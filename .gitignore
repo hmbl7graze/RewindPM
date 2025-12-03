@@ -139,7 +139,7 @@ $RECYCLE.BIN/
 # ===========================
 # .NET Aspire specific
 # ===========================
-*.AppHost/
+# AppHostプロジェクト自体はgit管理の対象に含める
 
 # ===========================
 # JetBrains Rider
