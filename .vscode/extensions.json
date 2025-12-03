@@ -1,0 +1,23 @@
+{
+  "recommendations": [
+    // C# 開発
+    "ms-dotnettools.csdevkit",
+    "ms-dotnettools.csharp",
+
+    // .NET Aspire
+    "ms-dotnettools.dotnet-interactive-vscode",
+
+    // テスト
+    "formulahendry.dotnet-test-explorer",
+
+    // コード品質
+    "editorconfig.editorconfig",
+
+    // Git
+    "eamodio.gitlens",
+
+    // マークダウン
+    "yzhang.markdown-all-in-one",
+    "davidanson.vscode-markdownlint"
+  ]
+}
