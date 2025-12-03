@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RewindPM.Domain\RewindPM.Domain.csproj" />
-    <ProjectReference Include="..\RewindPM.Infrastructure\RewindPM.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
