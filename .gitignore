@@ -21,11 +21,16 @@ bld/
 
 # Visual Studio 2022 cache/options
 .vs/
-.vscode/
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
+
+# VSCode (個人設定のみ除外、推奨設定は管理)
+.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
 
 # User-specific files
 *.rsuser
@@ -189,3 +194,10 @@ appsettings.Local.json
 # イベントストア用のデータファイル(必要に応じて)
 EventStore/
 *.events
+
+# ===========================
+# Claude Code
+# ===========================
+# ローカル設定ファイルは除外（個人設定）
+.claude/settings.local.json
+.claude/*.local.*
