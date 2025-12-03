@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="./RewindPM.ApiService/RewindPM.ApiService.csproj" />
+  <Project Path="./RewindPM.AppHost/RewindPM.AppHost.csproj" />
+  <Project Path="./RewindPM.ServiceDefaults/RewindPM.ServiceDefaults.csproj" />
+  <Project Path="./RewindPM.Web/RewindPM.Web.csproj" />
+</Solution>
