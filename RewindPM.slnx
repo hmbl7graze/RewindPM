@@ -3,7 +3,10 @@
   <Project Path="RewindPM.ServiceDefaults/RewindPM.ServiceDefaults.csproj" />
   <Project Path="RewindPM.Web/RewindPM.Web.csproj" />
   <Project Path="RewindPM.Application/RewindPM.Application.csproj" />
-  <Project Path="RewindPM.Domain.Test/RewindPM.Domain.Test.csproj" />
   <Project Path="RewindPM.Domain/RewindPM.Domain.csproj" />
   <Project Path="RewindPM.Infrastructure/RewindPM.Infrastructure.csproj" />
+  <Project Path="RewindPM.Application.Test/RewindPM.Application.Test.csproj" />
+  <Project Path="RewindPM.Domain.Test/RewindPM.Domain.Test.csproj" />
+  <Project Path="RewindPM.Infrastructure.Test/RewindPM.Infrastructure.Test.csproj" />
+  <Project Path="RewindPM.Web.Test/RewindPM.Web.Test.csproj" />
 </Solution>
