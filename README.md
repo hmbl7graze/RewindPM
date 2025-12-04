@@ -187,7 +187,7 @@ RewindPMは過去任意の時点にさかのぼってプロジェクトの振り
   - Aggregate、Value Object、Domain Eventパターンの採用
 
 ### 開発・テスト
-- **テストフレームワーク:** xUnit + FluentAssertions
+- **テストフレームワーク:** xUnit
 - **バリデーション:** FluentValidation（Application層で使用）
 - **CI/CD:** GitHub Actions
 

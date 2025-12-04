@@ -28,4 +28,8 @@
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RewindPM.Domain\RewindPM.Domain.csproj" />
+  </ItemGroup>
+
 </Project>
