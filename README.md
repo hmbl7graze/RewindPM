@@ -100,11 +100,12 @@ RewindPMは過去任意の時点にさかのぼってプロジェクトの振り
 #### 1. 基盤構築
 ドメイン層とイベントソーシングの基礎を動かす
 - ✅ プロジェクト構造の作成
+- ✅ CQRS対応のプロジェクト構成への移行
 - ✅ CI/CDの設定
 - ドメインモデルの実装（Aggregate、Value Object）
 - ドメインイベントの実装
-- イベントストアの実装（SQLite + EF Core）
-- ユニットテストの実装
+- ✅ イベントストアの実装（SQLite + EF Core）
+- ✅ Event Storeのユニットテスト実装
 - 最小限のBlazor UI（タスク作成とリプレイ結果の表示のみ）
 
 #### 2. プロジェクト管理の基本UI
@@ -174,17 +175,25 @@ RewindPMは過去任意の時点にさかのぼってプロジェクトの振り
 
 ### アーキテクチャパターン
 - **CQRS** (Command Query Responsibility Segregation)
+  - Write側とRead側を完全に分離したアーキテクチャ
   - コマンド：MediatR v12を使用（MITライセンス）
   - 将来的に自作ライブラリへの切り替えも検討
 - **イベントソーシング** (自前実装)
   - Event StoreをSQLiteで実装
-- **レイヤードアーキテクチャ** (4層)
-  - Presentation層 (RewindPM.Web)
-  - Application層 (RewindPM.Application)
-  - Domain層 (RewindPM.Domain)
-  - Infrastructure層 (RewindPM.Infrastructure)
+  - すべての変更をイベントとして永続化
+- **レイヤードアーキテクチャ** (CQRS対応)
+  - **Presentation層** (RewindPM.Web) - Blazor UI
+  - **Application層**
+    - RewindPM.Application.Write - Command、CommandHandler
+    - RewindPM.Application.Read - Query、QueryHandler、DTO
+  - **Domain層** (RewindPM.Domain) - Aggregate、Value Object、Domain Event
+  - **Infrastructure層**
+    - RewindPM.Infrastructure.Write - Event Store実装、Repository
+    - RewindPM.Infrastructure.Read - Read Model DB、Query実装
+  - **Projection層** (RewindPM.Projection) - Domain EventをRead DBに反映
 - **DDD** (Domain-Driven Design)
   - Aggregate、Value Object、Domain Eventパターンの採用
+  - ドメインロジックをドメイン層に集約
 
 ### 開発・テスト
 - **テストフレームワーク:** xUnit
