@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using RewindPM.Application.Write.Repositories;
 using RewindPM.Domain.Common;
 using RewindPM.Infrastructure.Write.EventStore;
 using RewindPM.Infrastructure.Write.Persistence;
+using RewindPM.Infrastructure.Write.Repositories;
 using RewindPM.Infrastructure.Write.Serialization;
 
 namespace RewindPM.Infrastructure;
@@ -31,6 +33,9 @@ public static class DependencyInjection
 
         // IEventStoreの実装としてSqliteEventStoreを登録（スコープド：DbContextを使用するため）
         services.AddScoped<IEventStore, SqliteEventStore>();
+
+        // IAggregateRepositoryの実装としてAggregateRepositoryを登録（スコープド：IEventStoreを使用するため）
+        services.AddScoped<IAggregateRepository, AggregateRepository>();
 
         return services;
     }
