@@ -1,15 +1,39 @@
 html, body {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+    background-color: #f6f8fa;
+    color: #1f2328;
 }
 
 a, .btn-link {
     color: #006bb7;
 }
 
+.btn {
+    font-weight: 500;
+    border-radius: 6px;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
 .btn-primary {
     color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+    background-color: #0969da;
+    border-color: #0969da;
+}
+
+.btn-primary:hover {
+    background-color: #0860ca;
+    border-color: #0860ca;
+}
+
+.btn-success {
+    color: #fff;
+    background-color: #1f883d;
+    border-color: #1f883d;
+}
+
+.btn-success:hover {
+    background-color: #1a7f37;
+    border-color: #1a7f37;
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
