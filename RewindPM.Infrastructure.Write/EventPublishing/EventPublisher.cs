@@ -9,7 +9,7 @@ namespace RewindPM.Infrastructure.Write.EventPublishing;
 /// </summary>
 public class EventPublisher : IEventPublisher
 {
-    private readonly Dictionary<Type, List<object>> _handlers = new();
+    private readonly Dictionary<Type, List<IEventHandlerWrapper>> _handlers = new();
     private readonly ILogger<EventPublisher> _logger;
 
     public EventPublisher(ILogger<EventPublisher> logger)
@@ -28,10 +28,12 @@ public class EventPublisher : IEventPublisher
 
         if (!_handlers.ContainsKey(eventType))
         {
-            _handlers[eventType] = new List<object>();
+            _handlers[eventType] = new List<IEventHandlerWrapper>();
         }
 
-        _handlers[eventType].Add(handler);
+        // リフレクションを使わずに型安全なラッパーを使用
+        var wrapper = new EventHandlerWrapper<TEvent>(handler);
+        _handlers[eventType].Add(wrapper);
 
         _logger.LogDebug("Subscribed handler {HandlerType} for event {EventType}",
             handler.GetType().Name, eventType.Name);
@@ -57,12 +59,7 @@ public class EventPublisher : IEventPublisher
         }
 
         // 各ハンドラーを並列実行
-        var tasks = new List<Task>();
-
-        foreach (var handler in handlers)
-        {
-            tasks.Add(InvokeHandlerAsync(handler, @event, eventType));
-        }
+        var tasks = handlers.Select(wrapper => InvokeHandlerAsync(wrapper, @event, eventType));
 
         await Task.WhenAll(tasks);
 
@@ -71,29 +68,58 @@ public class EventPublisher : IEventPublisher
     }
 
     /// <summary>
-    /// ハンドラーを呼び出す（リフレクション使用）
+    /// ハンドラーを呼び出す
     /// </summary>
-    private async Task InvokeHandlerAsync(object handler, IDomainEvent @event, Type eventType)
+    private async Task InvokeHandlerAsync(IEventHandlerWrapper wrapper, IDomainEvent @event, Type eventType)
     {
         try
         {
-            var handleMethod = handler.GetType().GetMethod(nameof(IEventHandler<IDomainEvent>.HandleAsync));
-            if (handleMethod != null)
-            {
-                var task = handleMethod.Invoke(handler, new object[] { @event }) as Task;
-                if (task != null)
-                {
-                    await task;
-                }
-            }
+            await wrapper.HandleAsync(@event);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex,
                 "Error handling event {EventType} with handler {HandlerType}",
-                eventType.Name, handler.GetType().Name);
+                eventType.Name, wrapper.HandlerTypeName);
             // ハンドラーのエラーは他のハンドラーに影響させない
             // 必要に応じてリトライや Dead Letter Queue への送信を検討
+        }
+    }
+
+    /// <summary>
+    /// 非ジェネリックなハンドラーラッパーインターフェース
+    /// </summary>
+    private interface IEventHandlerWrapper
+    {
+        Task HandleAsync(IDomainEvent @event);
+        string HandlerTypeName { get; }
+    }
+
+    /// <summary>
+    /// ジェネリックハンドラーをラップして非ジェネリックインターフェースで呼び出せるようにする
+    /// </summary>
+    private class EventHandlerWrapper<TEvent> : IEventHandlerWrapper
+        where TEvent : class, IDomainEvent
+    {
+        private readonly IEventHandler<TEvent> _handler;
+
+        public EventHandlerWrapper(IEventHandler<TEvent> handler)
+        {
+            _handler = handler ?? throw new ArgumentNullException(nameof(handler));
+        }
+
+        public string HandlerTypeName => _handler.GetType().Name;
+
+        public Task HandleAsync(IDomainEvent @event)
+        {
+            if (@event is TEvent typedEvent)
+            {
+                return _handler.HandleAsync(typedEvent);
+            }
+
+            // イベント型が一致しない場合（通常発生しない）
+            throw new InvalidOperationException(
+                $"Event type mismatch. Expected {typeof(TEvent).Name}, but got {@event.GetType().Name}");
         }
     }
 }
