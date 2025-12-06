@@ -43,23 +43,52 @@ builder.Services.AddProjection();
 
 var app = builder.Build();
 
-// データベースの初期化（開発環境のみ）
-if (app.Environment.IsDevelopment())
+// データベースマイグレーションの自動適用
+// - 保留中のマイグレーションがある場合: 常に適用（初回起動やスキーマ変更時）
+// - 保留中のマイグレーションがない場合: AUTO_MIGRATE_DATABASE=true または開発環境でのみ再実行
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var services = scope.ServiceProvider;
 
-    // ReadModelデータベースのマイグレーション適用
+    // ReadModelデータベースの処理
     var readModelContext = services.GetRequiredService<RewindPM.Infrastructure.Read.Persistence.ReadModelDbContext>();
-    Console.WriteLine($"[Startup] Applying ReadModel migrations...");
-    await readModelContext.Database.MigrateAsync();
-    Console.WriteLine($"[Startup] ReadModel database ready.");
+    var pendingReadModelMigrations = await readModelContext.Database.GetPendingMigrationsAsync();
+    var hasPendingReadModelMigrations = pendingReadModelMigrations.Any();
 
-    // EventStoreデータベースのマイグレーション適用
+    if (hasPendingReadModelMigrations)
+    {
+        Console.WriteLine($"[Startup] Applying ReadModel migrations...");
+        await readModelContext.Database.MigrateAsync();
+        Console.WriteLine($"[Startup] ReadModel migrations applied.");
+    }
+    else
+    {
+        var autoMigrate = builder.Configuration.GetValue<bool>("AUTO_MIGRATE_DATABASE", app.Environment.IsDevelopment());
+        if (autoMigrate)
+        {
+            await readModelContext.Database.MigrateAsync();
+        }
+    }
+
+    // EventStoreデータベースの処理
     var eventStoreContext = services.GetRequiredService<RewindPM.Infrastructure.Write.Persistence.EventStoreDbContext>();
-    Console.WriteLine($"[Startup] Applying EventStore migrations...");
-    await eventStoreContext.Database.MigrateAsync();
-    Console.WriteLine($"[Startup] EventStore database ready.");
+    var pendingEventStoreMigrations = await eventStoreContext.Database.GetPendingMigrationsAsync();
+    var hasPendingEventStoreMigrations = pendingEventStoreMigrations.Any();
+
+    if (hasPendingEventStoreMigrations)
+    {
+        Console.WriteLine($"[Startup] Applying EventStore migrations...");
+        await eventStoreContext.Database.MigrateAsync();
+        Console.WriteLine($"[Startup] EventStore migrations applied.");
+    }
+    else
+    {
+        var autoMigrate = builder.Configuration.GetValue<bool>("AUTO_MIGRATE_DATABASE", app.Environment.IsDevelopment());
+        if (autoMigrate)
+        {
+            await eventStoreContext.Database.MigrateAsync();
+        }
+    }
 }
 
 if (!app.Environment.IsDevelopment())
