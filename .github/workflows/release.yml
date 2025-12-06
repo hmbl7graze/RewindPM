@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    strategy:
+      matrix:
+        runtime: [linux-x64, win-x64, osx-x64, osx-arm64]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore RewindPM.slnx
+
+    - name: Run Tests
+      run: dotnet test RewindPM.slnx --configuration Release --verbosity normal
+
+    - name: Publish
+      run: |
+        dotnet publish RewindPM.Web/RewindPM.Web.csproj \
+          --configuration Release \
+          --runtime ${{ matrix.runtime }} \
+          --self-contained true \
+          -p:PublishSingleFile=true \
+          -p:PublishTrimmed=true \
+          --output ./publish/${{ matrix.runtime }}
+
+    - name: Create Archive
+      run: |
+        cd ./publish/${{ matrix.runtime }}
+        if [[ "${{ matrix.runtime }}" == win-* ]]; then
+          zip -r ../../RewindPM-${{ github.ref_name }}-${{ matrix.runtime }}.zip .
+        else
+          tar -czf ../../RewindPM-${{ github.ref_name }}-${{ matrix.runtime }}.tar.gz .
+        fi
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: RewindPM-${{ matrix.runtime }}
+        path: |
+          RewindPM-${{ github.ref_name }}-${{ matrix.runtime }}.zip
+          RewindPM-${{ github.ref_name }}-${{ matrix.runtime }}.tar.gz
+        retention-days: 1
+
+  create-release:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./artifacts
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          ./artifacts/**/*.zip
+          ./artifacts/**/*.tar.gz
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
