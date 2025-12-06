@@ -503,4 +503,324 @@ public class ProjectionHandlerTests : IAsyncDisposable
     }
 
     #endregion
+
+    #region TaskScheduledPeriodChangedEventHandler Tests
+
+    [Fact(DisplayName = "TaskScheduledPeriodChangedイベントで予定期間が更新され、スナップショットが作成されること")]
+    public async Task TaskScheduledPeriodChangedEventHandler_Should_Update_ScheduledPeriod_And_Create_Snapshot()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+        var createdAt = new DateTime(2025, 12, 5, 10, 0, 0, DateTimeKind.Utc);
+        var changedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
+
+        // 既存のタスクを作成
+        var task = new Infrastructure.Read.Entities.TaskEntity
+        {
+            Id = taskId,
+            ProjectId = projectId,
+            Title = "Test Task",
+            Description = "Test Description",
+            Status = TaskStatus.Todo,
+            ScheduledStartDate = new DateTime(2025, 12, 10),
+            ScheduledEndDate = new DateTime(2025, 12, 15),
+            EstimatedHours = 20,
+            CreatedBy = "user1",
+            CreatedAt = createdAt
+        };
+        _context.Tasks.Add(task);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var handler = new TaskScheduledPeriodChangedEventHandler(_context, CreateLogger<TaskScheduledPeriodChangedEventHandler>());
+        var newScheduledPeriod = new ScheduledPeriod(
+            new DateTime(2025, 12, 12),
+            new DateTime(2025, 12, 22),
+            40
+        );
+        var @event = new TaskScheduledPeriodChanged
+        {
+            AggregateId = taskId,
+            ScheduledPeriod = newScheduledPeriod,
+            ChangedBy = "user1",
+            OccurredAt = changedAt
+        };
+
+        // Act
+        await handler.HandleAsync(@event);
+
+        // Assert
+        var updatedTask = await _context.Tasks.FindAsync([taskId], TestContext.Current.CancellationToken);
+        Assert.NotNull(updatedTask);
+        Assert.Equal(new DateTime(2025, 12, 12), updatedTask.ScheduledStartDate);
+        Assert.Equal(new DateTime(2025, 12, 22), updatedTask.ScheduledEndDate);
+        Assert.Equal(40, updatedTask.EstimatedHours);
+        Assert.Equal("user1", updatedTask.UpdatedBy);
+        Assert.Equal(changedAt, updatedTask.UpdatedAt);
+
+        var snapshot = await _context.TaskHistories
+            .FirstOrDefaultAsync(h => h.TaskId == taskId && h.SnapshotDate == changedAt.Date, TestContext.Current.CancellationToken);
+        Assert.NotNull(snapshot);
+        Assert.Equal(new DateTime(2025, 12, 12), snapshot.ScheduledStartDate);
+        Assert.Equal(new DateTime(2025, 12, 22), snapshot.ScheduledEndDate);
+        Assert.Equal(40, snapshot.EstimatedHours);
+    }
+
+    [Fact(DisplayName = "TaskScheduledPeriodChangedイベントで同日の既存スナップショットが更新されること")]
+    public async Task TaskScheduledPeriodChangedEventHandler_Should_Update_Existing_Snapshot_On_Same_Day()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+        var today = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc);
+
+        // 既存のタスクとスナップショットを作成
+        var task = new Infrastructure.Read.Entities.TaskEntity
+        {
+            Id = taskId,
+            ProjectId = projectId,
+            Title = "Test Task",
+            Description = "Test Description",
+            Status = TaskStatus.Todo,
+            ScheduledStartDate = new DateTime(2025, 12, 10),
+            ScheduledEndDate = new DateTime(2025, 12, 15),
+            EstimatedHours = 20,
+            CreatedBy = "user1",
+            CreatedAt = today.AddDays(-1)
+        };
+        _context.Tasks.Add(task);
+
+        var existingSnapshot = new Infrastructure.Read.Entities.TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = taskId,
+            ProjectId = projectId,
+            SnapshotDate = today.Date,
+            Title = "Test Task",
+            Description = "Test Description",
+            Status = TaskStatus.Todo,
+            ScheduledStartDate = new DateTime(2025, 12, 10),
+            ScheduledEndDate = new DateTime(2025, 12, 15),
+            EstimatedHours = 20,
+            CreatedBy = "user1",
+            CreatedAt = today.AddDays(-1),
+            SnapshotCreatedAt = today.AddHours(-2)
+        };
+        _context.TaskHistories.Add(existingSnapshot);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var handler = new TaskScheduledPeriodChangedEventHandler(_context, CreateLogger<TaskScheduledPeriodChangedEventHandler>());
+        var newScheduledPeriod = new ScheduledPeriod(
+            new DateTime(2025, 12, 12),
+            new DateTime(2025, 12, 22),
+            40
+        );
+        var @event = new TaskScheduledPeriodChanged
+        {
+            AggregateId = taskId,
+            ScheduledPeriod = newScheduledPeriod,
+            ChangedBy = "user1",
+            OccurredAt = today
+        };
+
+        // Act
+        await handler.HandleAsync(@event);
+
+        // Assert
+        var snapshots = await _context.TaskHistories
+            .Where(h => h.TaskId == taskId && h.SnapshotDate == today.Date)
+            .ToListAsync(TestContext.Current.CancellationToken);
+
+        Assert.Single(snapshots);
+        Assert.Equal(new DateTime(2025, 12, 12), snapshots[0].ScheduledStartDate);
+        Assert.Equal(new DateTime(2025, 12, 22), snapshots[0].ScheduledEndDate);
+        Assert.Equal(40, snapshots[0].EstimatedHours);
+    }
+
+    #endregion
+
+    #region TaskActualPeriodChangedEventHandler Tests
+
+    [Fact(DisplayName = "TaskActualPeriodChangedイベントで実績期間が更新され、スナップショットが作成されること")]
+    public async Task TaskActualPeriodChangedEventHandler_Should_Update_ActualPeriod_And_Create_Snapshot()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+        var createdAt = new DateTime(2025, 12, 5, 10, 0, 0, DateTimeKind.Utc);
+        var changedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
+
+        // 既存のタスクを作成
+        var task = new Infrastructure.Read.Entities.TaskEntity
+        {
+            Id = taskId,
+            ProjectId = projectId,
+            Title = "Test Task",
+            Description = "Test Description",
+            Status = TaskStatus.InProgress,
+            ActualStartDate = null,
+            ActualEndDate = null,
+            ActualHours = null,
+            CreatedBy = "user1",
+            CreatedAt = createdAt
+        };
+        _context.Tasks.Add(task);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateLogger<TaskActualPeriodChangedEventHandler>());
+        var newActualPeriod = new ActualPeriod(
+            new DateTime(2025, 12, 11),
+            new DateTime(2025, 12, 20),
+            35
+        );
+        var @event = new TaskActualPeriodChanged
+        {
+            AggregateId = taskId,
+            ActualPeriod = newActualPeriod,
+            ChangedBy = "user1",
+            OccurredAt = changedAt
+        };
+
+        // Act
+        await handler.HandleAsync(@event);
+
+        // Assert
+        var updatedTask = await _context.Tasks.FindAsync([taskId], TestContext.Current.CancellationToken);
+        Assert.NotNull(updatedTask);
+        Assert.Equal(new DateTime(2025, 12, 11), updatedTask.ActualStartDate);
+        Assert.Equal(new DateTime(2025, 12, 20), updatedTask.ActualEndDate);
+        Assert.Equal(35, updatedTask.ActualHours);
+        Assert.Equal("user1", updatedTask.UpdatedBy);
+        Assert.Equal(changedAt, updatedTask.UpdatedAt);
+
+        var snapshot = await _context.TaskHistories
+            .FirstOrDefaultAsync(h => h.TaskId == taskId && h.SnapshotDate == changedAt.Date, TestContext.Current.CancellationToken);
+        Assert.NotNull(snapshot);
+        Assert.Equal(new DateTime(2025, 12, 11), snapshot.ActualStartDate);
+        Assert.Equal(new DateTime(2025, 12, 20), snapshot.ActualEndDate);
+        Assert.Equal(35, snapshot.ActualHours);
+    }
+
+    [Fact(DisplayName = "TaskActualPeriodChangedイベントで同日の既存スナップショットが更新されること")]
+    public async Task TaskActualPeriodChangedEventHandler_Should_Update_Existing_Snapshot_On_Same_Day()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+        var today = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc);
+
+        // 既存のタスクとスナップショットを作成
+        var task = new Infrastructure.Read.Entities.TaskEntity
+        {
+            Id = taskId,
+            ProjectId = projectId,
+            Title = "Test Task",
+            Description = "Test Description",
+            Status = TaskStatus.InProgress,
+            ActualStartDate = new DateTime(2025, 12, 10),
+            ActualEndDate = null,
+            ActualHours = 10,
+            CreatedBy = "user1",
+            CreatedAt = today.AddDays(-1)
+        };
+        _context.Tasks.Add(task);
+
+        var existingSnapshot = new Infrastructure.Read.Entities.TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = taskId,
+            ProjectId = projectId,
+            SnapshotDate = today.Date,
+            Title = "Test Task",
+            Description = "Test Description",
+            Status = TaskStatus.InProgress,
+            ActualStartDate = new DateTime(2025, 12, 10),
+            ActualEndDate = null,
+            ActualHours = 10,
+            CreatedBy = "user1",
+            CreatedAt = today.AddDays(-1),
+            SnapshotCreatedAt = today.AddHours(-2)
+        };
+        _context.TaskHistories.Add(existingSnapshot);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateLogger<TaskActualPeriodChangedEventHandler>());
+        var newActualPeriod = new ActualPeriod(
+            new DateTime(2025, 12, 10),
+            new DateTime(2025, 12, 15),
+            25
+        );
+        var @event = new TaskActualPeriodChanged
+        {
+            AggregateId = taskId,
+            ActualPeriod = newActualPeriod,
+            ChangedBy = "user1",
+            OccurredAt = today
+        };
+
+        // Act
+        await handler.HandleAsync(@event);
+
+        // Assert
+        var snapshots = await _context.TaskHistories
+            .Where(h => h.TaskId == taskId && h.SnapshotDate == today.Date)
+            .ToListAsync(TestContext.Current.CancellationToken);
+
+        Assert.Single(snapshots);
+        Assert.Equal(new DateTime(2025, 12, 10), snapshots[0].ActualStartDate);
+        Assert.Equal(new DateTime(2025, 12, 15), snapshots[0].ActualEndDate);
+        Assert.Equal(25, snapshots[0].ActualHours);
+    }
+
+    [Fact(DisplayName = "TaskActualPeriodChangedイベントでnullable値を適切に処理すること")]
+    public async Task TaskActualPeriodChangedEventHandler_Should_Handle_Nullable_Values()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+        var createdAt = new DateTime(2025, 12, 5, 10, 0, 0, DateTimeKind.Utc);
+        var changedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
+
+        // 既存のタスクを作成
+        var task = new Infrastructure.Read.Entities.TaskEntity
+        {
+            Id = taskId,
+            ProjectId = projectId,
+            Title = "Test Task",
+            Description = "Test Description",
+            Status = TaskStatus.InProgress,
+            CreatedBy = "user1",
+            CreatedAt = createdAt
+        };
+        _context.Tasks.Add(task);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateLogger<TaskActualPeriodChangedEventHandler>());
+
+        // 開始日のみ設定
+        var partialActualPeriod = new ActualPeriod(
+            startDate: new DateTime(2025, 12, 11),
+            endDate: null,
+            actualHours: null
+        );
+        var @event = new TaskActualPeriodChanged
+        {
+            AggregateId = taskId,
+            ActualPeriod = partialActualPeriod,
+            ChangedBy = "user1",
+            OccurredAt = changedAt
+        };
+
+        // Act
+        await handler.HandleAsync(@event);
+
+        // Assert
+        var updatedTask = await _context.Tasks.FindAsync([taskId], TestContext.Current.CancellationToken);
+        Assert.NotNull(updatedTask);
+        Assert.Equal(new DateTime(2025, 12, 11), updatedTask.ActualStartDate);
+        Assert.Null(updatedTask.ActualEndDate);
+        Assert.Null(updatedTask.ActualHours);
+    }
+
+    #endregion
 }

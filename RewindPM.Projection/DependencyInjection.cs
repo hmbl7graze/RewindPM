@@ -28,6 +28,8 @@ public static class DependencyInjection
         services.AddScoped<TaskCreatedEventHandler>();
         services.AddScoped<TaskUpdatedEventHandler>();
         services.AddScoped<TaskStatusChangedEventHandler>();
+        services.AddScoped<TaskScheduledPeriodChangedEventHandler>();
+        services.AddScoped<TaskActualPeriodChangedEventHandler>();
 
         // EventPublisherにハンドラーを登録
         // スコープドハンドラーをシングルトンEventPublisherから呼び出すためのアダプターを使用
@@ -47,6 +49,12 @@ public static class DependencyInjection
 
         eventPublisher.Subscribe<TaskStatusChanged>(
             new ScopedEventHandlerAdapter<TaskStatusChanged, TaskStatusChangedEventHandler>(serviceProvider));
+
+        eventPublisher.Subscribe<TaskScheduledPeriodChanged>(
+            new ScopedEventHandlerAdapter<TaskScheduledPeriodChanged, TaskScheduledPeriodChangedEventHandler>(serviceProvider));
+
+        eventPublisher.Subscribe<TaskActualPeriodChanged>(
+            new ScopedEventHandlerAdapter<TaskActualPeriodChanged, TaskActualPeriodChangedEventHandler>(serviceProvider));
 
         return services;
     }
