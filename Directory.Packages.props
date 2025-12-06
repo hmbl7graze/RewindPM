@@ -10,6 +10,7 @@
 
     <!-- Microsoft Extensions -->
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.0.0" />
 
     <!-- Entity Framework Core -->
