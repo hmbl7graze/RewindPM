@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using RewindPM.Application.Write.Repositories;
 using RewindPM.Domain.Common;
+using RewindPM.Infrastructure.Write.EventPublishing;
 using RewindPM.Infrastructure.Write.EventStore;
 using RewindPM.Infrastructure.Write.Persistence;
 using RewindPM.Infrastructure.Write.Repositories;
@@ -31,8 +32,21 @@ public static class DependencyInjection
         // DomainEventSerializerの登録（シングルトン：ステートレスなため）
         services.AddSingleton<DomainEventSerializer>();
 
-        // IEventStoreの実装としてSqliteEventStoreを登録（スコープド：DbContextを使用するため）
-        services.AddScoped<IEventStore, SqliteEventStore>();
+        // EventPublisherの登録（シングルトン：ハンドラー管理のため）
+        services.AddSingleton<IEventPublisher, EventPublisher>();
+
+        // SqliteEventStoreの登録（内部実装、スコープド：DbContextを使用するため）
+        services.AddScoped<SqliteEventStore>();
+
+        // IEventStoreの実装としてEventPublishingEventStoreDecoratorを登録
+        // SqliteEventStoreをラップしてイベント発行機能を追加
+        services.AddScoped<IEventStore>(sp =>
+        {
+            var innerStore = sp.GetRequiredService<SqliteEventStore>();
+            var eventPublisher = sp.GetRequiredService<IEventPublisher>();
+            var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<EventPublishingEventStoreDecorator>>();
+            return new EventPublishingEventStoreDecorator(innerStore, eventPublisher, logger);
+        });
 
         // IAggregateRepositoryの実装としてAggregateRepositoryを登録（スコープド：IEventStoreを使用するため）
         services.AddScoped<IAggregateRepository, AggregateRepository>();
