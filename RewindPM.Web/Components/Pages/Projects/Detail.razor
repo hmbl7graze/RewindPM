@@ -1,0 +1,92 @@
+@page "/projects/{id:guid}"
+@using MediatR
+@using RewindPM.Application.Read.Queries.Projects
+@inject IMediator Mediator
+@inject NavigationManager Navigation
+
+<PageTitle>プロジェクト詳細</PageTitle>
+
+<h1>プロジェクト詳細</h1>
+
+@if (isLoading)
+{
+    <p><em>読み込み中...</em></p>
+}
+else if (project == null)
+{
+    <div class="alert alert-danger">プロジェクトが見つかりません。</div>
+    <a href="/projects" class="btn btn-secondary">プロジェクト一覧に戻る</a>
+}
+else
+{
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2>@project.Title</h2>
+            <div>
+                <a href="/projects/@Id/edit" class="btn btn-warning">編集</a>
+                <a href="/projects" class="btn btn-secondary">一覧に戻る</a>
+            </div>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">プロジェクトID</dt>
+                <dd class="col-sm-9">@project.Id</dd>
+
+                <dt class="col-sm-3">プロジェクト名</dt>
+                <dd class="col-sm-9">@project.Title</dd>
+
+                <dt class="col-sm-3">説明</dt>
+                <dd class="col-sm-9">@project.Description</dd>
+
+                <dt class="col-sm-3">作成者</dt>
+                <dd class="col-sm-9">@project.CreatedBy</dd>
+
+                <dt class="col-sm-3">作成日時</dt>
+                <dd class="col-sm-9">@project.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</dd>
+
+                @if (project.UpdatedBy != null)
+                {
+                    <dt class="col-sm-3">更新者</dt>
+                    <dd class="col-sm-9">@project.UpdatedBy</dd>
+                }
+
+                @if (project.UpdatedAt.HasValue)
+                {
+                    <dt class="col-sm-3">更新日時</dt>
+                    <dd class="col-sm-9">@project.UpdatedAt.Value.ToString("yyyy/MM/dd HH:mm:ss")</dd>
+                }
+            </dl>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mt-3">@errorMessage</div>
+    }
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private ProjectDto? project;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var query = new GetProjectByIdQuery(Id);
+            project = await Mediator.Send(query);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"プロジェクトの読み込みに失敗しました: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

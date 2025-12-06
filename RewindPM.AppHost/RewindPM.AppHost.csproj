@@ -9,7 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RewindPM.ApiService\RewindPM.ApiService.csproj" />
     <ProjectReference Include="..\RewindPM.Web\RewindPM.Web.csproj" />
   </ItemGroup>
 

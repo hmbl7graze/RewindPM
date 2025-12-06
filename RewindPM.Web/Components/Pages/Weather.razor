@@ -2,7 +2,8 @@
 @attribute [StreamRendering(true)]
 @attribute [OutputCache(Duration = 5)]
 
-@inject WeatherApiClient WeatherApi
+@inject HttpClient Http
+@inject NavigationManager Navigation
 
 <PageTitle>Weather</PageTitle>
 
@@ -44,6 +45,12 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        forecasts = await WeatherApi.GetWeatherAsync();
+        var baseUri = Navigation.BaseUri;
+        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>($"{baseUri}weatherforecast");
+    }
+
+    record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
+    {
+        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
     }
 }

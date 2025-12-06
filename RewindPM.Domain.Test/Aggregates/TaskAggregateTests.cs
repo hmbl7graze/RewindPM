@@ -1,0 +1,374 @@
+using RewindPM.Domain.Aggregates;
+using RewindPM.Domain.Common;
+using RewindPM.Domain.Events;
+using RewindPM.Domain.ValueObjects;
+using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
+
+namespace RewindPM.Domain.Test.Aggregates;
+
+public class TaskAggregateTests
+{
+    private readonly Guid _projectId = Guid.NewGuid();
+    private readonly ScheduledPeriod _scheduledPeriod = new(
+        new DateTime(2025, 1, 1),
+        new DateTime(2025, 1, 10),
+        40);
+
+    [Fact(DisplayName = "有効な値でタスクを作成できる")]
+    public void Create_WithValidValues_ShouldCreateTask()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var title = "新しいタスク";
+        var description = "タスクの説明";
+        var createdBy = "user123";
+
+        // Act
+        var task = TaskAggregate.Create(id, _projectId, title, description, _scheduledPeriod, createdBy);
+
+        // Assert
+        Assert.Equal(id, task.Id);
+        Assert.Equal(_projectId, task.ProjectId);
+        Assert.Equal(title, task.Title);
+        Assert.Equal(description, task.Description);
+        Assert.Equal(TaskStatus.Todo, task.Status);
+        Assert.Equal(_scheduledPeriod, task.ScheduledPeriod);
+        Assert.NotNull(task.ActualPeriod);
+        Assert.False(task.ActualPeriod.IsStarted);
+        Assert.Equal(createdBy, task.CreatedBy);
+        Assert.Equal(createdBy, task.UpdatedBy);
+    }
+
+    [Fact(DisplayName = "タスク作成時にTaskCreatedイベントが発生する")]
+    public void Create_ShouldRaiseTaskCreatedEvent()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var title = "新しいタスク";
+        var description = "タスクの説明";
+        var createdBy = "user123";
+
+        // Act
+        var task = TaskAggregate.Create(id, _projectId, title, description, _scheduledPeriod, createdBy);
+
+        // Assert
+        Assert.Single(task.UncommittedEvents);
+        var @event = task.UncommittedEvents.First();
+        Assert.IsType<TaskCreated>(@event);
+
+        var taskCreatedEvent = (TaskCreated)@event;
+        Assert.Equal(id, taskCreatedEvent.AggregateId);
+        Assert.Equal(_projectId, taskCreatedEvent.ProjectId);
+        Assert.Equal(title, taskCreatedEvent.Title);
+        Assert.Equal(description, taskCreatedEvent.Description);
+        Assert.Equal(_scheduledPeriod, taskCreatedEvent.ScheduledPeriod);
+        Assert.Equal(createdBy, taskCreatedEvent.CreatedBy);
+    }
+
+    [Fact(DisplayName = "タイトルがnullの場合、DomainExceptionをスローする")]
+    public void Create_WhenTitleIsNull_ShouldThrowDomainException()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        string title = null!;
+        var description = "タスクの説明";
+        var createdBy = "user123";
+
+        // Act & Assert
+        var exception = Assert.Throws<DomainException>(() =>
+            TaskAggregate.Create(id, _projectId, title, description, _scheduledPeriod, createdBy));
+        Assert.Equal("タスクのタイトルは必須です", exception.Message);
+    }
+
+    [Fact(DisplayName = "プロジェクトIDが空の場合、DomainExceptionをスローする")]
+    public void Create_WhenProjectIdIsEmpty_ShouldThrowDomainException()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var projectId = Guid.Empty;
+        var title = "新しいタスク";
+        var description = "タスクの説明";
+        var createdBy = "user123";
+
+        // Act & Assert
+        var exception = Assert.Throws<DomainException>(() =>
+            TaskAggregate.Create(id, projectId, title, description, _scheduledPeriod, createdBy));
+        Assert.Equal("プロジェクトIDは必須です", exception.Message);
+    }
+
+    [Fact(DisplayName = "予定期間がnullの場合、DomainExceptionをスローする")]
+    public void Create_WhenScheduledPeriodIsNull_ShouldThrowDomainException()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var title = "新しいタスク";
+        var description = "タスクの説明";
+        ScheduledPeriod scheduledPeriod = null!;
+        var createdBy = "user123";
+
+        // Act & Assert
+        var exception = Assert.Throws<DomainException>(() =>
+            TaskAggregate.Create(id, _projectId, title, description, scheduledPeriod, createdBy));
+        Assert.Equal("予定期間は必須です", exception.Message);
+    }
+
+    [Fact(DisplayName = "作成者がnullの場合、DomainExceptionをスローする")]
+    public void Create_WhenCreatedByIsNull_ShouldThrowDomainException()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var title = "新しいタスク";
+        var description = "タスクの説明";
+        string createdBy = null!;
+
+        // Act & Assert
+        var exception = Assert.Throws<DomainException>(() =>
+            TaskAggregate.Create(id, _projectId, title, description, _scheduledPeriod, createdBy));
+        Assert.Equal("作成者のユーザーIDは必須です", exception.Message);
+    }
+
+    [Fact(DisplayName = "タスクのステータスを変更できる")]
+    public void ChangeStatus_WithValidValues_ShouldChangeStatus()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123");
+        task.ClearUncommittedEvents();
+
+        var newStatus = TaskStatus.InProgress;
+        var changedBy = "user456";
+
+        // Act
+        task.ChangeStatus(newStatus, changedBy);
+
+        // Assert
+        Assert.Equal(newStatus, task.Status);
+        Assert.Equal(changedBy, task.UpdatedBy);
+    }
+
+    [Fact(DisplayName = "ステータス変更時にTaskStatusChangedイベントが発生する")]
+    public void ChangeStatus_ShouldRaiseTaskStatusChangedEvent()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123");
+        task.ClearUncommittedEvents();
+
+        var oldStatus = TaskStatus.Todo;
+        var newStatus = TaskStatus.InProgress;
+        var changedBy = "user456";
+
+        // Act
+        task.ChangeStatus(newStatus, changedBy);
+
+        // Assert
+        Assert.Single(task.UncommittedEvents);
+        var @event = task.UncommittedEvents.First();
+        Assert.IsType<TaskStatusChanged>(@event);
+
+        var statusChangedEvent = (TaskStatusChanged)@event;
+        Assert.Equal(oldStatus, statusChangedEvent.OldStatus);
+        Assert.Equal(newStatus, statusChangedEvent.NewStatus);
+        Assert.Equal(changedBy, statusChangedEvent.ChangedBy);
+    }
+
+    [Fact(DisplayName = "同じステータスへの変更は無視される")]
+    public void ChangeStatus_WhenSameStatus_ShouldBeIgnored()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123");
+        task.ClearUncommittedEvents();
+
+        // Act
+        task.ChangeStatus(TaskStatus.Todo, "user456");
+
+        // Assert
+        Assert.Empty(task.UncommittedEvents);
+    }
+
+    [Fact(DisplayName = "タスクのタイトルと説明を更新できる")]
+    public void Update_WithValidValues_ShouldUpdateTask()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "旧タイトル", "旧説明", _scheduledPeriod, "user123");
+        task.ClearUncommittedEvents();
+
+        var newTitle = "新タイトル";
+        var newDescription = "新説明";
+        var updatedBy = "user456";
+
+        // Act
+        task.Update(newTitle, newDescription, updatedBy);
+
+        // Assert
+        Assert.Equal(newTitle, task.Title);
+        Assert.Equal(newDescription, task.Description);
+        Assert.Equal(updatedBy, task.UpdatedBy);
+    }
+
+    [Fact(DisplayName = "タスク更新時にTaskUpdatedイベントが発生する")]
+    public void Update_ShouldRaiseTaskUpdatedEvent()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "旧タイトル", "旧説明", _scheduledPeriod, "user123");
+        task.ClearUncommittedEvents();
+
+        var newTitle = "新タイトル";
+        var newDescription = "新説明";
+        var updatedBy = "user456";
+
+        // Act
+        task.Update(newTitle, newDescription, updatedBy);
+
+        // Assert
+        Assert.Single(task.UncommittedEvents);
+        var @event = task.UncommittedEvents.First();
+        Assert.IsType<TaskUpdated>(@event);
+
+        var taskUpdatedEvent = (TaskUpdated)@event;
+        Assert.Equal(newTitle, taskUpdatedEvent.Title);
+        Assert.Equal(newDescription, taskUpdatedEvent.Description);
+        Assert.Equal(updatedBy, taskUpdatedEvent.UpdatedBy);
+    }
+
+    [Fact(DisplayName = "タスクの予定期間を変更できる")]
+    public void ChangeSchedule_WithValidValues_ShouldChangeSchedule()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123");
+        task.ClearUncommittedEvents();
+
+        var newSchedule = new ScheduledPeriod(
+            new DateTime(2025, 2, 1),
+            new DateTime(2025, 2, 15),
+            60);
+        var changedBy = "user456";
+
+        // Act
+        task.ChangeSchedule(newSchedule, changedBy);
+
+        // Assert
+        Assert.Equal(newSchedule, task.ScheduledPeriod);
+        Assert.Equal(changedBy, task.UpdatedBy);
+    }
+
+    [Fact(DisplayName = "予定期間変更時にTaskScheduledPeriodChangedイベントが発生する")]
+    public void ChangeSchedule_ShouldRaiseTaskScheduledPeriodChangedEvent()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123");
+        task.ClearUncommittedEvents();
+
+        var newSchedule = new ScheduledPeriod(
+            new DateTime(2025, 2, 1),
+            new DateTime(2025, 2, 15),
+            60);
+        var changedBy = "user456";
+
+        // Act
+        task.ChangeSchedule(newSchedule, changedBy);
+
+        // Assert
+        Assert.Single(task.UncommittedEvents);
+        var @event = task.UncommittedEvents.First();
+        Assert.IsType<TaskScheduledPeriodChanged>(@event);
+
+        var scheduleChangedEvent = (TaskScheduledPeriodChanged)@event;
+        Assert.Equal(newSchedule, scheduleChangedEvent.ScheduledPeriod);
+        Assert.Equal(changedBy, scheduleChangedEvent.ChangedBy);
+    }
+
+    [Fact(DisplayName = "タスクの実績期間を変更できる")]
+    public void ChangeActualPeriod_WithValidValues_ShouldChangeActualPeriod()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123");
+        task.ClearUncommittedEvents();
+
+        var actualPeriod = new ActualPeriod(
+            new DateTime(2025, 1, 2),
+            new DateTime(2025, 1, 8),
+            35);
+        var changedBy = "user456";
+
+        // Act
+        task.ChangeActualPeriod(actualPeriod, changedBy);
+
+        // Assert
+        Assert.Equal(actualPeriod, task.ActualPeriod);
+        Assert.Equal(changedBy, task.UpdatedBy);
+    }
+
+    [Fact(DisplayName = "実績期間変更時にTaskActualPeriodChangedイベントが発生する")]
+    public void ChangeActualPeriod_ShouldRaiseTaskActualPeriodChangedEvent()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123");
+        task.ClearUncommittedEvents();
+
+        var actualPeriod = new ActualPeriod(
+            new DateTime(2025, 1, 2),
+            new DateTime(2025, 1, 8),
+            35);
+        var changedBy = "user456";
+
+        // Act
+        task.ChangeActualPeriod(actualPeriod, changedBy);
+
+        // Assert
+        Assert.Single(task.UncommittedEvents);
+        var @event = task.UncommittedEvents.First();
+        Assert.IsType<TaskActualPeriodChanged>(@event);
+
+        var actualPeriodChangedEvent = (TaskActualPeriodChanged)@event;
+        Assert.Equal(actualPeriod, actualPeriodChangedEvent.ActualPeriod);
+        Assert.Equal(changedBy, actualPeriodChangedEvent.ChangedBy);
+    }
+
+    [Fact(DisplayName = "イベントリプレイでタスクの状態を復元できる")]
+    public void ReplayEvents_ShouldRestoreTaskState()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var events = new List<IDomainEvent>
+        {
+            new TaskCreated
+            {
+                AggregateId = id,
+                ProjectId = _projectId,
+                Title = "元のタイトル",
+                Description = "元の説明",
+                ScheduledPeriod = _scheduledPeriod,
+                CreatedBy = "user123"
+            },
+            new TaskStatusChanged
+            {
+                AggregateId = id,
+                OldStatus = TaskStatus.Todo,
+                NewStatus = TaskStatus.InProgress,
+                ChangedBy = "user456"
+            },
+            new TaskUpdated
+            {
+                AggregateId = id,
+                Title = "更新されたタイトル",
+                Description = "更新された説明",
+                UpdatedBy = "user789"
+            }
+        };
+
+        // Act
+        var task = new TaskAggregate();
+        task.ReplayEvents(events);
+
+        // Assert
+        Assert.Equal(id, task.Id);
+        Assert.Equal(_projectId, task.ProjectId);
+        Assert.Equal("更新されたタイトル", task.Title);
+        Assert.Equal("更新された説明", task.Description);
+        Assert.Equal(TaskStatus.InProgress, task.Status);
+        Assert.Equal(_scheduledPeriod, task.ScheduledPeriod);
+        Assert.Equal("user123", task.CreatedBy);
+        Assert.Equal("user789", task.UpdatedBy);
+        Assert.Equal(2, task.Version); // 3つのイベント = Version 2 (0-indexed)
+        Assert.Empty(task.UncommittedEvents);
+    }
+}
