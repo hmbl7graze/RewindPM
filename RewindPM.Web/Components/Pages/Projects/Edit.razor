@@ -70,7 +70,7 @@ else
     private ProjectDto? project;
 
     [SupplyParameterFromForm]
-    private ProjectFormModel formModel { get; set; } = new ProjectFormModel();
+    private ProjectFormModel formModel { get; set; } = null!;
 
     private bool isLoading = true;
     private bool isSubmitting = false;
@@ -85,7 +85,7 @@ else
 
             // フォーム送信時（POST）は既にformModelに値が入っているので、初期化しない
             // 初回表示時（GET）のみformModelを初期化する
-            if (project != null && string.IsNullOrEmpty(formModel.Title))
+            if (project != null && formModel == null)
             {
                 formModel = new ProjectFormModel
                 {

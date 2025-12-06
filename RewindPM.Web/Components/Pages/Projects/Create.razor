@@ -52,15 +52,22 @@
 
 @code {
     [SupplyParameterFromForm]
-    private ProjectFormModel formModel { get; set; } = new ProjectFormModel
-    {
-        Title = string.Empty,
-        Description = string.Empty,
-        CreatedBy = "test-user" // TODO: 実際の認証システムから取得
-    };
+    private ProjectFormModel formModel { get; set; } = null!;
 
     private bool isSubmitting = false;
     private string? errorMessage;
+
+    protected override void OnInitialized()
+    {
+        // フォーム送信時（POST）は既にformModelに値が入っているので、初期化しない
+        // 初回表示時（GET）のみformModelを初期化する
+        formModel ??= new ProjectFormModel
+        {
+            Title = string.Empty,
+            Description = string.Empty,
+            CreatedBy = "test-user" // TODO: 実際の認証システムから取得
+        };
+    }
 
     private async Task HandleSubmit()
     {
