@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using RewindPM.Web.Components;
 using RewindPM.Infrastructure;
 using RewindPM.Infrastructure.Read;
@@ -41,6 +42,25 @@ builder.Services.AddApplicationRead();
 builder.Services.AddProjection();
 
 var app = builder.Build();
+
+// データベースの初期化（開発環境のみ）
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var services = scope.ServiceProvider;
+
+    // ReadModelデータベースのマイグレーション適用
+    var readModelContext = services.GetRequiredService<RewindPM.Infrastructure.Read.Persistence.ReadModelDbContext>();
+    Console.WriteLine($"[Startup] Applying ReadModel migrations...");
+    await readModelContext.Database.MigrateAsync();
+    Console.WriteLine($"[Startup] ReadModel database ready.");
+
+    // EventStoreデータベースのマイグレーション適用
+    var eventStoreContext = services.GetRequiredService<RewindPM.Infrastructure.Write.Persistence.EventStoreDbContext>();
+    Console.WriteLine($"[Startup] Applying EventStore migrations...");
+    await eventStoreContext.Database.MigrateAsync();
+    Console.WriteLine($"[Startup] EventStore database ready.");
+}
 
 if (!app.Environment.IsDevelopment())
 {
