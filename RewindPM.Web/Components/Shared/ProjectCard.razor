@@ -1,19 +1,20 @@
 @using RewindPM.Application.Read.DTOs
-@inject NavigationManager Navigation
 
-<div class="project-card" @onclick="HandleClick">
-    <div class="project-card-header">
-        <h3 class="project-card-title">@Project.Title</h3>
+<a href="/projects/@Project.Id" class="project-card-link">
+    <div class="project-card">
+        <div class="project-card-header">
+            <h3 class="project-card-title">@Project.Title</h3>
+        </div>
+        <div class="project-card-body">
+            <p class="project-card-description">@TruncatedDescription</p>
+        </div>
+        <div class="project-card-footer">
+            <span class="project-card-stat text-muted">
+                <small>TODO: タスク統計（未実装）</small>
+            </span>
+        </div>
     </div>
-    <div class="project-card-body">
-        <p class="project-card-description">@TruncatedDescription</p>
-    </div>
-    <div class="project-card-footer">
-        <span class="project-card-stat text-muted">
-            <small>TODO: タスク統計（未実装）</small>
-        </span>
-    </div>
-</div>
+</a>
 
 @code {
     [Parameter]
@@ -37,10 +38,5 @@
 
             return firstTwoLines;
         }
-    }
-
-    private void HandleClick()
-    {
-        Navigation.NavigateTo($"/projects/{Project.Id}");
     }
 }

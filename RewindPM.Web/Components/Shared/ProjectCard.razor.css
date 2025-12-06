@@ -1,3 +1,10 @@
+.project-card-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    height: 100%;
+}
+
 .project-card {
     background: white;
     border: 1px solid #d0d7de;
@@ -8,6 +15,8 @@
     height: 100%;
     display: flex;
     flex-direction: column;
+    position: relative;
+    z-index: 1;
 }
 
 .project-card:hover {
@@ -25,6 +34,7 @@
     color: #0969da;
     margin: 0;
     line-height: 1.4;
+    pointer-events: none;
 }
 
 .project-card-body {
@@ -39,6 +49,7 @@
     margin: 0;
     white-space: pre-wrap;
     word-wrap: break-word;
+    pointer-events: none;
 }
 
 .project-card-footer {

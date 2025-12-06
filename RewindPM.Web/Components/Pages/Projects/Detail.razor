@@ -1,16 +1,20 @@
 @page "/projects/{id:guid}"
+@rendermode InteractiveServer
 @using MediatR
 @using RewindPM.Application.Read.Queries.Projects
+@using RewindPM.Application.Read.Queries.Tasks
+@using RewindPM.Application.Read.DTOs
+@using RewindPM.Web.Components.Pages.Tasks
 @inject IMediator Mediator
 @inject NavigationManager Navigation
 
-<PageTitle>プロジェクト詳細</PageTitle>
-
-<h1>プロジェクト詳細</h1>
+<PageTitle>@(project?.Title ?? "プロジェクト詳細") - RewindPM</PageTitle>
 
 @if (isLoading)
 {
-    <p><em>読み込み中...</em></p>
+    <div class="loading-state">
+        <p><em>読み込み中...</em></p>
+    </div>
 }
 else if (project == null)
 {
@@ -19,50 +23,114 @@ else if (project == null)
 }
 else
 {
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h2>@project.Title</h2>
-            <div>
-                <a href="/projects/@Id/edit" class="btn btn-warning">編集</a>
-                <a href="/projects" class="btn btn-secondary">一覧に戻る</a>
+    <!-- ヘッダー部 -->
+    <div class="project-detail-header">
+        <div class="header-left">
+            <a href="/projects" class="back-link">← Back to Projects</a>
+        </div>
+        <div class="header-center">
+            <h1 class="project-title">@project.Title</h1>
+        </div>
+        <div class="header-right">
+            <a href="/projects/@Id/edit" class="btn btn-secondary">Edit Project</a>
+            <button class="btn btn-success" @onclick="ShowCreateTaskModal">Add Task</button>
+        </div>
+    </div>
+
+    <!-- プロジェクト情報表示 -->
+    <div class="project-info">
+        @if (!string.IsNullOrWhiteSpace(project.Description))
+        {
+            <div class="project-description">
+                <strong>Description:</strong>
+                <p>@project.Description</p>
             </div>
-        </div>
-        <div class="card-body">
-            <dl class="row">
-                <dt class="col-sm-3">プロジェクトID</dt>
-                <dd class="col-sm-9">@project.Id</dd>
+        }
+    </div>
 
-                <dt class="col-sm-3">プロジェクト名</dt>
-                <dd class="col-sm-9">@project.Title</dd>
+    <!-- タスク一覧表示エリア -->
+    <div class="tasks-section">
+        <h2 class="section-title">Tasks</h2>
 
-                <dt class="col-sm-3">説明</dt>
-                <dd class="col-sm-9">@project.Description</dd>
-
-                <dt class="col-sm-3">作成者</dt>
-                <dd class="col-sm-9">@project.CreatedBy</dd>
-
-                <dt class="col-sm-3">作成日時</dt>
-                <dd class="col-sm-9">@project.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</dd>
-
-                @if (project.UpdatedBy != null)
+        @if (isLoadingTasks)
+        {
+            <p><em>タスクを読み込み中...</em></p>
+        }
+        else if (tasks == null || !tasks.Any())
+        {
+            <div class="empty-tasks">
+                <p class="text-muted">タスクがありません。</p>
+                <p class="text-muted">「Add Task」ボタンから新しいタスクを作成してください。</p>
+            </div>
+        }
+        else
+        {
+            <div class="task-list">
+                @foreach (var task in tasks)
                 {
-                    <dt class="col-sm-3">更新者</dt>
-                    <dd class="col-sm-9">@project.UpdatedBy</dd>
+                    <div class="task-item" @onclick="() => ShowTaskDetailModal(task)">
+                        <div class="task-item-header">
+                            <h3 class="task-item-title">@task.Title</h3>
+                            <span class="task-status task-status-@task.Status.ToString().ToLower()">
+                                @GetStatusDisplayName(task.Status)
+                            </span>
+                        </div>
+                        <div class="task-item-body">
+                            @if (!string.IsNullOrWhiteSpace(task.Description))
+                            {
+                                <p class="task-description">@task.Description</p>
+                            }
+                            <div class="task-dates">
+                                @if (task.ScheduledStartDate.HasValue && task.ScheduledEndDate.HasValue)
+                                {
+                                    <span class="task-date-info">
+                                        <strong>予定:</strong>
+                                        @task.ScheduledStartDate.Value.ToString("yyyy/MM/dd")
+                                        〜
+                                        @task.ScheduledEndDate.Value.ToString("yyyy/MM/dd")
+                                        @if (task.EstimatedHours.HasValue)
+                                        {
+                                            <span>(@task.EstimatedHours.Value h)</span>
+                                        }
+                                    </span>
+                                }
+                                @if (task.ActualStartDate.HasValue || task.ActualEndDate.HasValue)
+                                {
+                                    <span class="task-date-info">
+                                        <strong>実績:</strong>
+                                        @if (task.ActualStartDate.HasValue)
+                                        {
+                                            @task.ActualStartDate.Value.ToString("yyyy/MM/dd")
+                                        }
+                                        @if (task.ActualEndDate.HasValue)
+                                        {
+                                            <text>〜 @task.ActualEndDate.Value.ToString("yyyy/MM/dd")</text>
+                                        }
+                                        @if (task.ActualHours.HasValue)
+                                        {
+                                            <span>(@task.ActualHours.Value h)</span>
+                                        }
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    </div>
                 }
-
-                @if (project.UpdatedAt.HasValue)
-                {
-                    <dt class="col-sm-3">更新日時</dt>
-                    <dd class="col-sm-9">@project.UpdatedAt.Value.ToString("yyyy/MM/dd HH:mm:ss")</dd>
-                }
-            </dl>
-        </div>
+            </div>
+        }
     </div>
 
     @if (!string.IsNullOrEmpty(errorMessage))
     {
         <div class="alert alert-danger mt-3">@errorMessage</div>
     }
+
+    <!-- タスク作成・編集モーダル -->
+    <TaskFormModal @bind-IsVisible="showTaskModal"
+                   ProjectId="@Id"
+                   ExistingTask="@selectedTask"
+                   OnSuccess="HandleTaskModalSuccess"
+                   OnCancel="HandleTaskModalCancel" />
 }
 
 @code {
@@ -70,10 +138,20 @@ else
     public Guid Id { get; set; }
 
     private ProjectDto? project;
+    private List<TaskDto>? tasks;
     private bool isLoading = true;
+    private bool isLoadingTasks = true;
     private string? errorMessage;
+    private bool showTaskModal = false;
+    private TaskDto? selectedTask = null;
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadProject();
+        await LoadTasks();
+    }
+
+    private async Task LoadProject()
     {
         try
         {
@@ -88,5 +166,62 @@ else
         {
             isLoading = false;
         }
+    }
+
+    private async Task LoadTasks()
+    {
+        try
+        {
+            var query = new GetTasksByProjectIdQuery(Id);
+            tasks = await Mediator.Send(query);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"タスクの読み込みに失敗しました: {ex.Message}";
+            tasks = new List<TaskDto>();
+        }
+        finally
+        {
+            isLoadingTasks = false;
+        }
+    }
+
+    private void ShowCreateTaskModal()
+    {
+        selectedTask = null;
+        showTaskModal = true;
+    }
+
+    private void ShowTaskDetailModal(TaskDto task)
+    {
+        selectedTask = task;
+        showTaskModal = true;
+    }
+
+    private async Task HandleTaskModalSuccess()
+    {
+        showTaskModal = false;
+        selectedTask = null;
+        // タスク一覧を再読み込み
+        await LoadTasks();
+        StateHasChanged();
+    }
+
+    private void HandleTaskModalCancel()
+    {
+        showTaskModal = false;
+        selectedTask = null;
+    }
+
+    private string GetStatusDisplayName(RewindPM.Domain.ValueObjects.TaskStatus status)
+    {
+        return status switch
+        {
+            RewindPM.Domain.ValueObjects.TaskStatus.Todo => "TODO",
+            RewindPM.Domain.ValueObjects.TaskStatus.InProgress => "進行中",
+            RewindPM.Domain.ValueObjects.TaskStatus.InReview => "レビュー中",
+            RewindPM.Domain.ValueObjects.TaskStatus.Done => "完了",
+            _ => status.ToString()
+        };
     }
 }

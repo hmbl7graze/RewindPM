@@ -1,0 +1,437 @@
+@using MediatR
+@using RewindPM.Application.Write.Commands.Tasks
+@using RewindPM.Application.Read.DTOs
+@using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus
+@using RewindPM.Web.Components.Shared
+@inject IMediator Mediator
+
+<Modal Title="@ModalTitle" @bind-IsVisible="IsVisible">
+    <div class="task-form">
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+
+        <div class="form-group">
+            <label for="taskTitle">タスク名 <span class="required">*</span></label>
+            <input type="text"
+                   id="taskTitle"
+                   class="form-control @(titleError != null ? "is-invalid" : "")"
+                   @bind="title"
+                   maxlength="200"
+                   placeholder="タスク名を入力してください" />
+            @if (titleError != null)
+            {
+                <div class="invalid-feedback">@titleError</div>
+            }
+        </div>
+
+        <div class="form-group">
+            <label for="taskDescription">説明</label>
+            <textarea id="taskDescription"
+                      class="form-control"
+                      @bind="description"
+                      rows="4"
+                      maxlength="5000"
+                      placeholder="タスクの説明を入力してください"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="taskStatus">ステータス</label>
+            <select id="taskStatus" class="form-control" @bind="status">
+                <option value="@TaskStatus.Todo">TODO</option>
+                <option value="@TaskStatus.InProgress">進行中</option>
+                <option value="@TaskStatus.InReview">レビュー中</option>
+                <option value="@TaskStatus.Done">完了</option>
+            </select>
+        </div>
+
+        <div class="form-section">
+            <h4>予定期間</h4>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="scheduledStartDate">開始日</label>
+                    <input type="date"
+                           id="scheduledStartDate"
+                           class="form-control @(scheduledDateError != null ? "is-invalid" : "")"
+                           @bind="scheduledStartDate" />
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="scheduledEndDate">終了日</label>
+                    <input type="date"
+                           id="scheduledEndDate"
+                           class="form-control @(scheduledDateError != null ? "is-invalid" : "")"
+                           @bind="scheduledEndDate" />
+                </div>
+            </div>
+            @if (scheduledDateError != null)
+            {
+                <div class="text-danger small">@scheduledDateError</div>
+            }
+            <div class="form-group">
+                <label for="estimatedHours">予定工数（時間）</label>
+                <input type="number"
+                       id="estimatedHours"
+                       class="form-control @(estimatedHoursError != null ? "is-invalid" : "")"
+                       @bind="estimatedHours"
+                       min="1"
+                       placeholder="例: 20" />
+                @if (estimatedHoursError != null)
+                {
+                    <div class="invalid-feedback">@estimatedHoursError</div>
+                }
+            </div>
+        </div>
+
+        @if (IsEditMode)
+        {
+            <div class="form-section">
+                <h4>実績期間</h4>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label for="actualStartDate">開始日</label>
+                        <input type="date"
+                               id="actualStartDate"
+                               class="form-control @(actualDateError != null ? "is-invalid" : "")"
+                               @bind="actualStartDate" />
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label for="actualEndDate">終了日</label>
+                        <input type="date"
+                               id="actualEndDate"
+                               class="form-control @(actualDateError != null ? "is-invalid" : "")"
+                               @bind="actualEndDate" />
+                    </div>
+                </div>
+                @if (actualDateError != null)
+                {
+                    <div class="text-danger small">@actualDateError</div>
+                }
+                <div class="form-group">
+                    <label for="actualHours">実績工数（時間）</label>
+                    <input type="number"
+                           id="actualHours"
+                           class="form-control @(actualHoursError != null ? "is-invalid" : "")"
+                           @bind="actualHours"
+                           min="1"
+                           placeholder="例: 25" />
+                    @if (actualHoursError != null)
+                    {
+                        <div class="invalid-feedback">@actualHoursError</div>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="modal-actions">
+            @if (isSaving)
+            {
+                <button class="btn btn-primary" disabled>
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    保存中...
+                </button>
+            }
+            else
+            {
+                <button class="btn btn-success" @onclick="HandleSave">保存</button>
+            }
+            <button class="btn btn-secondary" @onclick="HandleCancel">キャンセル</button>
+            @if (IsEditMode)
+            {
+                <button class="btn btn-danger" @onclick="HandleDelete">削除</button>
+            }
+        </div>
+    </div>
+</Modal>
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    [Parameter]
+    public Guid ProjectId { get; set; }
+
+    [Parameter]
+    public TaskDto? ExistingTask { get; set; }
+
+    [Parameter]
+    public EventCallback OnSuccess { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private bool IsEditMode => ExistingTask != null;
+    private string ModalTitle => IsEditMode ? "タスク編集" : "タスク作成";
+
+    private string title = string.Empty;
+    private string description = string.Empty;
+    private TaskStatus status = TaskStatus.Todo;
+    private DateTime? scheduledStartDate;
+    private DateTime? scheduledEndDate;
+    private int? estimatedHours;
+    private DateTime? actualStartDate;
+    private DateTime? actualEndDate;
+    private int? actualHours;
+
+    private bool isSaving = false;
+    private string? errorMessage;
+    private string? titleError;
+    private string? scheduledDateError;
+    private string? estimatedHoursError;
+    private string? actualDateError;
+    private string? actualHoursError;
+
+    protected override void OnParametersSet()
+    {
+        if (ExistingTask != null)
+        {
+            LoadExistingTask();
+        }
+        else
+        {
+            ResetForm();
+        }
+    }
+
+    private void LoadExistingTask()
+    {
+        if (ExistingTask == null) return;
+
+        title = ExistingTask.Title;
+        description = ExistingTask.Description;
+        status = ExistingTask.Status;
+        scheduledStartDate = ExistingTask.ScheduledStartDate;
+        scheduledEndDate = ExistingTask.ScheduledEndDate;
+        estimatedHours = ExistingTask.EstimatedHours;
+        actualStartDate = ExistingTask.ActualStartDate;
+        actualEndDate = ExistingTask.ActualEndDate;
+        actualHours = ExistingTask.ActualHours;
+    }
+
+    private void ResetForm()
+    {
+        title = string.Empty;
+        description = string.Empty;
+        status = TaskStatus.Todo;
+        scheduledStartDate = null;
+        scheduledEndDate = null;
+        estimatedHours = null;
+        actualStartDate = null;
+        actualEndDate = null;
+        actualHours = null;
+        ClearErrors();
+    }
+
+    private void ClearErrors()
+    {
+        errorMessage = null;
+        titleError = null;
+        scheduledDateError = null;
+        estimatedHoursError = null;
+        actualDateError = null;
+        actualHoursError = null;
+    }
+
+    private bool ValidateForm()
+    {
+        ClearErrors();
+        bool isValid = true;
+
+        // タスク名の検証
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            titleError = "タスク名は必須です。";
+            isValid = false;
+        }
+        else if (title.Length > 200)
+        {
+            titleError = "タスク名は200文字以内で入力してください。";
+            isValid = false;
+        }
+
+        // 予定期間の検証
+        if (scheduledStartDate.HasValue && scheduledEndDate.HasValue)
+        {
+            if (scheduledEndDate < scheduledStartDate)
+            {
+                scheduledDateError = "終了日は開始日より後の日付を指定してください。";
+                isValid = false;
+            }
+        }
+
+        // 予定工数の検証
+        if (estimatedHours.HasValue && estimatedHours <= 0)
+        {
+            estimatedHoursError = "予定工数は1以上を指定してください。";
+            isValid = false;
+        }
+
+        // 実績期間の検証（編集モードのみ）
+        if (IsEditMode && actualStartDate.HasValue && actualEndDate.HasValue)
+        {
+            if (actualEndDate < actualStartDate)
+            {
+                actualDateError = "終了日は開始日より後の日付を指定してください。";
+                isValid = false;
+            }
+        }
+
+        // 実績工数の検証
+        if (actualHours.HasValue && actualHours <= 0)
+        {
+            actualHoursError = "実績工数は1以上を指定してください。";
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    private async Task HandleSave()
+    {
+        if (!ValidateForm())
+        {
+            return;
+        }
+
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            if (IsEditMode)
+            {
+                await UpdateTask();
+            }
+            else
+            {
+                await CreateTask();
+            }
+
+            await OnSuccess.InvokeAsync();
+            await CloseModal();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"保存に失敗しました: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task CreateTask()
+    {
+        // 予定期間が設定されていない場合、デフォルト値を使用
+        var schedStartDate = scheduledStartDate ?? DateTime.Today;
+        var schedEndDate = scheduledEndDate ?? DateTime.Today.AddDays(1);
+        var estHours = estimatedHours ?? 8;
+
+        var command = new CreateTaskCommand(
+            Id: Guid.NewGuid(),
+            ProjectId: ProjectId,
+            Title: title,
+            Description: description,
+            ScheduledStartDate: schedStartDate,
+            ScheduledEndDate: schedEndDate,
+            EstimatedHours: estHours,
+            CreatedBy: "admin"
+        );
+
+        await Mediator.Send(command);
+
+        // ステータスがTODO以外の場合、ステータス変更コマンドを送信
+        if (status != TaskStatus.Todo)
+        {
+            var changeStatusCommand = new ChangeTaskStatusCommand(
+                TaskId: command.Id,
+                NewStatus: status,
+                ChangedBy: "admin"
+            );
+            await Mediator.Send(changeStatusCommand);
+        }
+    }
+
+    private async Task UpdateTask()
+    {
+        if (ExistingTask == null) return;
+
+        // タイトルまたは説明が変更された場合
+        if (title != ExistingTask.Title || description != ExistingTask.Description)
+        {
+            var updateCommand = new UpdateTaskCommand(
+                TaskId: ExistingTask.Id,
+                Title: title,
+                Description: description,
+                UpdatedBy: "admin"
+            );
+            await Mediator.Send(updateCommand);
+        }
+
+        // ステータスが変更された場合
+        if (status != ExistingTask.Status)
+        {
+            var changeStatusCommand = new ChangeTaskStatusCommand(
+                TaskId: ExistingTask.Id,
+                NewStatus: status,
+                ChangedBy: "admin"
+            );
+            await Mediator.Send(changeStatusCommand);
+        }
+
+        // 予定期間が変更された場合（すべての値が設定されている場合のみ）
+        if (scheduledStartDate.HasValue && scheduledEndDate.HasValue && estimatedHours.HasValue)
+        {
+            if (scheduledStartDate != ExistingTask.ScheduledStartDate ||
+                scheduledEndDate != ExistingTask.ScheduledEndDate ||
+                estimatedHours != ExistingTask.EstimatedHours)
+            {
+                var changeScheduleCommand = new ChangeTaskScheduleCommand(
+                    TaskId: ExistingTask.Id,
+                    ScheduledStartDate: scheduledStartDate.Value,
+                    ScheduledEndDate: scheduledEndDate.Value,
+                    EstimatedHours: estimatedHours.Value,
+                    ChangedBy: "admin"
+                );
+                await Mediator.Send(changeScheduleCommand);
+            }
+        }
+
+        // 実績期間が変更された場合
+        if (actualStartDate != ExistingTask.ActualStartDate ||
+            actualEndDate != ExistingTask.ActualEndDate ||
+            actualHours != ExistingTask.ActualHours)
+        {
+            var changeActualCommand = new ChangeTaskActualPeriodCommand(
+                TaskId: ExistingTask.Id,
+                ActualStartDate: actualStartDate,
+                ActualEndDate: actualEndDate,
+                ActualHours: actualHours,
+                ChangedBy: "admin"
+            );
+            await Mediator.Send(changeActualCommand);
+        }
+    }
+
+    private async Task HandleDelete()
+    {
+        // TODO: 削除機能は将来実装
+        errorMessage = "削除機能は未実装です。";
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleCancel()
+    {
+        await CloseModal();
+        await OnCancel.InvokeAsync();
+    }
+
+    private async Task CloseModal()
+    {
+        ResetForm();
+        await IsVisibleChanged.InvokeAsync(false);
+    }
+}
