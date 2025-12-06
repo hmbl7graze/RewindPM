@@ -1,6 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using RewindPM.Domain.Common;
-using RewindPM.Domain.Events;
 using RewindPM.Projection.Handlers;
 
 namespace RewindPM.Projection;
@@ -11,17 +9,13 @@ namespace RewindPM.Projection;
 public static class DependencyInjection
 {
     /// <summary>
-    /// Projection層のサービスをDIコンテナに登録し、EventPublisherにハンドラーを登録する
+    /// Projection層のサービスをDIコンテナに登録する
+    /// EventPublisherへのハンドラー登録はProjectionInitializerによってアプリケーション起動時に行われる
     /// </summary>
     /// <param name="services">サービスコレクション</param>
-    /// <param name="eventPublisher">イベント発行者（既にDIコンテナに登録済みのインスタンス）</param>
     /// <returns>サービスコレクション</returns>
-    public static IServiceCollection AddProjection(
-        this IServiceCollection services,
-        IEventPublisher eventPublisher)
+    public static IServiceCollection AddProjection(this IServiceCollection services)
     {
-        ArgumentNullException.ThrowIfNull(eventPublisher);
-
         // プロジェクションハンドラーをスコープドで登録
         services.AddScoped<ProjectCreatedEventHandler>();
         services.AddScoped<ProjectUpdatedEventHandler>();
@@ -31,55 +25,10 @@ public static class DependencyInjection
         services.AddScoped<TaskScheduledPeriodChangedEventHandler>();
         services.AddScoped<TaskActualPeriodChangedEventHandler>();
 
-        // EventPublisherにハンドラーを登録
-        // スコープドハンドラーをシングルトンEventPublisherから呼び出すためのアダプターを使用
-        var serviceProvider = services.BuildServiceProvider();
-
-        eventPublisher.Subscribe<ProjectCreated>(
-            new ScopedEventHandlerAdapter<ProjectCreated, ProjectCreatedEventHandler>(serviceProvider));
-
-        eventPublisher.Subscribe<ProjectUpdated>(
-            new ScopedEventHandlerAdapter<ProjectUpdated, ProjectUpdatedEventHandler>(serviceProvider));
-
-        eventPublisher.Subscribe<TaskCreated>(
-            new ScopedEventHandlerAdapter<TaskCreated, TaskCreatedEventHandler>(serviceProvider));
-
-        eventPublisher.Subscribe<TaskUpdated>(
-            new ScopedEventHandlerAdapter<TaskUpdated, TaskUpdatedEventHandler>(serviceProvider));
-
-        eventPublisher.Subscribe<TaskStatusChanged>(
-            new ScopedEventHandlerAdapter<TaskStatusChanged, TaskStatusChangedEventHandler>(serviceProvider));
-
-        eventPublisher.Subscribe<TaskScheduledPeriodChanged>(
-            new ScopedEventHandlerAdapter<TaskScheduledPeriodChanged, TaskScheduledPeriodChangedEventHandler>(serviceProvider));
-
-        eventPublisher.Subscribe<TaskActualPeriodChanged>(
-            new ScopedEventHandlerAdapter<TaskActualPeriodChanged, TaskActualPeriodChangedEventHandler>(serviceProvider));
+        // ProjectionInitializerをHostedServiceとして登録
+        // アプリケーション起動時にEventPublisherにハンドラーを登録する
+        services.AddHostedService<ProjectionInitializer>();
 
         return services;
-    }
-
-    /// <summary>
-    /// スコープドハンドラーをシングルトンEventPublisherから呼び出すためのアダプター
-    /// 各イベント処理時に新しいスコープを作成してハンドラーを解決
-    /// </summary>
-    private class ScopedEventHandlerAdapter<TEvent, THandler> : IEventHandler<TEvent>
-        where TEvent : class, IDomainEvent
-        where THandler : IEventHandler<TEvent>
-    {
-        private readonly IServiceProvider _serviceProvider;
-
-        public ScopedEventHandlerAdapter(IServiceProvider serviceProvider)
-        {
-            _serviceProvider = serviceProvider;
-        }
-
-        public async Task HandleAsync(TEvent @event)
-        {
-            // 新しいスコープを作成してハンドラーを解決
-            using var scope = _serviceProvider.CreateScope();
-            var handler = scope.ServiceProvider.GetRequiredService<THandler>();
-            await handler.HandleAsync(@event);
-        }
     }
 }

@@ -1,4 +1,9 @@
 using RewindPM.Web.Components;
+using RewindPM.Infrastructure;
+using RewindPM.Infrastructure.Read;
+using RewindPM.Application.Write;
+using RewindPM.Application.Read;
+using RewindPM.Projection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +17,28 @@ builder.Services.AddRazorComponents()
 builder.Services.AddOutputCache();
 
 builder.Services.AddHttpClient();
+
+// データベース接続文字列の取得
+var eventStoreConnectionString = builder.Configuration.GetConnectionString("EventStore")
+    ?? throw new InvalidOperationException("Connection string 'EventStore' not found.");
+var readModelConnectionString = builder.Configuration.GetConnectionString("ReadModel")
+    ?? throw new InvalidOperationException("Connection string 'ReadModel' not found.");
+
+// Infrastructure層の登録（EventStore, EventPublisher, AggregateRepository）
+builder.Services.AddInfrastructure(eventStoreConnectionString);
+
+// Infrastructure.Read層の登録（ReadModelRepository, ReadModelDbContext）
+builder.Services.AddInfrastructureRead(readModelConnectionString);
+
+// Application.Write層の登録（MediatR for Commands）
+builder.Services.AddApplicationWrite();
+
+// Application.Read層の登録（MediatR for Queries）
+builder.Services.AddApplicationRead();
+
+// Projection層の登録（Event Handlers）
+// ProjectionInitializerがHostedServiceとしてアプリケーション起動時にイベントハンドラーを登録
+builder.Services.AddProjection();
 
 var app = builder.Build();
 
