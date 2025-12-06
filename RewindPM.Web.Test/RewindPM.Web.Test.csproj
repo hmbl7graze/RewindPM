@@ -12,6 +12,8 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="bunit" />
+    <PackageReference Include="NSubstitute" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RewindPM.Web\RewindPM.Web.csproj" />
+    <ProjectReference Include="..\RewindPM.Application.Read\RewindPM.Application.Read.csproj" />
   </ItemGroup>
 
 </Project>
