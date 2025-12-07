@@ -203,7 +203,6 @@ appsettings.Local.json
 # イベントファイル
 *.events
 # データディレクトリ（実行時に生成されるデータのみ）
-**/data/
 **/App_Data/*.db
 **/App_Data/*.sqlite
 
