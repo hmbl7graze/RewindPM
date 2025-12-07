@@ -117,16 +117,12 @@ public class ProjectCardTests : Bunit.TestContext
             CreatedBy = "test-user"
         };
 
-        var navMan = Services.GetRequiredService<NavigationManager>();
-
         // Act
         var cut = RenderComponent<ProjectCard>(parameters => parameters
             .Add(p => p.Project, project));
 
-        var card = cut.Find(".project-card");
-        card.Click();
-
-        // Assert
-        Assert.Equal($"http://localhost/projects/{projectId}", navMan.Uri);
+        // Assert - アンカータグのhref属性を検証
+        var link = cut.Find(".project-card-link");
+        Assert.Equal($"/projects/{projectId}", link.GetAttribute("href"));
     }
 }

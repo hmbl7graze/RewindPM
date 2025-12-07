@@ -5,6 +5,7 @@
 @using RewindPM.Application.Read.Queries.Tasks
 @using RewindPM.Application.Read.DTOs
 @using RewindPM.Web.Components.Pages.Tasks
+@using RewindPM.Web.Components.Tasks
 @inject IMediator Mediator
 @inject NavigationManager Navigation
 
@@ -48,75 +49,17 @@ else
         }
     </div>
 
-    <!-- タスク一覧表示エリア -->
+    <!-- ガントチャート表示エリア -->
     <div class="tasks-section">
-        <h2 class="section-title">Tasks</h2>
+        <h2 class="section-title">Gantt Chart</h2>
 
         @if (isLoadingTasks)
         {
             <p><em>タスクを読み込み中...</em></p>
         }
-        else if (tasks == null || !tasks.Any())
-        {
-            <div class="empty-tasks">
-                <p class="text-muted">タスクがありません。</p>
-                <p class="text-muted">「Add Task」ボタンから新しいタスクを作成してください。</p>
-            </div>
-        }
         else
         {
-            <div class="task-list">
-                @foreach (var task in tasks)
-                {
-                    <div class="task-item" @onclick="() => ShowTaskDetailModal(task)">
-                        <div class="task-item-header">
-                            <h3 class="task-item-title">@task.Title</h3>
-                            <span class="task-status task-status-@task.Status.ToString().ToLower()">
-                                @GetStatusDisplayName(task.Status)
-                            </span>
-                        </div>
-                        <div class="task-item-body">
-                            @if (!string.IsNullOrWhiteSpace(task.Description))
-                            {
-                                <p class="task-description">@task.Description</p>
-                            }
-                            <div class="task-dates">
-                                @if (task.ScheduledStartDate.HasValue && task.ScheduledEndDate.HasValue)
-                                {
-                                    <span class="task-date-info">
-                                        <strong>予定:</strong>
-                                        @task.ScheduledStartDate.Value.ToString("yyyy/MM/dd")
-                                        〜
-                                        @task.ScheduledEndDate.Value.ToString("yyyy/MM/dd")
-                                        @if (task.EstimatedHours.HasValue)
-                                        {
-                                            <span>(@task.EstimatedHours.Value h)</span>
-                                        }
-                                    </span>
-                                }
-                                @if (task.ActualStartDate.HasValue || task.ActualEndDate.HasValue)
-                                {
-                                    <span class="task-date-info">
-                                        <strong>実績:</strong>
-                                        @if (task.ActualStartDate.HasValue)
-                                        {
-                                            @task.ActualStartDate.Value.ToString("yyyy/MM/dd")
-                                        }
-                                        @if (task.ActualEndDate.HasValue)
-                                        {
-                                            <text>〜 @task.ActualEndDate.Value.ToString("yyyy/MM/dd")</text>
-                                        }
-                                        @if (task.ActualHours.HasValue)
-                                        {
-                                            <span>(@task.ActualHours.Value h)</span>
-                                        }
-                                    </span>
-                                }
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
+            <GanttChart Tasks="@(tasks ?? new List<TaskDto>())" OnTaskClick="ShowTaskDetailModal" />
         }
     </div>
 
@@ -211,17 +154,5 @@ else
     {
         showTaskModal = false;
         selectedTask = null;
-    }
-
-    private string GetStatusDisplayName(RewindPM.Domain.ValueObjects.TaskStatus status)
-    {
-        return status switch
-        {
-            RewindPM.Domain.ValueObjects.TaskStatus.Todo => "TODO",
-            RewindPM.Domain.ValueObjects.TaskStatus.InProgress => "進行中",
-            RewindPM.Domain.ValueObjects.TaskStatus.InReview => "レビュー中",
-            RewindPM.Domain.ValueObjects.TaskStatus.Done => "完了",
-            _ => status.ToString()
-        };
     }
 }

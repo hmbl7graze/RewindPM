@@ -188,8 +188,8 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Assert
-        var emptyTasks = cut.Find(".empty-tasks");
-        Assert.Contains("タスクがありません", emptyTasks.TextContent);
+        var emptyGantt = cut.Find(".gantt-empty");
+        Assert.Contains("タスクがありません", emptyGantt.TextContent);
     }
 
     [Fact(DisplayName = "タスクが存在する場合、タスク一覧が表示される")]
@@ -209,17 +209,17 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
-        // Assert
-        var taskItems = cut.FindAll(".task-item");
-        Assert.Equal(2, taskItems.Count);
+        // Assert - Gantt chart rows
+        var ganttRows = cut.FindAll(".gantt-row");
+        Assert.Equal(2, ganttRows.Count);
 
         // Task 1の検証
-        var task1 = taskItems[0];
+        var task1 = ganttRows[0];
         Assert.Contains("Task 1", task1.TextContent);
         Assert.Contains("TODO", task1.TextContent);
 
         // Task 2の検証
-        var task2 = taskItems[1];
+        var task2 = ganttRows[1];
         Assert.Contains("Task 2", task2.TextContent);
         Assert.Contains("進行中", task2.TextContent);
     }
@@ -241,10 +241,10 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
-        // Assert
-        var statusBadges = cut.FindAll(".task-status");
-        Assert.Contains(statusBadges, b => b.ClassList.Contains("task-status-todo"));
-        Assert.Contains(statusBadges, b => b.ClassList.Contains("task-status-inprogress"));
+        // Assert - Gantt chart status badges
+        var statusBadges = cut.FindAll(".gantt-task-status");
+        Assert.Contains(statusBadges, b => b.ClassList.Contains("gantt-status-todo"));
+        Assert.Contains(statusBadges, b => b.ClassList.Contains("gantt-status-inprogress"));
     }
 
     [Fact(DisplayName = "Add Taskボタンクリック時にタスク作成モーダルが開く")]
@@ -287,9 +287,9 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
-        // Act
-        var taskItem = cut.Find(".task-item");
-        taskItem.Click();
+        // Act - Click on Gantt row
+        var ganttRow = cut.Find(".gantt-row");
+        ganttRow.Click();
 
         // Assert - モーダルが表示されているか確認
         var modal = cut.Find(".modal-overlay");

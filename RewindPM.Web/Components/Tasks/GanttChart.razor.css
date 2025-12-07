@@ -1,0 +1,211 @@
+.gantt-chart {
+    width: 100%;
+    background: white;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.gantt-empty {
+    padding: 40px;
+    text-align: center;
+    color: #656d76;
+}
+
+.gantt-container {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ヘッダー */
+.gantt-header {
+    display: flex;
+    border-bottom: 2px solid #d0d7de;
+    background: #f6f8fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.gantt-header-task-name {
+    width: 250px;
+    min-width: 250px;
+    padding: 12px 16px;
+    font-weight: 600;
+    color: #24292f;
+    border-right: 1px solid #d0d7de;
+    display: flex;
+    align-items: center;
+}
+
+.gantt-header-timeline {
+    flex: 1;
+    overflow-x: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 月の行 */
+.gantt-month-row {
+    border-bottom: 1px solid #d0d7de;
+}
+
+.gantt-month-cell {
+    padding: 6px 8px;
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #24292f;
+    border-right: 1px solid #d0d7de;
+}
+
+.gantt-month-cell:last-child {
+    border-right: none;
+}
+
+/* タイムライングリッド */
+.gantt-timeline-grid {
+    display: grid;
+    min-width: 600px;
+    height: 100%;
+}
+
+.gantt-date-cell {
+    border-right: 1px solid #d0d7de;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #656d76;
+    min-width: 20px;
+}
+
+.gantt-date-cell:last-child {
+    border-right: none;
+}
+
+.gantt-date-label {
+    white-space: nowrap;
+}
+
+/* ボディ */
+.gantt-body {
+    display: flex;
+    flex-direction: column;
+}
+
+.gantt-row {
+    display: flex;
+    border-bottom: 1px solid #d0d7de;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.gantt-row:hover {
+    background-color: #f6f8fa;
+}
+
+.gantt-row:last-child {
+    border-bottom: none;
+}
+
+.gantt-task-name {
+    width: 250px;
+    min-width: 250px;
+    padding: 6px 12px;
+    border-right: 1px solid #d0d7de;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.gantt-task-title {
+    font-weight: 500;
+    color: #24292f;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.gantt-task-status {
+    font-size: 0.7rem;
+    padding: 1px 4px;
+    border-radius: 2px;
+    display: inline-block;
+    width: fit-content;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.gantt-status-todo {
+    background: #f6f8fa;
+    color: #656d76;
+}
+
+.gantt-status-inprogress {
+    background: #ddf4ff;
+    color: #0969da;
+}
+
+.gantt-status-inreview {
+    background: #fff8c5;
+    color: #9a6700;
+}
+
+.gantt-status-done {
+    background: #dafbe1;
+    color: #1a7f37;
+}
+
+.gantt-timeline {
+    flex: 1;
+    overflow-x: auto;
+    position: relative;
+    padding: 2px 0;
+}
+
+/* タスクバー */
+.gantt-bar {
+    height: 10px;
+    border-radius: 2px;
+    position: relative;
+    margin: 1px 0;
+}
+
+.gantt-bar-scheduled {
+    background: #d0d7de;
+    opacity: 0.6;
+}
+
+.gantt-bar-actual {
+    background: #0969da;
+}
+
+.gantt-bar:hover {
+    opacity: 1;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* スクロールバーのスタイリング（オプション） */
+.gantt-header-timeline::-webkit-scrollbar,
+.gantt-timeline::-webkit-scrollbar {
+    height: 8px;
+}
+
+.gantt-header-timeline::-webkit-scrollbar-track,
+.gantt-timeline::-webkit-scrollbar-track {
+    background: #f6f8fa;
+}
+
+.gantt-header-timeline::-webkit-scrollbar-thumb,
+.gantt-timeline::-webkit-scrollbar-thumb {
+    background: #d0d7de;
+    border-radius: 4px;
+}
+
+.gantt-header-timeline::-webkit-scrollbar-thumb:hover,
+.gantt-timeline::-webkit-scrollbar-thumb:hover {
+    background: #afb8c1;
+}

@@ -1,0 +1,238 @@
+@using RewindPM.Application.Read.DTOs
+@using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus
+
+<div class="gantt-chart">
+    @if (Tasks == null || !Tasks.Any())
+    {
+        <div class="gantt-empty">
+            <p>タスクがありません</p>
+        </div>
+    }
+    else if (TimelineStart == null || TimelineEnd == null)
+    {
+        <div class="gantt-empty">
+            <p>予定期間が設定されたタスクがありません</p>
+        </div>
+    }
+    else
+    {
+        <div class="gantt-container">
+            @* ヘッダー部分（タスク名と日付） *@
+            <div class="gantt-header">
+                <div class="gantt-header-task-name">タスク名</div>
+                <div class="gantt-header-timeline">
+                    @* 月の行 *@
+                    <div class="gantt-month-row">
+                        <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, 1fr);">
+                            @foreach (var monthGroup in GetMonthGroups())
+                            {
+                                <div class="gantt-month-cell" style="grid-column: @monthGroup.StartColumn / @monthGroup.EndColumn;">
+                                    @monthGroup.Year/@monthGroup.Month
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    @* 日の行 *@
+                    <div class="gantt-date-row">
+                        <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, 1fr);">
+                            @for (int i = 0; i < TotalDays; i++)
+                            {
+                                var date = TimelineStart.Value.AddDays(i);
+                                <div class="gantt-date-cell">
+                                    <div class="gantt-date-label">@date.Day</div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* タスク行 *@
+            <div class="gantt-body">
+                @foreach (var task in Tasks)
+                {
+                    <div class="gantt-row" @onclick="() => HandleTaskClick(task)">
+                        <div class="gantt-task-name" title="@task.Title">
+                            <span class="gantt-task-title">@task.Title</span>
+                            <span class="gantt-task-status gantt-status-@GetStatusClass(task.Status)">
+                                @GetStatusLabel(task.Status)
+                            </span>
+                        </div>
+                        <div class="gantt-timeline">
+                            <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, 1fr);">
+                                @* 予定期間バー *@
+                                @if (task.ScheduledStartDate.HasValue && task.ScheduledEndDate.HasValue)
+                                {
+                                    var gridColumn = GetGridColumn(task.ScheduledStartDate.Value, task.ScheduledEndDate.Value);
+                                    <div class="gantt-bar gantt-bar-scheduled" style="grid-column: @gridColumn;" title="予定: @task.ScheduledStartDate.Value.ToString("yyyy/MM/dd") - @task.ScheduledEndDate.Value.ToString("yyyy/MM/dd")"></div>
+                                }
+
+                                @* 実績期間バー *@
+                                @if (task.ActualStartDate.HasValue && task.ActualEndDate.HasValue)
+                                {
+                                    var gridColumn = GetGridColumn(task.ActualStartDate.Value, task.ActualEndDate.Value);
+                                    <div class="gantt-bar gantt-bar-actual" style="grid-column: @gridColumn;" title="実績: @task.ActualStartDate.Value.ToString("yyyy/MM/dd") - @task.ActualEndDate.Value.ToString("yyyy/MM/dd")"></div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public List<TaskDto> Tasks { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<TaskDto> OnTaskClick { get; set; }
+
+    private DateTime? TimelineStart { get; set; }
+    private DateTime? TimelineEnd { get; set; }
+    private int TotalDays { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        CalculateTimeline();
+    }
+
+    private void CalculateTimeline()
+    {
+        if (Tasks == null || !Tasks.Any())
+        {
+            TimelineStart = null;
+            TimelineEnd = null;
+            TotalDays = 0;
+            return;
+        }
+
+        // 全タスクの最も早い開始日と最も遅い終了日を取得
+        var allDates = new List<DateTime>();
+
+        foreach (var task in Tasks)
+        {
+            if (task.ScheduledStartDate.HasValue)
+                allDates.Add(task.ScheduledStartDate.Value);
+            if (task.ScheduledEndDate.HasValue)
+                allDates.Add(task.ScheduledEndDate.Value);
+            if (task.ActualStartDate.HasValue)
+                allDates.Add(task.ActualStartDate.Value);
+            if (task.ActualEndDate.HasValue)
+                allDates.Add(task.ActualEndDate.Value);
+        }
+
+        if (!allDates.Any())
+        {
+            TimelineStart = null;
+            TimelineEnd = null;
+            TotalDays = 0;
+            return;
+        }
+
+        TimelineStart = allDates.Min().Date;
+        TimelineEnd = allDates.Max().Date;
+        TotalDays = (int)(TimelineEnd.Value - TimelineStart.Value).TotalDays + 1;
+    }
+
+    private string GetGridColumn(DateTime startDate, DateTime endDate)
+    {
+        if (TimelineStart == null) return "1 / 2";
+
+        // グリッドの開始列を計算（1-indexed）
+        var startDay = (int)(startDate.Date - TimelineStart.Value).TotalDays + 1;
+        var endDay = (int)(endDate.Date - TimelineStart.Value).TotalDays + 2; // 終了日は次の日の始まりまで
+
+        // 範囲外の場合は調整
+        startDay = Math.Max(1, Math.Min(startDay, TotalDays));
+        endDay = Math.Max(startDay + 1, Math.Min(endDay, TotalDays + 1));
+
+        return $"{startDay} / {endDay}";
+    }
+
+    private async Task HandleTaskClick(TaskDto task)
+    {
+        if (OnTaskClick.HasDelegate)
+        {
+            await OnTaskClick.InvokeAsync(task);
+        }
+    }
+
+    private string GetStatusClass(TaskStatus status)
+    {
+        return status switch
+        {
+            TaskStatus.Todo => "todo",
+            TaskStatus.InProgress => "inprogress",
+            TaskStatus.InReview => "inreview",
+            TaskStatus.Done => "done",
+            _ => "todo"
+        };
+    }
+
+    private string GetStatusLabel(TaskStatus status)
+    {
+        return status switch
+        {
+            TaskStatus.Todo => "TODO",
+            TaskStatus.InProgress => "進行中",
+            TaskStatus.InReview => "レビュー中",
+            TaskStatus.Done => "完了",
+            _ => "TODO"
+        };
+    }
+
+    private List<MonthGroup> GetMonthGroups()
+    {
+        var groups = new List<MonthGroup>();
+        if (TimelineStart == null || TotalDays == 0) return groups;
+
+        var processedDays = 0;
+        while (processedDays < TotalDays)
+        {
+            var currentDate = TimelineStart.Value.AddDays(processedDays);
+            var currentMonth = currentDate.Month;
+            var currentYear = currentDate.Year;
+            var startColumn = processedDays + 1;
+
+            // この月の日数をカウント
+            var daysInThisMonth = 0;
+            for (int i = processedDays; i < TotalDays; i++)
+            {
+                var checkDate = TimelineStart.Value.AddDays(i);
+                if (checkDate.Month == currentMonth && checkDate.Year == currentYear)
+                {
+                    daysInThisMonth++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            var endColumn = startColumn + daysInThisMonth;
+            groups.Add(new MonthGroup
+            {
+                Year = currentYear,
+                Month = currentMonth,
+                StartColumn = startColumn,
+                EndColumn = endColumn,
+                DayCount = daysInThisMonth
+            });
+
+            processedDays += daysInThisMonth;
+        }
+
+        return groups;
+    }
+
+    private class MonthGroup
+    {
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public int StartColumn { get; set; }
+        public int EndColumn { get; set; }
+        public int DayCount { get; set; }
+    }
+}
