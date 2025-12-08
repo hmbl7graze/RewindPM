@@ -7,6 +7,7 @@
 @using RewindPM.Application.Write.Commands.Tasks
 @using RewindPM.Web.Components.Pages.Tasks
 @using RewindPM.Web.Components.Tasks
+@using RewindPM.Web.Components.Shared
 @inject IMediator Mediator
 @inject NavigationManager Navigation
 
@@ -35,7 +36,7 @@ else
         </div>
         <div class="header-right">
             <a href="/projects/@Id/edit" class="btn btn-secondary">Edit Project</a>
-            <button class="btn btn-success" @onclick="ShowCreateTaskModal">Add Task</button>
+            <button class="btn btn-success" @onclick="ShowCreateTaskModal" disabled="@_isViewingPast">Add Task</button>
         </div>
     </div>
 
@@ -49,6 +50,21 @@ else
             </div>
         }
     </div>
+
+    <!-- タイムラインコントロール（リワインド機能） -->
+    <TimelineControl
+        CurrentDate="_currentViewDate"
+        EditDates="_editDates"
+        OnDateChanged="HandleDateChanged" />
+
+    <!-- 過去表示中の警告バナー -->
+    @if (_isViewingPast)
+    {
+        <div class="alert alert-warning past-view-banner">
+            <strong>過去の状態を表示中です。</strong>
+            編集はできません。最新状態に戻るには「最新に戻る」ボタンをクリックしてください。
+        </div>
+    }
 
     <!-- ガントチャート表示エリア -->
     <div class="tasks-section">
@@ -91,10 +107,33 @@ else
     private bool showTaskModal = false;
     private TaskDto? selectedTask = null;
 
+    // リワインド機能用の状態
+    private DateTime? _currentViewDate = null; // null = 最新
+    private List<DateTime> _editDates = new();
+    private bool _isViewingPast => _currentViewDate.HasValue;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadProject();
+        await LoadEditDates();
         await LoadTasks();
+    }
+
+    /// <summary>
+    /// 編集日一覧を取得
+    /// </summary>
+    private async Task LoadEditDates()
+    {
+        try
+        {
+            var query = new GetProjectEditDatesQuery(Id, Ascending: false);
+            _editDates = await Mediator.Send(query);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"編集日一覧の読み込みに失敗しました: {ex.Message}";
+            _editDates = new List<DateTime>();
+        }
     }
 
     private async Task LoadProject()
@@ -118,8 +157,20 @@ else
     {
         try
         {
-            var query = new GetTasksByProjectIdQuery(Id);
-            tasks = await Mediator.Send(query);
+            isLoadingTasks = true;
+
+            if (_isViewingPast)
+            {
+                // 過去時点のタスク一覧を取得
+                var query = new GetTasksByProjectIdAtTimeQuery(Id, _currentViewDate!.Value);
+                tasks = await Mediator.Send(query);
+            }
+            else
+            {
+                // 最新のタスク一覧を取得
+                var query = new GetTasksByProjectIdQuery(Id);
+                tasks = await Mediator.Send(query);
+            }
         }
         catch (Exception ex)
         {
@@ -134,12 +185,21 @@ else
 
     private void ShowCreateTaskModal()
     {
+        // 過去表示中は新規作成不可
+        if (_isViewingPast)
+        {
+            errorMessage = "過去の状態を表示中のため、タスクを作成できません。";
+            return;
+        }
+
         selectedTask = null;
         showTaskModal = true;
     }
 
     private void ShowTaskDetailModal(TaskDto task)
     {
+        // 過去表示中は読み取り専用で表示（今後、読み取り専用モーダルを実装する場合はここで分岐）
+        // 現状は過去表示中でも詳細を確認できるようにする
         selectedTask = task;
         showTaskModal = true;
     }
@@ -150,6 +210,8 @@ else
         selectedTask = null;
         // タスク一覧を再読み込み
         await LoadTasks();
+        // 編集日一覧も更新（新しい編集日が追加された可能性があるため）
+        await LoadEditDates();
         StateHasChanged();
     }
 
@@ -159,8 +221,25 @@ else
         selectedTask = null;
     }
 
+    /// <summary>
+    /// タイムラインコントロールで日付が変更された際の処理
+    /// </summary>
+    private async Task HandleDateChanged(DateTime? newDate)
+    {
+        _currentViewDate = newDate;
+        await LoadTasks();
+        StateHasChanged();
+    }
+
     private async Task HandleBarResize((Guid taskId, string barType, DateTime newStartDate, DateTime newEndDate) resizeData)
     {
+        // 過去表示中は編集不可
+        if (_isViewingPast)
+        {
+            errorMessage = "過去の状態を表示中のため、編集できません。";
+            return;
+        }
+
         try
         {
             var task = tasks?.FirstOrDefault(t => t.Id == resizeData.taskId);
@@ -195,6 +274,8 @@ else
 
             // タスク一覧を再読み込み
             await LoadTasks();
+            // 編集日一覧も更新（新しい編集日が追加された可能性があるため）
+            await LoadEditDates();
             StateHasChanged();
         }
         catch (Exception ex)

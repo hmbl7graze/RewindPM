@@ -1,0 +1,162 @@
+<div class="timeline-control @(IsViewingPast ? "viewing-past" : "")">
+    <button
+        class="timeline-button timeline-button-prev"
+        @onclick="MoveToPrevious"
+        disabled="@(!CanMoveToPrevious)"
+        aria-label="前の編集日へ移動"
+        type="button">
+        ◀
+    </button>
+
+    <div class="timeline-date-display">
+        @if (CurrentDate.HasValue)
+        {
+            <span class="timeline-date">@CurrentDate.Value.ToString("yyyy年MM月dd日")</span>
+            <span class="timeline-status">過去の状態を表示中</span>
+        }
+        else
+        {
+            <span class="timeline-date">最新</span>
+            <span class="timeline-status">現在の状態</span>
+        }
+    </div>
+
+    <button
+        class="timeline-button timeline-button-next"
+        @onclick="MoveToNext"
+        disabled="@(!CanMoveToNext)"
+        aria-label="次の編集日へ移動"
+        type="button">
+        ▶
+    </button>
+
+    @if (IsViewingPast)
+    {
+        <button
+            class="timeline-button timeline-button-today"
+            @onclick="MoveToLatest"
+            aria-label="最新状態に戻る"
+            type="button">
+            最新に戻る
+        </button>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// 現在表示中の日付（nullの場合は最新）
+    /// </summary>
+    [Parameter]
+    public DateTime? CurrentDate { get; set; }
+
+    /// <summary>
+    /// 編集日一覧（降順：新しい順）
+    /// </summary>
+    [Parameter]
+    public List<DateTime> EditDates { get; set; } = new();
+
+    /// <summary>
+    /// 日付変更イベント
+    /// </summary>
+    [Parameter]
+    public EventCallback<DateTime?> OnDateChanged { get; set; }
+
+    /// <summary>
+    /// 過去を表示中かどうか
+    /// </summary>
+    private bool IsViewingPast => CurrentDate.HasValue;
+
+    /// <summary>
+    /// 前の編集日へ移動可能かどうか
+    /// </summary>
+    private bool CanMoveToPrevious
+    {
+        get
+        {
+            if (EditDates == null || EditDates.Count == 0)
+                return false;
+
+            if (!CurrentDate.HasValue)
+            {
+                // 最新表示中の場合、編集日があれば移動可能
+                return EditDates.Count > 0;
+            }
+
+            // 現在の日付より古い日付が存在するか確認
+            return EditDates.Any(d => d < CurrentDate.Value);
+        }
+    }
+
+    /// <summary>
+    /// 次の編集日へ移動可能かどうか
+    /// </summary>
+    private bool CanMoveToNext
+    {
+        get
+        {
+            if (!CurrentDate.HasValue || EditDates == null || EditDates.Count == 0)
+                return false;
+
+            // 現在の日付より新しい日付が存在するか確認
+            return EditDates.Any(d => d > CurrentDate.Value);
+        }
+    }
+
+    /// <summary>
+    /// 前の編集日（より古い日付）へ移動
+    /// </summary>
+    private async Task MoveToPrevious()
+    {
+        if (!CanMoveToPrevious)
+            return;
+
+        DateTime? newDate;
+
+        if (!CurrentDate.HasValue)
+        {
+            // 最新表示中の場合、最新の編集日（リストの先頭）へ
+            newDate = EditDates.FirstOrDefault();
+        }
+        else
+        {
+            // 現在の日付より古い日付のうち、最も新しいものを取得
+            newDate = EditDates
+                .Where(d => d < CurrentDate.Value)
+                .OrderByDescending(d => d)
+                .FirstOrDefault();
+        }
+
+        if (newDate != default(DateTime))
+        {
+            await OnDateChanged.InvokeAsync(newDate);
+        }
+    }
+
+    /// <summary>
+    /// 次の編集日（より新しい日付）へ移動
+    /// </summary>
+    private async Task MoveToNext()
+    {
+        if (!CanMoveToNext)
+            return;
+
+        // 現在の日付より新しい日付のうち、最も古いものを取得
+        var newDate = EditDates
+            .Where(d => d > CurrentDate!.Value)
+            .OrderBy(d => d)
+            .FirstOrDefault();
+
+        if (newDate != default(DateTime))
+        {
+            await OnDateChanged.InvokeAsync(newDate);
+        }
+    }
+
+    /// <summary>
+    /// 最新状態に戻る
+    /// </summary>
+    private async Task MoveToLatest()
+    {
+        await OnDateChanged.InvokeAsync(null);
+    }
+}

@@ -1,0 +1,144 @@
+.timeline-control {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background-color: #f6f8fa;
+    border-radius: 6px;
+    border: 1px solid #d0d7de;
+    margin-bottom: 1.5rem;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.timeline-control.viewing-past {
+    background-color: #fff8e1;
+    border-color: #ffc107;
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15);
+}
+
+.timeline-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    background-color: white;
+    color: #1f2328;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 2.5rem;
+}
+
+.timeline-button:hover:not(:disabled) {
+    background-color: #f6f8fa;
+    border-color: #1f2328;
+}
+
+.timeline-button:active:not(:disabled) {
+    background-color: #eaedef;
+}
+
+.timeline-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background-color: #f6f8fa;
+}
+
+.timeline-button-prev,
+.timeline-button-next {
+    font-size: 1.2rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.timeline-button-today {
+    margin-left: auto;
+    background-color: #0969da;
+    color: white;
+    border-color: #0969da;
+}
+
+.timeline-button-today:hover {
+    background-color: #0860ca;
+    border-color: #0860ca;
+}
+
+.timeline-button-today:active {
+    background-color: #0757ba;
+}
+
+.timeline-date-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    text-align: center;
+}
+
+.timeline-date {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2328;
+    margin-bottom: 0.25rem;
+}
+
+.timeline-status {
+    font-size: 0.875rem;
+    color: #656d76;
+}
+
+.timeline-control.viewing-past .timeline-date {
+    color: #f57c00;
+}
+
+.timeline-control.viewing-past .timeline-status {
+    color: #e65100;
+    font-weight: 500;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .timeline-control {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+
+    .timeline-date-display {
+        order: -1;
+        flex-basis: 100%;
+        margin-bottom: 0.5rem;
+    }
+
+    .timeline-button-today {
+        margin-left: 0;
+        flex: 1;
+    }
+
+    .timeline-date {
+        font-size: 1rem;
+    }
+
+    .timeline-status {
+        font-size: 0.8125rem;
+    }
+}
+
+/* アニメーション */
+@keyframes highlight {
+    0% {
+        background-color: #fff8e1;
+    }
+    50% {
+        background-color: #ffecb3;
+    }
+    100% {
+        background-color: #fff8e1;
+    }
+}
+
+.timeline-control.viewing-past {
+    animation: highlight 1s ease-in-out;
+}
