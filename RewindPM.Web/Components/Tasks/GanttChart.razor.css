@@ -237,22 +237,86 @@
     width: 8px;
     cursor: ew-resize;
     z-index: 2;
+    transition: all 0.2s ease;
 }
 
-.gantt-resize-handle:hover {
-    background: rgba(0, 0, 0, 0.1);
-}
-
+/* 左ハンドル */
 .gantt-resize-handle-left {
     left: 0;
+    border-left: 4px solid rgba(0, 0, 0, 0.3);
     border-top-left-radius: 2px;
     border-bottom-left-radius: 2px;
 }
 
+/* 右ハンドル */
 .gantt-resize-handle-right {
     right: 0;
+    border-right: 4px solid rgba(0, 0, 0, 0.3);
     border-top-right-radius: 2px;
     border-bottom-right-radius: 2px;
+}
+
+/* ハンドルをホバー時 */
+.gantt-resize-handle:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.gantt-resize-handle-left:hover {
+    border-left-width: 6px;
+    border-left-color: rgba(0, 0, 0, 0.6);
+}
+
+.gantt-resize-handle-right:hover {
+    border-right-width: 6px;
+    border-right-color: rgba(0, 0, 0, 0.6);
+}
+
+/* バー全体をホバー時もハンドルを強調 */
+.gantt-bar:hover .gantt-resize-handle {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.gantt-bar:hover .gantt-resize-handle-left {
+    border-left-color: rgba(0, 0, 0, 0.45);
+}
+
+.gantt-bar:hover .gantt-resize-handle-right {
+    border-right-color: rgba(0, 0, 0, 0.45);
+}
+
+/* 実績バーのハンドル */
+.gantt-bar-actual .gantt-resize-handle-left {
+    border-left-color: rgba(255, 255, 255, 0.6);
+}
+
+.gantt-bar-actual .gantt-resize-handle-right {
+    border-right-color: rgba(255, 255, 255, 0.6);
+}
+
+.gantt-bar-actual .gantt-resize-handle:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.gantt-bar-actual .gantt-resize-handle-left:hover {
+    border-left-width: 6px;
+    border-left-color: rgba(255, 255, 255, 0.9);
+}
+
+.gantt-bar-actual .gantt-resize-handle-right:hover {
+    border-right-width: 6px;
+    border-right-color: rgba(255, 255, 255, 0.9);
+}
+
+.gantt-bar-actual:hover .gantt-resize-handle {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.gantt-bar-actual:hover .gantt-resize-handle-left {
+    border-left-color: rgba(255, 255, 255, 0.75);
+}
+
+.gantt-bar-actual:hover .gantt-resize-handle-right {
+    border-right-color: rgba(255, 255, 255, 0.75);
 }
 
 /* リサイズ中のスタイル */
