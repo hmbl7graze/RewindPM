@@ -229,6 +229,38 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
+/* リサイズハンドル */
+.gantt-resize-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: ew-resize;
+    z-index: 2;
+}
+
+.gantt-resize-handle:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.gantt-resize-handle-left {
+    left: 0;
+    border-top-left-radius: 2px;
+    border-bottom-left-radius: 2px;
+}
+
+.gantt-resize-handle-right {
+    right: 0;
+    border-top-right-radius: 2px;
+    border-bottom-right-radius: 2px;
+}
+
+/* リサイズ中のスタイル */
+.gantt-bar.resizing {
+    opacity: 0.8;
+    transition: none;
+}
+
 /* 横スクロールバースタイリング */
 .gantt-timeline-scroll::-webkit-scrollbar {
     height: 10px;

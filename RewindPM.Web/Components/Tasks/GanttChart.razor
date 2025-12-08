@@ -78,14 +78,28 @@
                                     @if (task.ScheduledStartDate.HasValue && task.ScheduledEndDate.HasValue)
                                     {
                                         var gridColumn = GetGridColumn(task.ScheduledStartDate.Value, task.ScheduledEndDate.Value);
-                                        <div class="gantt-bar gantt-bar-scheduled" style="grid-column: @gridColumn;" title="予定: @task.ScheduledStartDate.Value.ToString("yyyy/MM/dd") - @task.ScheduledEndDate.Value.ToString("yyyy/MM/dd")"></div>
+                                        <div class="gantt-bar gantt-bar-scheduled"
+                                             style="grid-column: @gridColumn;"
+                                             title="予定: @task.ScheduledStartDate.Value.ToString("yyyy/MM/dd") - @task.ScheduledEndDate.Value.ToString("yyyy/MM/dd")"
+                                             data-task-id="@task.Id"
+                                             data-bar-type="scheduled">
+                                            <div class="gantt-resize-handle gantt-resize-handle-left"></div>
+                                            <div class="gantt-resize-handle gantt-resize-handle-right"></div>
+                                        </div>
                                     }
 
                                     @* 実績期間バー *@
                                     @if (task.ActualStartDate.HasValue && task.ActualEndDate.HasValue)
                                     {
                                         var gridColumn = GetGridColumn(task.ActualStartDate.Value, task.ActualEndDate.Value);
-                                        <div class="gantt-bar gantt-bar-actual" style="grid-column: @gridColumn;" title="実績: @task.ActualStartDate.Value.ToString("yyyy/MM/dd") - @task.ActualEndDate.Value.ToString("yyyy/MM/dd")"></div>
+                                        <div class="gantt-bar gantt-bar-actual"
+                                             style="grid-column: @gridColumn;"
+                                             title="実績: @task.ActualStartDate.Value.ToString("yyyy/MM/dd") - @task.ActualEndDate.Value.ToString("yyyy/MM/dd")"
+                                             data-task-id="@task.Id"
+                                             data-bar-type="actual">
+                                            <div class="gantt-resize-handle gantt-resize-handle-left"></div>
+                                            <div class="gantt-resize-handle gantt-resize-handle-right"></div>
+                                        </div>
                                     }
                                 </div>
                             </div>
@@ -103,6 +117,9 @@
 
     [Parameter]
     public EventCallback<TaskDto> OnTaskClick { get; set; }
+
+    [Parameter]
+    public EventCallback<(Guid taskId, string barType, DateTime newStartDate, DateTime newEndDate)> OnBarResize { get; set; }
 
     private DateTime? TimelineStart { get; set; }
     private DateTime? TimelineEnd { get; set; }
@@ -131,13 +148,31 @@
             try
             {
                 dotNetRef = DotNetObjectReference.Create(this);
-                await JSRuntime.InvokeVoidAsync("ganttScrollSync.initialize", scrollWrapperRef, headerTimelineRef, timelineRefs);
+                await JSRuntime.InvokeVoidAsync("ganttScrollSync.initialize", scrollWrapperRef, headerTimelineRef, timelineRefs, dotNetRef);
                 scriptsInitialized = true;
             }
             catch (Exception)
             {
                 // JavaScript初期化エラーをサイレントに処理
             }
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnBarResized(string taskIdStr, string barType, int startDayIndex, int endDayIndex)
+    {
+        if (TimelineStart == null) return;
+
+        if (!Guid.TryParse(taskIdStr, out var taskId)) return;
+
+        // インデックスから日付を計算
+        var newStartDate = TimelineStart.Value.AddDays(startDayIndex);
+        var newEndDate = TimelineStart.Value.AddDays(endDayIndex);
+
+        // コールバックを呼び出し
+        if (OnBarResize.HasDelegate)
+        {
+            await OnBarResize.InvokeAsync((taskId, barType, newStartDate, newEndDate));
         }
     }
 

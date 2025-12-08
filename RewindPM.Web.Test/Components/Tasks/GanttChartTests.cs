@@ -354,6 +354,164 @@ public class GanttChartTests : Bunit.TestContext
         Assert.Equal("3", dateCells[2].TextContent.Trim());
     }
 
+    [Fact(DisplayName = "予定期間バーにリサイズハンドルが表示される")]
+    public void GanttChart_DisplaysResizeHandles_OnScheduledBars()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks));
+
+        // Assert
+        var scheduledBars = cut.FindAll(".gantt-bar-scheduled");
+        Assert.Equal(2, scheduledBars.Count);
+
+        // 各予定期間バーに左右のリサイズハンドルがあることを確認
+        foreach (var bar in scheduledBars)
+        {
+            var leftHandle = bar.QuerySelector(".gantt-resize-handle-left");
+            var rightHandle = bar.QuerySelector(".gantt-resize-handle-right");
+            Assert.NotNull(leftHandle);
+            Assert.NotNull(rightHandle);
+        }
+    }
+
+    [Fact(DisplayName = "実績期間バーにリサイズハンドルが表示される")]
+    public void GanttChart_DisplaysResizeHandles_OnActualBars()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks));
+
+        // Assert
+        var actualBars = cut.FindAll(".gantt-bar-actual");
+        Assert.Single(actualBars); // Task 2 only
+
+        // 実績期間バーに左右のリサイズハンドルがあることを確認
+        var bar = actualBars[0];
+        var leftHandle = bar.QuerySelector(".gantt-resize-handle-left");
+        var rightHandle = bar.QuerySelector(".gantt-resize-handle-right");
+        Assert.NotNull(leftHandle);
+        Assert.NotNull(rightHandle);
+    }
+
+    [Fact(DisplayName = "バーにタスクIDとバー種別のデータ属性が設定される")]
+    public void GanttChart_SetsDataAttributes_OnBars()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+        var taskId = tasks[0].Id;
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks));
+
+        // Assert
+        var scheduledBar = cut.Find(".gantt-bar-scheduled");
+        Assert.Equal(taskId.ToString(), scheduledBar.GetAttribute("data-task-id"));
+        Assert.Equal("scheduled", scheduledBar.GetAttribute("data-bar-type"));
+    }
+
+    [Fact(DisplayName = "OnBarResizeコールバックが呼ばれる")]
+    public async Task GanttChart_InvokesOnBarResize_WhenBarResized()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+        var taskId = tasks[0].Id;
+
+        (Guid taskId, string barType, DateTime newStartDate, DateTime newEndDate)? resizeData = null;
+        var onBarResize = EventCallback.Factory.Create<(Guid, string, DateTime, DateTime)>(
+            this,
+            (data) => resizeData = data
+        );
+
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.OnBarResize, onBarResize));
+
+        // Act - OnBarResizedメソッドを直接呼び出してテスト
+        await cut.Instance.OnBarResized(taskId.ToString(), "scheduled", 0, 2);
+
+        // Assert
+        Assert.NotNull(resizeData);
+        Assert.Equal(taskId, resizeData.Value.taskId);
+        Assert.Equal("scheduled", resizeData.Value.barType);
+        Assert.Equal(new DateTime(2024, 1, 1), resizeData.Value.newStartDate);
+        Assert.Equal(new DateTime(2024, 1, 3), resizeData.Value.newEndDate);
+    }
+
+    [Fact(DisplayName = "OnBarResizedで無効なGUIDの場合は処理されない")]
+    public async Task GanttChart_IgnoresInvalidTaskId_InOnBarResized()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+        var callbackInvoked = false;
+        var onBarResize = EventCallback.Factory.Create<(Guid, string, DateTime, DateTime)>(
+            this,
+            (data) => callbackInvoked = true
+        );
+
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.OnBarResize, onBarResize));
+
+        // Act - 無効なGUIDで呼び出し
+        await cut.Instance.OnBarResized("invalid-guid", "scheduled", 0, 2);
+
+        // Assert - コールバックは呼ばれない
+        Assert.False(callbackInvoked);
+    }
+
+    [Fact(DisplayName = "OnBarResizedで日付が正しく計算される")]
+    public async Task GanttChart_CalculatesDatesCorrectly_InOnBarResized()
+    {
+        // Arrange
+        var tasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = Guid.NewGuid(),
+                Title = "Task",
+                Description = "Test",
+                Status = TaskStatus.InProgress,
+                ScheduledStartDate = new DateTime(2024, 1, 1),
+                ScheduledEndDate = new DateTime(2024, 1, 10),
+                EstimatedHours = 40,
+                ActualStartDate = new DateTime(2024, 1, 1),
+                ActualEndDate = new DateTime(2024, 1, 5),
+                ActualHours = 20,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        (Guid taskId, string barType, DateTime newStartDate, DateTime newEndDate)? resizeData = null;
+        var onBarResize = EventCallback.Factory.Create<(Guid, string, DateTime, DateTime)>(
+            this,
+            (data) => resizeData = data
+        );
+
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.OnBarResize, onBarResize));
+
+        // Act - タイムライン開始日から5日目～8日目にリサイズ
+        await cut.Instance.OnBarResized(tasks[0].Id.ToString(), "actual", 5, 8);
+
+        // Assert
+        Assert.NotNull(resizeData);
+        Assert.Equal(new DateTime(2024, 1, 6), resizeData.Value.newStartDate); // 1/1 + 5日
+        Assert.Equal(new DateTime(2024, 1, 9), resizeData.Value.newEndDate);   // 1/1 + 8日
+    }
+
     private List<TaskDto> CreateTestTasks()
     {
         return new List<TaskDto>

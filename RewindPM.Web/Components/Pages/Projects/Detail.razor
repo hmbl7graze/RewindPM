@@ -4,6 +4,7 @@
 @using RewindPM.Application.Read.Queries.Projects
 @using RewindPM.Application.Read.Queries.Tasks
 @using RewindPM.Application.Read.DTOs
+@using RewindPM.Application.Write.Commands.Tasks
 @using RewindPM.Web.Components.Pages.Tasks
 @using RewindPM.Web.Components.Tasks
 @inject IMediator Mediator
@@ -59,7 +60,9 @@ else
         }
         else
         {
-            <GanttChart Tasks="@(tasks ?? new List<TaskDto>())" OnTaskClick="ShowTaskDetailModal" />
+            <GanttChart Tasks="@(tasks ?? new List<TaskDto>())"
+                        OnTaskClick="ShowTaskDetailModal"
+                        OnBarResize="HandleBarResize" />
         }
     </div>
 
@@ -154,5 +157,49 @@ else
     {
         showTaskModal = false;
         selectedTask = null;
+    }
+
+    private async Task HandleBarResize((Guid taskId, string barType, DateTime newStartDate, DateTime newEndDate) resizeData)
+    {
+        try
+        {
+            var task = tasks?.FirstOrDefault(t => t.Id == resizeData.taskId);
+            if (task == null) return;
+
+            if (resizeData.barType == "scheduled")
+            {
+                // 予定期間を更新
+                var command = new ChangeTaskScheduleCommand(
+                    TaskId: task.Id,
+                    ScheduledStartDate: resizeData.newStartDate,
+                    ScheduledEndDate: resizeData.newEndDate,
+                    EstimatedHours: task.EstimatedHours ?? 0,
+                    ChangedBy: "current-user" // TODO: 実際のユーザーIDを使用
+                );
+
+                await Mediator.Send(command);
+            }
+            else if (resizeData.barType == "actual")
+            {
+                // 実績期間を更新
+                var command = new ChangeTaskActualPeriodCommand(
+                    TaskId: task.Id,
+                    ActualStartDate: resizeData.newStartDate,
+                    ActualEndDate: resizeData.newEndDate,
+                    ActualHours: task.ActualHours,
+                    ChangedBy: "current-user" // TODO: 実際のユーザーIDを使用
+                );
+
+                await Mediator.Send(command);
+            }
+
+            // タスク一覧を再読み込み
+            await LoadTasks();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"タスクの期間更新に失敗しました: {ex.Message}";
+        }
     }
 }
