@@ -129,6 +129,25 @@ public class ReadModelRepository : IReadModelRepository
     }
 
     /// <summary>
+    /// 指定されたプロジェクトの編集日一覧を取得（リワインド機能用）
+    /// </summary>
+    public async Task<List<DateTime>> GetProjectEditDatesAsync(Guid projectId, bool ascending = false, CancellationToken cancellationToken = default)
+    {
+        // プロジェクトに属するタスクの履歴から、編集日（SnapshotDate）を取得
+        var query = _context.TaskHistories
+            .Where(h => h.ProjectId == projectId)
+            .Select(h => h.SnapshotDate)
+            .Distinct();
+
+        // 並び順を指定
+        var orderedQuery = ascending
+            ? query.OrderBy(d => d)
+            : query.OrderByDescending(d => d);
+
+        return await orderedQuery.ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
     /// ProjectEntityからProjectDtoへのマッピング
     /// </summary>
     private static ProjectDto MapToProjectDto(ProjectEntity entity)

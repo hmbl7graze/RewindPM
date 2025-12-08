@@ -426,4 +426,237 @@ public class ReadModelRepositoryTests : IDisposable
         // Assert
         Assert.Empty(result);
     }
+
+    [Fact(DisplayName = "プロジェクトの編集日一覧を降順（新しい順）で取得できること")]
+    public async Task GetProjectEditDatesAsync_Descending_ShouldReturnEditDatesInDescendingOrder()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var baseDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        // 複数の日付でタスク履歴を作成
+        var history1 = new TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = Guid.NewGuid(),
+            ProjectId = projectId,
+            SnapshotDate = baseDate, // 1月1日
+            Title = "Task on Jan 1",
+            Description = "Description",
+            Status = TaskStatus.Todo,
+            CreatedAt = baseDate,
+            CreatedBy = "user1",
+            SnapshotCreatedAt = baseDate
+        };
+
+        var history2 = new TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = Guid.NewGuid(),
+            ProjectId = projectId,
+            SnapshotDate = baseDate.AddDays(2), // 1月3日
+            Title = "Task on Jan 3",
+            Description = "Description",
+            Status = TaskStatus.Todo,
+            CreatedAt = baseDate.AddDays(2),
+            CreatedBy = "user1",
+            SnapshotCreatedAt = baseDate.AddDays(2)
+        };
+
+        var history3 = new TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = Guid.NewGuid(),
+            ProjectId = projectId,
+            SnapshotDate = baseDate.AddDays(4), // 1月5日
+            Title = "Task on Jan 5",
+            Description = "Description",
+            Status = TaskStatus.Todo,
+            CreatedAt = baseDate.AddDays(4),
+            CreatedBy = "user1",
+            SnapshotCreatedAt = baseDate.AddDays(4)
+        };
+
+        _context.TaskHistories.AddRange(history1, history2, history3);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.GetProjectEditDatesAsync(projectId, ascending: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(3, result.Count);
+        Assert.Equal(baseDate.AddDays(4), result[0]); // 1月5日
+        Assert.Equal(baseDate.AddDays(2), result[1]); // 1月3日
+        Assert.Equal(baseDate, result[2]); // 1月1日
+    }
+
+    [Fact(DisplayName = "プロジェクトの編集日一覧を昇順（古い順）で取得できること")]
+    public async Task GetProjectEditDatesAsync_Ascending_ShouldReturnEditDatesInAscendingOrder()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var baseDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        var history1 = new TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = Guid.NewGuid(),
+            ProjectId = projectId,
+            SnapshotDate = baseDate,
+            Title = "Task on Jan 1",
+            Description = "Description",
+            Status = TaskStatus.Todo,
+            CreatedAt = baseDate,
+            CreatedBy = "user1",
+            SnapshotCreatedAt = baseDate
+        };
+
+        var history2 = new TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = Guid.NewGuid(),
+            ProjectId = projectId,
+            SnapshotDate = baseDate.AddDays(2),
+            Title = "Task on Jan 3",
+            Description = "Description",
+            Status = TaskStatus.Todo,
+            CreatedAt = baseDate.AddDays(2),
+            CreatedBy = "user1",
+            SnapshotCreatedAt = baseDate.AddDays(2)
+        };
+
+        _context.TaskHistories.AddRange(history1, history2);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.GetProjectEditDatesAsync(projectId, ascending: true, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.Equal(baseDate, result[0]); // 1月1日
+        Assert.Equal(baseDate.AddDays(2), result[1]); // 1月3日
+    }
+
+    [Fact(DisplayName = "同じ日に複数のタスク履歴がある場合、日付は重複せずに1つだけ返すこと")]
+    public async Task GetProjectEditDatesAsync_MultipleTasks_ShouldReturnDistinctDates()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var baseDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        // 同じ日付（1月1日）に3つのタスク履歴を作成
+        var history1 = new TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = Guid.NewGuid(),
+            ProjectId = projectId,
+            SnapshotDate = baseDate,
+            Title = "Task 1",
+            Description = "Description",
+            Status = TaskStatus.Todo,
+            CreatedAt = baseDate,
+            CreatedBy = "user1",
+            SnapshotCreatedAt = baseDate
+        };
+
+        var history2 = new TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = Guid.NewGuid(),
+            ProjectId = projectId,
+            SnapshotDate = baseDate, // 同じ日付
+            Title = "Task 2",
+            Description = "Description",
+            Status = TaskStatus.Todo,
+            CreatedAt = baseDate,
+            CreatedBy = "user1",
+            SnapshotCreatedAt = baseDate
+        };
+
+        var history3 = new TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = Guid.NewGuid(),
+            ProjectId = projectId,
+            SnapshotDate = baseDate, // 同じ日付
+            Title = "Task 3",
+            Description = "Description",
+            Status = TaskStatus.Todo,
+            CreatedAt = baseDate,
+            CreatedBy = "user1",
+            SnapshotCreatedAt = baseDate
+        };
+
+        _context.TaskHistories.AddRange(history1, history2, history3);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.GetProjectEditDatesAsync(projectId, ascending: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Single(result); // 重複せず1つだけ
+        Assert.Equal(baseDate, result[0]);
+    }
+
+    [Fact(DisplayName = "編集履歴が存在しない場合は空のリストを返すこと")]
+    public async Task GetProjectEditDatesAsync_NoHistory_ShouldReturnEmptyList()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+
+        // Act
+        var result = await _repository.GetProjectEditDatesAsync(projectId, ascending: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact(DisplayName = "他のプロジェクトの編集日は含まれないこと")]
+    public async Task GetProjectEditDatesAsync_ShouldFilterByProjectId()
+    {
+        // Arrange
+        var projectId1 = Guid.NewGuid();
+        var projectId2 = Guid.NewGuid();
+        var baseDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        // プロジェクト1のタスク履歴
+        var history1 = new TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = Guid.NewGuid(),
+            ProjectId = projectId1,
+            SnapshotDate = baseDate,
+            Title = "Project 1 Task",
+            Description = "Description",
+            Status = TaskStatus.Todo,
+            CreatedAt = baseDate,
+            CreatedBy = "user1",
+            SnapshotCreatedAt = baseDate
+        };
+
+        // プロジェクト2のタスク履歴（別の日付）
+        var history2 = new TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = Guid.NewGuid(),
+            ProjectId = projectId2,
+            SnapshotDate = baseDate.AddDays(5),
+            Title = "Project 2 Task",
+            Description = "Description",
+            Status = TaskStatus.Todo,
+            CreatedAt = baseDate.AddDays(5),
+            CreatedBy = "user1",
+            SnapshotCreatedAt = baseDate.AddDays(5)
+        };
+
+        _context.TaskHistories.AddRange(history1, history2);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.GetProjectEditDatesAsync(projectId1, ascending: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal(baseDate, result[0]); // プロジェクト1の日付のみ
+    }
 }
