@@ -6,6 +6,16 @@
     overflow: hidden;
 }
 
+/* 読み取り専用モード（過去表示中） */
+.gantt-chart.readonly-mode {
+    opacity: 0.85;
+    background-color: #f8f9fa;
+}
+
+.gantt-chart.readonly-mode .gantt-resize-handle {
+    display: none !important;
+}
+
 .gantt-empty {
     padding: 40px;
     text-align: center;

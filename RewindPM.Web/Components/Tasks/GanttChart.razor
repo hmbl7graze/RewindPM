@@ -4,7 +4,7 @@
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
-<div class="gantt-chart">
+<div class="gantt-chart @(IsReadOnly ? "readonly-mode" : "")">
     @if (Tasks == null || !Tasks.Any())
     {
         <div class="gantt-empty">
@@ -83,8 +83,11 @@
                                              title="予定: @task.ScheduledStartDate.Value.ToString("yyyy/MM/dd") - @task.ScheduledEndDate.Value.ToString("yyyy/MM/dd")"
                                              data-task-id="@task.Id"
                                              data-bar-type="scheduled">
-                                            <div class="gantt-resize-handle gantt-resize-handle-left"></div>
-                                            <div class="gantt-resize-handle gantt-resize-handle-right"></div>
+                                            @if (!IsReadOnly)
+                                            {
+                                                <div class="gantt-resize-handle gantt-resize-handle-left"></div>
+                                                <div class="gantt-resize-handle gantt-resize-handle-right"></div>
+                                            }
                                         </div>
                                     }
 
@@ -97,8 +100,11 @@
                                              title="実績: @task.ActualStartDate.Value.ToString("yyyy/MM/dd") - @task.ActualEndDate.Value.ToString("yyyy/MM/dd")"
                                              data-task-id="@task.Id"
                                              data-bar-type="actual">
-                                            <div class="gantt-resize-handle gantt-resize-handle-left"></div>
-                                            <div class="gantt-resize-handle gantt-resize-handle-right"></div>
+                                            @if (!IsReadOnly)
+                                            {
+                                                <div class="gantt-resize-handle gantt-resize-handle-left"></div>
+                                                <div class="gantt-resize-handle gantt-resize-handle-right"></div>
+                                            }
                                         </div>
                                     }
                                 </div>
@@ -120,6 +126,12 @@
 
     [Parameter]
     public EventCallback<(Guid taskId, string barType, DateTime newStartDate, DateTime newEndDate)> OnBarResize { get; set; }
+
+    [Parameter]
+    public DateTime? ViewDate { get; set; }
+
+    [Parameter]
+    public bool IsReadOnly { get; set; } = false;
 
     private DateTime? TimelineStart { get; set; }
     private DateTime? TimelineEnd { get; set; }

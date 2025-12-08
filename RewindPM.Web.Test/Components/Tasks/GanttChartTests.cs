@@ -512,6 +512,162 @@ public class GanttChartTests : Bunit.TestContext
         Assert.Equal(new DateTime(2024, 1, 9), resizeData.Value.newEndDate);   // 1/1 + 8日
     }
 
+    // ========== リワインド機能（IsReadOnly）のテスト ==========
+
+    [Fact(DisplayName = "IsReadOnlyがfalseの場合、readonly-modeクラスが付与されない")]
+    public void GanttChart_DoesNotHaveReadonlyClass_WhenIsReadOnlyIsFalse()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.IsReadOnly, false));
+
+        // Assert
+        var ganttChart = cut.Find(".gantt-chart");
+        Assert.DoesNotContain("readonly-mode", ganttChart.ClassName);
+    }
+
+    [Fact(DisplayName = "IsReadOnlyがtrueの場合、readonly-modeクラスが付与される")]
+    public void GanttChart_HasReadonlyClass_WhenIsReadOnlyIsTrue()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.IsReadOnly, true));
+
+        // Assert
+        var ganttChart = cut.Find(".gantt-chart");
+        Assert.Contains("readonly-mode", ganttChart.ClassName);
+    }
+
+    [Fact(DisplayName = "IsReadOnlyがfalseの場合、予定期間バーにリサイズハンドルが表示される")]
+    public void GanttChart_DisplaysResizeHandles_WhenIsReadOnlyIsFalse()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.IsReadOnly, false));
+
+        // Assert
+        var scheduledBars = cut.FindAll(".gantt-bar-scheduled");
+        Assert.True(scheduledBars.Count > 0);
+
+        // 各予定期間バーに左右のリサイズハンドルがあることを確認
+        foreach (var bar in scheduledBars)
+        {
+            var leftHandle = bar.QuerySelector(".gantt-resize-handle-left");
+            var rightHandle = bar.QuerySelector(".gantt-resize-handle-right");
+            Assert.NotNull(leftHandle);
+            Assert.NotNull(rightHandle);
+        }
+    }
+
+    [Fact(DisplayName = "IsReadOnlyがtrueの場合、予定期間バーにリサイズハンドルが表示されない")]
+    public void GanttChart_DoesNotDisplayResizeHandles_WhenIsReadOnlyIsTrue()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.IsReadOnly, true));
+
+        // Assert
+        var scheduledBars = cut.FindAll(".gantt-bar-scheduled");
+        Assert.True(scheduledBars.Count > 0);
+
+        // 予定期間バーにリサイズハンドルがないことを確認
+        foreach (var bar in scheduledBars)
+        {
+            var leftHandle = bar.QuerySelector(".gantt-resize-handle-left");
+            var rightHandle = bar.QuerySelector(".gantt-resize-handle-right");
+            Assert.Null(leftHandle);
+            Assert.Null(rightHandle);
+        }
+    }
+
+    [Fact(DisplayName = "IsReadOnlyがtrueの場合、実績期間バーにリサイズハンドルが表示されない")]
+    public void GanttChart_DoesNotDisplayResizeHandlesOnActualBars_WhenIsReadOnlyIsTrue()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.IsReadOnly, true));
+
+        // Assert
+        var actualBars = cut.FindAll(".gantt-bar-actual");
+        Assert.Single(actualBars); // Task 2 only
+
+        // 実績期間バーにリサイズハンドルがないことを確認
+        var bar = actualBars[0];
+        var leftHandle = bar.QuerySelector(".gantt-resize-handle-left");
+        var rightHandle = bar.QuerySelector(".gantt-resize-handle-right");
+        Assert.Null(leftHandle);
+        Assert.Null(rightHandle);
+    }
+
+    [Fact(DisplayName = "ViewDateパラメータが設定できる")]
+    public void GanttChart_AcceptsViewDateParameter()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+        var viewDate = new DateTime(2024, 1, 5);
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.ViewDate, viewDate));
+
+        // Assert
+        Assert.Equal(viewDate, cut.Instance.ViewDate);
+    }
+
+    [Fact(DisplayName = "ViewDateがnullでも正常に動作する")]
+    public void GanttChart_WorksCorrectly_WhenViewDateIsNull()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.ViewDate, null));
+
+        // Assert
+        Assert.Null(cut.Instance.ViewDate);
+        var ganttChart = cut.Find(".gantt-chart");
+        Assert.NotNull(ganttChart);
+    }
+
+    [Fact(DisplayName = "デフォルトでIsReadOnlyはfalse")]
+    public void GanttChart_IsReadOnlyDefaultsToFalse()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks));
+
+        // Assert
+        Assert.False(cut.Instance.IsReadOnly);
+        var ganttChart = cut.Find(".gantt-chart");
+        Assert.DoesNotContain("readonly-mode", ganttChart.ClassName);
+    }
+
     private List<TaskDto> CreateTestTasks()
     {
         return new List<TaskDto>

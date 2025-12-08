@@ -78,7 +78,9 @@ else
         {
             <GanttChart Tasks="@(tasks ?? new List<TaskDto>())"
                         OnTaskClick="ShowTaskDetailModal"
-                        OnBarResize="HandleBarResize" />
+                        OnBarResize="HandleBarResize"
+                        ViewDate="_currentViewDate"
+                        IsReadOnly="_isViewingPast" />
         }
     </div>
 

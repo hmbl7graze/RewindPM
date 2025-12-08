@@ -487,7 +487,8 @@ public class DetailTests : Bunit.TestContext
                 ScheduledEndDate = new DateTime(2025, 1, 15),
                 EstimatedHours = 5,
                 CreatedAt = new DateTime(2025, 1, 10),
-                CreatedBy = "admin"
+                CreatedBy = "admin",
+                UpdatedAt = null
             }
         };
 
