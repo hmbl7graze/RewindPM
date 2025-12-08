@@ -1,16 +1,22 @@
 @page "/projects/{id:guid}"
+@rendermode InteractiveServer
 @using MediatR
 @using RewindPM.Application.Read.Queries.Projects
+@using RewindPM.Application.Read.Queries.Tasks
+@using RewindPM.Application.Read.DTOs
+@using RewindPM.Application.Write.Commands.Tasks
+@using RewindPM.Web.Components.Pages.Tasks
+@using RewindPM.Web.Components.Tasks
 @inject IMediator Mediator
 @inject NavigationManager Navigation
 
-<PageTitle>プロジェクト詳細</PageTitle>
-
-<h1>プロジェクト詳細</h1>
+<PageTitle>@(project?.Title ?? "プロジェクト詳細") - RewindPM</PageTitle>
 
 @if (isLoading)
 {
-    <p><em>読み込み中...</em></p>
+    <div class="loading-state">
+        <p><em>読み込み中...</em></p>
+    </div>
 }
 else if (project == null)
 {
@@ -19,50 +25,58 @@ else if (project == null)
 }
 else
 {
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h2>@project.Title</h2>
-            <div>
-                <a href="/projects/@Id/edit" class="btn btn-warning">編集</a>
-                <a href="/projects" class="btn btn-secondary">一覧に戻る</a>
+    <!-- ヘッダー部 -->
+    <div class="project-detail-header">
+        <div class="header-left">
+            <a href="/projects" class="back-link">← Back to Projects</a>
+        </div>
+        <div class="header-center">
+            <h1 class="project-title">@project.Title</h1>
+        </div>
+        <div class="header-right">
+            <a href="/projects/@Id/edit" class="btn btn-secondary">Edit Project</a>
+            <button class="btn btn-success" @onclick="ShowCreateTaskModal">Add Task</button>
+        </div>
+    </div>
+
+    <!-- プロジェクト情報表示 -->
+    <div class="project-info">
+        @if (!string.IsNullOrWhiteSpace(project.Description))
+        {
+            <div class="project-description">
+                <strong>Description:</strong>
+                <p>@project.Description</p>
             </div>
-        </div>
-        <div class="card-body">
-            <dl class="row">
-                <dt class="col-sm-3">プロジェクトID</dt>
-                <dd class="col-sm-9">@project.Id</dd>
+        }
+    </div>
 
-                <dt class="col-sm-3">プロジェクト名</dt>
-                <dd class="col-sm-9">@project.Title</dd>
+    <!-- ガントチャート表示エリア -->
+    <div class="tasks-section">
+        <h2 class="section-title">Gantt Chart</h2>
 
-                <dt class="col-sm-3">説明</dt>
-                <dd class="col-sm-9">@project.Description</dd>
-
-                <dt class="col-sm-3">作成者</dt>
-                <dd class="col-sm-9">@project.CreatedBy</dd>
-
-                <dt class="col-sm-3">作成日時</dt>
-                <dd class="col-sm-9">@project.CreatedAt.ToString("yyyy/MM/dd HH:mm:ss")</dd>
-
-                @if (project.UpdatedBy != null)
-                {
-                    <dt class="col-sm-3">更新者</dt>
-                    <dd class="col-sm-9">@project.UpdatedBy</dd>
-                }
-
-                @if (project.UpdatedAt.HasValue)
-                {
-                    <dt class="col-sm-3">更新日時</dt>
-                    <dd class="col-sm-9">@project.UpdatedAt.Value.ToString("yyyy/MM/dd HH:mm:ss")</dd>
-                }
-            </dl>
-        </div>
+        @if (isLoadingTasks)
+        {
+            <p><em>タスクを読み込み中...</em></p>
+        }
+        else
+        {
+            <GanttChart Tasks="@(tasks ?? new List<TaskDto>())"
+                        OnTaskClick="ShowTaskDetailModal"
+                        OnBarResize="HandleBarResize" />
+        }
     </div>
 
     @if (!string.IsNullOrEmpty(errorMessage))
     {
         <div class="alert alert-danger mt-3">@errorMessage</div>
     }
+
+    <!-- タスク作成・編集モーダル -->
+    <TaskFormModal @bind-IsVisible="showTaskModal"
+                   ProjectId="@Id"
+                   ExistingTask="@selectedTask"
+                   OnSuccess="HandleTaskModalSuccess"
+                   OnCancel="HandleTaskModalCancel" />
 }
 
 @code {
@@ -70,10 +84,20 @@ else
     public Guid Id { get; set; }
 
     private ProjectDto? project;
+    private List<TaskDto>? tasks;
     private bool isLoading = true;
+    private bool isLoadingTasks = true;
     private string? errorMessage;
+    private bool showTaskModal = false;
+    private TaskDto? selectedTask = null;
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadProject();
+        await LoadTasks();
+    }
+
+    private async Task LoadProject()
     {
         try
         {
@@ -87,6 +111,95 @@ else
         finally
         {
             isLoading = false;
+        }
+    }
+
+    private async Task LoadTasks()
+    {
+        try
+        {
+            var query = new GetTasksByProjectIdQuery(Id);
+            tasks = await Mediator.Send(query);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"タスクの読み込みに失敗しました: {ex.Message}";
+            tasks = new List<TaskDto>();
+        }
+        finally
+        {
+            isLoadingTasks = false;
+        }
+    }
+
+    private void ShowCreateTaskModal()
+    {
+        selectedTask = null;
+        showTaskModal = true;
+    }
+
+    private void ShowTaskDetailModal(TaskDto task)
+    {
+        selectedTask = task;
+        showTaskModal = true;
+    }
+
+    private async Task HandleTaskModalSuccess()
+    {
+        showTaskModal = false;
+        selectedTask = null;
+        // タスク一覧を再読み込み
+        await LoadTasks();
+        StateHasChanged();
+    }
+
+    private void HandleTaskModalCancel()
+    {
+        showTaskModal = false;
+        selectedTask = null;
+    }
+
+    private async Task HandleBarResize((Guid taskId, string barType, DateTime newStartDate, DateTime newEndDate) resizeData)
+    {
+        try
+        {
+            var task = tasks?.FirstOrDefault(t => t.Id == resizeData.taskId);
+            if (task == null) return;
+
+            if (resizeData.barType == "scheduled")
+            {
+                // 予定期間を更新
+                var command = new ChangeTaskScheduleCommand(
+                    TaskId: task.Id,
+                    ScheduledStartDate: resizeData.newStartDate,
+                    ScheduledEndDate: resizeData.newEndDate,
+                    EstimatedHours: task.EstimatedHours ?? 0,
+                    ChangedBy: "current-user" // TODO: 実際のユーザーIDを使用
+                );
+
+                await Mediator.Send(command);
+            }
+            else if (resizeData.barType == "actual")
+            {
+                // 実績期間を更新
+                var command = new ChangeTaskActualPeriodCommand(
+                    TaskId: task.Id,
+                    ActualStartDate: resizeData.newStartDate,
+                    ActualEndDate: resizeData.newEndDate,
+                    ActualHours: task.ActualHours,
+                    ChangedBy: "current-user" // TODO: 実際のユーザーIDを使用
+                );
+
+                await Mediator.Send(command);
+            }
+
+            // タスク一覧を再読み込み
+            await LoadTasks();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"タスクの期間更新に失敗しました: {ex.Message}";
         }
     }
 }

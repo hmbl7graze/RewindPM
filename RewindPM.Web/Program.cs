@@ -5,6 +5,12 @@ using RewindPM.Infrastructure.Read;
 using RewindPM.Application.Write;
 using RewindPM.Application.Read;
 using RewindPM.Projection;
+using RewindPM.Web.Data;
+using MediatR;
+using RewindPM.Application.Read.Queries.Projects;
+using RewindPM.Domain.Common;
+using RewindPM.Domain.Events;
+using RewindPM.Projection.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -89,6 +95,44 @@ using (var scope = app.Services.CreateScope())
             await eventStoreContext.Database.MigrateAsync();
         }
     }
+
+    // 開発環境でサンプルデータを追加
+    if (app.Environment.IsDevelopment())
+    {
+        var mediator = services.GetRequiredService<IMediator>();
+        var projects = await mediator.Send(new GetAllProjectsQuery());
+
+        if (projects.Count == 0)
+        {
+            Console.WriteLine("[Startup] Seeding sample data...");
+
+            // Projectionハンドラーを登録してからシードデータを実行
+            // EventPublisherにすべてのプロジェクションハンドラーを登録
+            var eventPublisher = services.GetRequiredService<IEventPublisher>();
+            eventPublisher.Subscribe<ProjectCreated>(
+                new ScopedEventHandlerAdapter<ProjectCreated, ProjectCreatedEventHandler>(services));
+            eventPublisher.Subscribe<ProjectUpdated>(
+                new ScopedEventHandlerAdapter<ProjectUpdated, ProjectUpdatedEventHandler>(services));
+            eventPublisher.Subscribe<TaskCreated>(
+                new ScopedEventHandlerAdapter<TaskCreated, TaskCreatedEventHandler>(services));
+            eventPublisher.Subscribe<TaskUpdated>(
+                new ScopedEventHandlerAdapter<TaskUpdated, TaskUpdatedEventHandler>(services));
+            eventPublisher.Subscribe<TaskStatusChanged>(
+                new ScopedEventHandlerAdapter<TaskStatusChanged, TaskStatusChangedEventHandler>(services));
+            eventPublisher.Subscribe<TaskScheduledPeriodChanged>(
+                new ScopedEventHandlerAdapter<TaskScheduledPeriodChanged, TaskScheduledPeriodChangedEventHandler>(services));
+            eventPublisher.Subscribe<TaskActualPeriodChanged>(
+                new ScopedEventHandlerAdapter<TaskActualPeriodChanged, TaskActualPeriodChangedEventHandler>(services));
+
+            var seedData = new SeedData(mediator);
+            await seedData.SeedAsync();
+            Console.WriteLine("[Startup] Sample data seeded successfully.");
+        }
+        else
+        {
+            Console.WriteLine($"[Startup] Database already contains {projects.Count} project(s). Skipping seed data.");
+        }
+    }
 }
 
 if (!app.Environment.IsDevelopment())
@@ -133,4 +177,28 @@ app.Run();
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+}
+
+/// <summary>
+/// スコープドハンドラーをシングルトンEventPublisherから呼び出すためのアダプター
+/// 各イベント処理時に新しいスコープを作成してハンドラーを解決
+/// </summary>
+file class ScopedEventHandlerAdapter<TEvent, THandler> : IEventHandler<TEvent>
+    where TEvent : class, IDomainEvent
+    where THandler : IEventHandler<TEvent>
+{
+    private readonly IServiceProvider _serviceProvider;
+
+    public ScopedEventHandlerAdapter(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
+    public async Task HandleAsync(TEvent @event)
+    {
+        // 新しいスコープを作成してハンドラーを解決
+        using var scope = _serviceProvider.CreateScope();
+        var handler = scope.ServiceProvider.GetRequiredService<THandler>();
+        await handler.HandleAsync(@event);
+    }
 }

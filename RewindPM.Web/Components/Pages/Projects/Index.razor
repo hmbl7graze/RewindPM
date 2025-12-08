@@ -1,59 +1,57 @@
 @page "/projects"
+@rendermode InteractiveServer
 @using MediatR
 @using RewindPM.Application.Read.Queries.Projects
+@using RewindPM.Web.Components.Shared
 @inject IMediator Mediator
 @inject NavigationManager Navigation
 
-<PageTitle>プロジェクト一覧</PageTitle>
+<PageTitle>プロジェクト一覧 - RewindPM</PageTitle>
 
-<h1>プロジェクト一覧</h1>
-
-<div class="mb-3">
-    <a href="/projects/create" class="btn btn-primary">新規プロジェクト作成</a>
+<div class="projects-header">
+    <h1 class="projects-title">RewindPM</h1>
+    <button class="btn btn-success" @onclick="ShowCreateModal">
+        <span class="btn-icon">+</span> New Project
+    </button>
 </div>
 
 @if (projects == null)
 {
-    <p><em>読み込み中...</em></p>
+    <div class="loading-state">
+        <p><em>読み込み中...</em></p>
+    </div>
 }
 else if (!projects.Any())
 {
-    <p>プロジェクトがありません。</p>
+    <div class="empty-state">
+        <p>プロジェクトがありません。</p>
+        <p class="text-muted">「+ New Project」ボタンから新しいプロジェクトを作成してください。</p>
+    </div>
 }
 else
 {
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>プロジェクト名</th>
-                <th>説明</th>
-                <th>作成日時</th>
-                <th>更新日時</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var project in projects)
-            {
-                <tr>
-                    <td>@project.Title</td>
-                    <td>@project.Description</td>
-                    <td>@project.CreatedAt.ToString("yyyy/MM/dd HH:mm")</td>
-                    <td>@(project.UpdatedAt?.ToString("yyyy/MM/dd HH:mm") ?? "-")</td>
-                    <td>
-                        <a href="/projects/@project.Id" class="btn btn-sm btn-info">詳細</a>
-                        <a href="/projects/@project.Id/edit" class="btn btn-sm btn-warning">編集</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="projects-grid">
+        @foreach (var project in projects)
+        {
+            <ProjectCard Project="@project" />
+        }
+    </div>
 }
+
+<Modal Title="プロジェクト作成" @bind-IsVisible="showCreateModal">
+    <CreateProjectForm OnSuccess="HandleCreateSuccess" OnCancel="HandleCreateCancel" />
+</Modal>
 
 @code {
     private List<ProjectDto>? projects;
+    private bool showCreateModal = false;
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadProjects();
+    }
+
+    private async Task LoadProjects()
     {
         try
         {
@@ -66,5 +64,23 @@ else
             Console.WriteLine($"Error loading projects: {ex.Message}");
             projects = new List<ProjectDto>();
         }
+    }
+
+    private void ShowCreateModal()
+    {
+        showCreateModal = true;
+    }
+
+    private async Task HandleCreateSuccess()
+    {
+        showCreateModal = false;
+        // プロジェクト一覧を再読み込み
+        await LoadProjects();
+        StateHasChanged();
+    }
+
+    private void HandleCreateCancel()
+    {
+        showCreateModal = false;
     }
 }

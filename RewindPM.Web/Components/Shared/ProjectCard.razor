@@ -1,0 +1,42 @@
+@using RewindPM.Application.Read.DTOs
+
+<a href="/projects/@Project.Id" class="project-card-link">
+    <div class="project-card">
+        <div class="project-card-header">
+            <h3 class="project-card-title">@Project.Title</h3>
+        </div>
+        <div class="project-card-body">
+            <p class="project-card-description">@TruncatedDescription</p>
+        </div>
+        <div class="project-card-footer">
+            <span class="project-card-stat text-muted">
+                <small>TODO: タスク統計（未実装）</small>
+            </span>
+        </div>
+    </div>
+</a>
+
+@code {
+    [Parameter]
+    public required ProjectDto Project { get; set; }
+
+    private string TruncatedDescription
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(Project.Description))
+                return "説明なし";
+
+            var lines = Project.Description.Split('\n');
+            var firstTwoLines = string.Join('\n', lines.Take(2));
+
+            if (firstTwoLines.Length > 100)
+                return firstTwoLines.Substring(0, 100) + "...";
+
+            if (lines.Length > 2)
+                return firstTwoLines + "...";
+
+            return firstTwoLines;
+        }
+    }
+}

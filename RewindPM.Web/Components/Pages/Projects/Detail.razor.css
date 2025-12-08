@@ -1,0 +1,212 @@
+/* プロジェクト詳細ヘッダー */
+.project-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #d0d7de;
+}
+
+.header-left {
+    flex: 1;
+}
+
+.header-center {
+    flex: 2;
+    text-align: center;
+}
+
+.header-right {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.back-link {
+    color: #0969da;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.back-link:hover {
+    color: #0860ca;
+    text-decoration: underline;
+}
+
+.project-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #1f2328;
+    margin: 0;
+}
+
+/* プロジェクト情報 */
+.project-info {
+    background-color: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.project-description {
+    margin: 0;
+}
+
+.project-description strong {
+    color: #656d76;
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.project-description p {
+    color: #1f2328;
+    margin: 0;
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+/* タスクセクション */
+.tasks-section {
+    margin-top: 32px;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1f2328;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #d0d7de;
+}
+
+.empty-tasks {
+    text-align: center;
+    padding: 60px 20px;
+    color: #656d76;
+}
+
+/* タスク一覧 */
+.task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.task-item {
+    background-color: #ffffff;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 16px;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.task-item:hover {
+    border-color: #0969da;
+    box-shadow: 0 1px 3px rgba(31, 35, 40, 0.12);
+}
+
+.task-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.task-item-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1f2328;
+    margin: 0;
+}
+
+.task-status {
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+
+.task-status-todo {
+    background-color: #6c757d;
+    color: #ffffff;
+}
+
+.task-status-inprogress {
+    background-color: #0d6efd;
+    color: #ffffff;
+}
+
+.task-status-inreview {
+    background-color: #ffc107;
+    color: #000000;
+}
+
+.task-status-done {
+    background-color: #28a745;
+    color: #ffffff;
+}
+
+.task-item-body {
+    margin-top: 8px;
+}
+
+.task-description {
+    color: #656d76;
+    font-size: 0.9rem;
+    margin: 0 0 12px 0;
+    line-height: 1.5;
+}
+
+.task-dates {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.task-date-info {
+    font-size: 0.875rem;
+    color: #656d76;
+}
+
+.task-date-info strong {
+    color: #1f2328;
+    margin-right: 4px;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .project-detail-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .header-left,
+    .header-center,
+    .header-right {
+        flex: auto;
+        text-align: left;
+    }
+
+    .header-right {
+        justify-content: flex-start;
+    }
+
+    .project-title {
+        font-size: 1.5rem;
+    }
+}
+
+/* ローディング状態 */
+.loading-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #656d76;
+}

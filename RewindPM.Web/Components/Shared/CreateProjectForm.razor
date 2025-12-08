@@ -1,0 +1,102 @@
+@using MediatR
+@using RewindPM.Application.Write.Commands.Projects
+@inject IMediator Mediator
+
+<EditForm Model="@formModel" OnValidSubmit="@HandleSubmit" FormName="CreateProjectForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="validation-summary" />
+
+    <div class="form-group">
+        <label for="title" class="form-label">プロジェクト名 <span class="required">*</span></label>
+        <InputText id="title" class="form-control" @bind-Value="formModel.Title" placeholder="プロジェクト名を入力" maxlength="200" />
+        <small class="form-text">最大200文字</small>
+    </div>
+
+    <div class="form-group">
+        <label for="description" class="form-label">説明</label>
+        <InputTextArea id="description" class="form-control" rows="5" @bind-Value="formModel.Description" placeholder="プロジェクトの説明を入力（任意）" maxlength="5000" />
+        <small class="form-text">最大5000文字</small>
+    </div>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    <div class="form-actions">
+        @if (isSubmitting)
+        {
+            <button class="btn btn-primary" type="button" disabled>
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                作成中...
+            </button>
+        }
+        else
+        {
+            <button type="submit" class="btn btn-primary">作成</button>
+            <button type="button" class="btn btn-secondary" @onclick="Cancel">キャンセル</button>
+        }
+    </div>
+</EditForm>
+
+@code {
+    [SupplyParameterFromForm]
+    private ProjectFormModel formModel { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback OnSuccess { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private bool isSubmitting = false;
+    private string? errorMessage;
+
+    protected override void OnInitialized()
+    {
+        formModel ??= new ProjectFormModel
+        {
+            Title = string.Empty,
+            Description = string.Empty,
+            CreatedBy = "test-user" // TODO: 実際の認証システムから取得
+        };
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            isSubmitting = true;
+            errorMessage = null;
+
+            var command = new CreateProjectCommand(
+                Guid.NewGuid(),
+                formModel.Title,
+                formModel.Description,
+                formModel.CreatedBy
+            );
+
+            var projectId = await Mediator.Send(command);
+
+            // 作成成功
+            await OnSuccess.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"プロジェクトの作成に失敗しました: {ex.Message}";
+            isSubmitting = false;
+        }
+    }
+
+    private async Task Cancel()
+    {
+        await OnCancel.InvokeAsync();
+    }
+
+    public class ProjectFormModel
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string CreatedBy { get; set; } = string.Empty;
+    }
+}
