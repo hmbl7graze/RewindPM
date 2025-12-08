@@ -210,7 +210,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Assert - Gantt chart rows
-        var ganttRows = cut.FindAll(".gantt-row");
+        var ganttRows = cut.FindAll(".gantt-task-name-cell");
         Assert.Equal(2, ganttRows.Count);
 
         // Task 1の検証
@@ -287,9 +287,9 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
-        // Act - Click on Gantt row
-        var ganttRow = cut.Find(".gantt-row");
-        ganttRow.Click();
+        // Act - Click on Gantt task name cell
+        var taskNameCell = cut.Find(".gantt-task-name-cell");
+        taskNameCell.Click();
 
         // Assert - モーダルが表示されているか確認
         var modal = cut.Find(".modal-overlay");

@@ -12,16 +12,20 @@
     color: #656d76;
 }
 
+/* コンテナ（縦スクロール） */
 .gantt-container {
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     flex-direction: column;
 }
 
-/* ヘッダー */
+/* ヘッダー行（上部固定） */
 .gantt-header {
     display: flex;
-    border-bottom: 2px solid #d0d7de;
     background: #f6f8fa;
+    border-bottom: 2px solid #d0d7de;
     position: sticky;
     top: 0;
     z-index: 10;
@@ -33,14 +37,17 @@
     padding: 12px 16px;
     font-weight: 600;
     color: #24292f;
-    border-right: 1px solid #d0d7de;
+    border-right: 2px solid #d0d7de;
     display: flex;
     align-items: center;
 }
 
-.gantt-header-timeline {
+.gantt-header-timeline-wrapper {
     flex: 1;
-    overflow-x: auto;
+    overflow: hidden;
+}
+
+.gantt-header-timeline {
     display: flex;
     flex-direction: column;
 }
@@ -51,32 +58,33 @@
 }
 
 .gantt-month-cell {
-    padding: 6px 8px;
     text-align: center;
     font-size: 0.875rem;
     font-weight: 600;
     color: #24292f;
     border-right: 1px solid #d0d7de;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 0;
 }
 
 .gantt-month-cell:last-child {
     border-right: none;
 }
 
-/* タイムライングリッド */
-.gantt-timeline-grid {
-    display: grid;
-    min-width: 600px;
-    height: 100%;
-}
-
+/* 日の行 */
 .gantt-date-cell {
     border-right: 1px solid #d0d7de;
-    padding: 8px 4px;
     text-align: center;
     font-size: 0.75rem;
     color: #656d76;
     min-width: 20px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .gantt-date-cell:last-child {
@@ -85,38 +93,53 @@
 
 .gantt-date-label {
     white-space: nowrap;
+    padding: 8px 4px;
 }
 
-/* ボディ */
-.gantt-body {
+/* タイムライングリッド */
+.gantt-timeline-grid {
+    display: grid;
+    min-width: 600px;
+    height: 100%;
+    box-sizing: border-box;
+    align-items: center;
+}
+
+/* コンテンツ行（横方向分割） */
+.gantt-content {
+    display: flex;
+    flex: 1;
+}
+
+/* タスク名列 */
+.gantt-task-names {
+    width: 250px;
+    min-width: 250px;
+    border-right: 2px solid #d0d7de;
     display: flex;
     flex-direction: column;
 }
 
-.gantt-row {
-    display: flex;
-    border-bottom: 1px solid #d0d7de;
-    cursor: pointer;
-    transition: background-color 0.15s ease;
-}
-
-.gantt-row:hover {
-    background-color: #f6f8fa;
-}
-
-.gantt-row:last-child {
-    border-bottom: none;
-}
-
-.gantt-task-name {
-    width: 250px;
-    min-width: 250px;
+.gantt-task-name-cell {
     padding: 6px 12px;
-    border-right: 1px solid #d0d7de;
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 8px;
+    border-bottom: 1px solid #d0d7de;
+    background: white;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    height: 38px;
+    box-sizing: border-box;
+}
+
+.gantt-task-name-cell:hover {
+    background-color: #f6f8fa;
+}
+
+.gantt-task-name-cell:last-child {
+    border-bottom: none;
 }
 
 .gantt-task-title {
@@ -159,11 +182,28 @@
     color: #1a7f37;
 }
 
-.gantt-timeline {
+/* タイムライン列（横スクロール） */
+.gantt-timeline-scroll {
     flex: 1;
     overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.gantt-timeline-rows {
+    display: flex;
+    flex-direction: column;
+    min-width: fit-content;
+}
+
+.gantt-timeline-row {
+    border-bottom: 1px solid #d0d7de;
+    height: 38px;
     position: relative;
-    padding: 2px 0;
+    box-sizing: border-box;
+}
+
+.gantt-timeline-row:last-child {
+    border-bottom: none;
 }
 
 /* タスクバー */
@@ -171,7 +211,8 @@
     height: 10px;
     border-radius: 2px;
     position: relative;
-    margin: 1px 0;
+    margin: 2px 0;
+    box-sizing: border-box;
 }
 
 .gantt-bar-scheduled {
@@ -188,24 +229,38 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
 
-/* スクロールバーのスタイリング（オプション） */
-.gantt-header-timeline::-webkit-scrollbar,
-.gantt-timeline::-webkit-scrollbar {
-    height: 8px;
+/* 横スクロールバースタイリング */
+.gantt-timeline-scroll::-webkit-scrollbar {
+    height: 10px;
 }
 
-.gantt-header-timeline::-webkit-scrollbar-track,
-.gantt-timeline::-webkit-scrollbar-track {
+.gantt-timeline-scroll::-webkit-scrollbar-track {
     background: #f6f8fa;
 }
 
-.gantt-header-timeline::-webkit-scrollbar-thumb,
-.gantt-timeline::-webkit-scrollbar-thumb {
+.gantt-timeline-scroll::-webkit-scrollbar-thumb {
     background: #d0d7de;
     border-radius: 4px;
 }
 
-.gantt-header-timeline::-webkit-scrollbar-thumb:hover,
-.gantt-timeline::-webkit-scrollbar-thumb:hover {
+.gantt-timeline-scroll::-webkit-scrollbar-thumb:hover {
+    background: #afb8c1;
+}
+
+/* 縦スクロールバースタイリング */
+.gantt-container::-webkit-scrollbar {
+    width: 10px;
+}
+
+.gantt-container::-webkit-scrollbar-track {
+    background: #f6f8fa;
+}
+
+.gantt-container::-webkit-scrollbar-thumb {
+    background: #d0d7de;
+    border-radius: 4px;
+}
+
+.gantt-container::-webkit-scrollbar-thumb:hover {
     background: #afb8c1;
 }

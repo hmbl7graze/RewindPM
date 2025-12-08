@@ -69,7 +69,7 @@ public class GanttChartTests : Bunit.TestContext
             .Add(p => p.Tasks, tasks));
 
         // Assert
-        var ganttRows = cut.FindAll(".gantt-row");
+        var ganttRows = cut.FindAll(".gantt-task-name-cell");
         Assert.Equal(2, ganttRows.Count);
     }
 
@@ -165,8 +165,8 @@ public class GanttChartTests : Bunit.TestContext
             .Add(p => p.OnTaskClick, onTaskClick));
 
         // Act
-        var ganttRow = cut.Find(".gantt-row");
-        await cut.InvokeAsync(() => ganttRow.Click());
+        var taskNameCell = cut.Find(".gantt-task-name-cell");
+        await cut.InvokeAsync(() => taskNameCell.Click());
 
         // Assert
         Assert.NotNull(clickedTask);
