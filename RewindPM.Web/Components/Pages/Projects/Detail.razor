@@ -94,7 +94,8 @@ else
                    ProjectId="@Id"
                    ExistingTask="@selectedTask"
                    OnSuccess="HandleTaskModalSuccess"
-                   OnCancel="HandleTaskModalCancel" />
+                   OnCancel="HandleTaskModalCancel"
+                   IsReadOnly="_isViewingPast" />
 }
 
 @code {

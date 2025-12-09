@@ -47,6 +47,11 @@
     background-color: #f6f8fa;
 }
 
+.timeline-button:focus-visible {
+    outline: 2px solid #0969da;
+    outline-offset: 2px;
+}
+
 .timeline-button-prev,
 .timeline-button-next {
     font-size: 1.2rem;

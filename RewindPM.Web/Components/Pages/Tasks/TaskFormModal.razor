@@ -19,7 +19,8 @@
                    class="form-control @(titleError != null ? "is-invalid" : "")"
                    @bind="title"
                    maxlength="200"
-                   placeholder="タスク名を入力してください" />
+                   placeholder="タスク名を入力してください"
+                   disabled="@IsReadOnly" />
             @if (titleError != null)
             {
                 <div class="invalid-feedback">@titleError</div>
@@ -33,12 +34,13 @@
                       @bind="description"
                       rows="4"
                       maxlength="5000"
-                      placeholder="タスクの説明を入力してください"></textarea>
+                      placeholder="タスクの説明を入力してください"
+                      disabled="@IsReadOnly"></textarea>
         </div>
 
         <div class="form-group">
             <label for="taskStatus">ステータス</label>
-            <select id="taskStatus" class="form-control" @bind="status">
+            <select id="taskStatus" class="form-control" @bind="status" disabled="@IsReadOnly">
                 <option value="@TaskStatus.Todo">TODO</option>
                 <option value="@TaskStatus.InProgress">進行中</option>
                 <option value="@TaskStatus.InReview">レビュー中</option>
@@ -54,14 +56,16 @@
                     <input type="date"
                            id="scheduledStartDate"
                            class="form-control @(scheduledDateError != null ? "is-invalid" : "")"
-                           @bind="scheduledStartDate" />
+                           @bind="scheduledStartDate"
+                           disabled="@IsReadOnly" />
                 </div>
                 <div class="form-group col-md-6">
                     <label for="scheduledEndDate">終了日</label>
                     <input type="date"
                            id="scheduledEndDate"
                            class="form-control @(scheduledDateError != null ? "is-invalid" : "")"
-                           @bind="scheduledEndDate" />
+                           @bind="scheduledEndDate"
+                           disabled="@IsReadOnly" />
                 </div>
             </div>
             @if (scheduledDateError != null)
@@ -75,7 +79,8 @@
                        class="form-control @(estimatedHoursError != null ? "is-invalid" : "")"
                        @bind="estimatedHours"
                        min="1"
-                       placeholder="例: 20" />
+                       placeholder="例: 20"
+                       disabled="@IsReadOnly" />
                 @if (estimatedHoursError != null)
                 {
                     <div class="invalid-feedback">@estimatedHoursError</div>
@@ -93,14 +98,16 @@
                         <input type="date"
                                id="actualStartDate"
                                class="form-control @(actualDateError != null ? "is-invalid" : "")"
-                               @bind="actualStartDate" />
+                               @bind="actualStartDate"
+                               disabled="@IsReadOnly" />
                     </div>
                     <div class="form-group col-md-6">
                         <label for="actualEndDate">終了日</label>
                         <input type="date"
                                id="actualEndDate"
                                class="form-control @(actualDateError != null ? "is-invalid" : "")"
-                               @bind="actualEndDate" />
+                               @bind="actualEndDate"
+                               disabled="@IsReadOnly" />
                     </div>
                 </div>
                 @if (actualDateError != null)
@@ -114,7 +121,8 @@
                            class="form-control @(actualHoursError != null ? "is-invalid" : "")"
                            @bind="actualHours"
                            min="1"
-                           placeholder="例: 25" />
+                           placeholder="例: 25"
+                           disabled="@IsReadOnly" />
                     @if (actualHoursError != null)
                     {
                         <div class="invalid-feedback">@actualHoursError</div>
@@ -124,19 +132,22 @@
         }
 
         <div class="modal-actions">
-            @if (isSaving)
+            @if (!IsReadOnly)
             {
-                <button class="btn btn-primary" disabled>
-                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    保存中...
-                </button>
+                @if (isSaving)
+                {
+                    <button class="btn btn-primary" disabled>
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        保存中...
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-success" @onclick="HandleSave">保存</button>
+                }
             }
-            else
-            {
-                <button class="btn btn-success" @onclick="HandleSave">保存</button>
-            }
-            <button class="btn btn-secondary" @onclick="HandleCancel">キャンセル</button>
-            @if (IsEditMode)
+            <button class="btn btn-secondary" @onclick="HandleCancel">@(IsReadOnly ? "閉じる" : "キャンセル")</button>
+            @if (IsEditMode && !IsReadOnly)
             {
                 <button class="btn btn-danger" @onclick="HandleDelete">削除</button>
             }
@@ -163,8 +174,11 @@
     [Parameter]
     public EventCallback OnCancel { get; set; }
 
+    [Parameter]
+    public bool IsReadOnly { get; set; } = false;
+
     private bool IsEditMode => ExistingTask != null;
-    private string ModalTitle => IsEditMode ? "タスク編集" : "タスク作成";
+    private string ModalTitle => IsReadOnly ? "タスク詳細（読み取り専用）" : (IsEditMode ? "タスク編集" : "タスク作成");
 
     private string title = string.Empty;
     private string description = string.Empty;
