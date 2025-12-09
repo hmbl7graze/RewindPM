@@ -5,133 +5,133 @@
 @using RewindPM.Web.Components.Shared
 @inject IMediator Mediator
 
-<Modal Title="@ModalTitle" @bind-IsVisible="IsVisible">
-    <div class="task-form">
+<Modal Title="@ModalTitle" @bind-IsVisible="IsVisible" Size="ModalSize.ExtraLarge">
+    <div class="task-form-layout">
         @if (!string.IsNullOrEmpty(errorMessage))
         {
-            <div class="alert alert-danger">@errorMessage</div>
+            <div class="alert alert-danger mb-3">@errorMessage</div>
         }
 
-        <div class="form-group">
-            <label for="taskTitle">タスク名 <span class="required">*</span></label>
+        <!-- Title Section (Top) -->
+        <div class="task-title-section">
+            @if (IsEditMode && ExistingTask != null)
+            {
+               @*  <div class="task-id-display">Task #@ExistingTask.TaskNumber</div> *@
+            }
+            <label class="form-label text-muted small fw-bold">タスク名</label>
             <input type="text"
-                   id="taskTitle"
-                   class="form-control @(titleError != null ? "is-invalid" : "")"
+                   class="form-control task-title-input @(titleError != null ? "is-invalid" : "")"
                    @bind="title"
                    maxlength="200"
-                   placeholder="タスク名を入力してください"
+                   placeholder="タスク名"
                    disabled="@IsReadOnly" />
             @if (titleError != null)
             {
-                <div class="invalid-feedback">@titleError</div>
+                <div class="invalid-feedback d-block">@titleError</div>
             }
         </div>
 
-        <div class="form-group">
-            <label for="taskDescription">説明</label>
-            <textarea id="taskDescription"
-                      class="form-control"
-                      @bind="description"
-                      rows="4"
-                      maxlength="5000"
-                      placeholder="タスクの説明を入力してください"
-                      disabled="@IsReadOnly"></textarea>
-        </div>
-
-        <div class="form-group">
-            <label for="taskStatus">ステータス</label>
-            <select id="taskStatus" class="form-control" @bind="status" disabled="@IsReadOnly">
-                <option value="@TaskStatus.Todo">TODO</option>
-                <option value="@TaskStatus.InProgress">進行中</option>
-                <option value="@TaskStatus.InReview">レビュー中</option>
-                <option value="@TaskStatus.Done">完了</option>
-            </select>
-        </div>
-
-        <div class="form-section">
-            <h4>予定期間</h4>
-            <div class="form-row">
-                <div class="form-group col-md-6">
-                    <label for="scheduledStartDate">開始日</label>
-                    <input type="date"
-                           id="scheduledStartDate"
-                           class="form-control @(scheduledDateError != null ? "is-invalid" : "")"
-                           @bind="scheduledStartDate"
-                           disabled="@IsReadOnly" />
-                </div>
-                <div class="form-group col-md-6">
-                    <label for="scheduledEndDate">終了日</label>
-                    <input type="date"
-                           id="scheduledEndDate"
-                           class="form-control @(scheduledDateError != null ? "is-invalid" : "")"
-                           @bind="scheduledEndDate"
-                           disabled="@IsReadOnly" />
+        <!-- Split Content -->
+        <div class="task-content-wrapper">
+            <!-- Left: Description -->
+            <div class="task-main-column">
+                <div class="description-container">
+                    <label class="form-label text-muted small fw-bold">説明</label>
+                    <textarea class="form-control description-textarea"
+                              @bind="description"
+                              maxlength="5000"
+                              placeholder="タスクの詳細な説明を入力してください..."
+                              disabled="@IsReadOnly"></textarea>
                 </div>
             </div>
-            @if (scheduledDateError != null)
-            {
-                <div class="text-danger small">@scheduledDateError</div>
-            }
-            <div class="form-group">
-                <label for="estimatedHours">予定工数（時間）</label>
-                <input type="number"
-                       id="estimatedHours"
-                       class="form-control @(estimatedHoursError != null ? "is-invalid" : "")"
-                       @bind="estimatedHours"
-                       min="1"
-                       placeholder="例: 20"
-                       disabled="@IsReadOnly" />
-                @if (estimatedHoursError != null)
-                {
-                    <div class="invalid-feedback">@estimatedHoursError</div>
-                }
-            </div>
-        </div>
 
-        @if (IsEditMode)
-        {
-            <div class="form-section">
-                <h4>実績期間</h4>
-                <div class="form-row">
-                    <div class="form-group col-md-6">
-                        <label for="actualStartDate">開始日</label>
-                        <input type="date"
-                               id="actualStartDate"
-                               class="form-control @(actualDateError != null ? "is-invalid" : "")"
-                               @bind="actualStartDate"
-                               disabled="@IsReadOnly" />
-                    </div>
-                    <div class="form-group col-md-6">
-                        <label for="actualEndDate">終了日</label>
-                        <input type="date"
-                               id="actualEndDate"
-                               class="form-control @(actualDateError != null ? "is-invalid" : "")"
-                               @bind="actualEndDate"
-                               disabled="@IsReadOnly" />
-                    </div>
+            <!-- Right: Metadata Sidebar -->
+            <div class="task-sidebar-column">
+                <!-- Status -->
+                <div class="sidebar-section">
+                    <h5>ステータス</h5>
+                    <select class="form-select text-sm" @bind="status" disabled="@IsReadOnly">
+                        <option value="@TaskStatus.Todo">TODO</option>
+                        <option value="@TaskStatus.InProgress">進行中</option>
+                        <option value="@TaskStatus.InReview">レビュー中</option>
+                        <option value="@TaskStatus.Done">完了</option>
+                    </select>
                 </div>
-                @if (actualDateError != null)
-                {
-                    <div class="text-danger small">@actualDateError</div>
-                }
-                <div class="form-group">
-                    <label for="actualHours">実績工数（時間）</label>
-                    <input type="number"
-                           id="actualHours"
-                           class="form-control @(actualHoursError != null ? "is-invalid" : "")"
-                           @bind="actualHours"
-                           min="1"
-                           placeholder="例: 25"
-                           disabled="@IsReadOnly" />
-                    @if (actualHoursError != null)
+
+                <!-- Schedule -->
+                <div class="sidebar-section">
+                    <h5>予定</h5>
+                    <div class="d-flex gap-2">
+                        <div class="mb-2 flex-fill">
+                            <label class="form-label small text-muted">開始日</label>
+                            <input type="date" class="form-control form-control-sm @(scheduledDateError != null ? "is-invalid" : "")"
+                                   @bind="scheduledStartDate" disabled="@IsReadOnly" />
+                        </div>
+                        <div class="mb-2 flex-fill">
+                            <label class="form-label small text-muted">終了日</label>
+                            <input type="date" class="form-control form-control-sm @(scheduledDateError != null ? "is-invalid" : "")"
+                                   @bind="scheduledEndDate" disabled="@IsReadOnly" />
+                        </div>
+                    </div>
+                    @if (scheduledDateError != null)
                     {
-                        <div class="invalid-feedback">@actualHoursError</div>
+                        <div class="text-danger small">@scheduledDateError</div>
                     }
+                    <div>
+                        <label class="form-label small text-muted">予定工数 (h)</label>
+                        <input type="number" class="form-control form-control-sm @(estimatedHoursError != null ? "is-invalid" : "")"
+                               @bind="estimatedHours" min="1" disabled="@IsReadOnly" />
+                         @if (estimatedHoursError != null)
+                        {
+                            <div class="invalid-feedback d-block">@estimatedHoursError</div>
+                        }
+                    </div>
                 </div>
-            </div>
-        }
 
-        <div class="modal-actions">
+                <!-- Actuals (Only in Edit Mode) -->
+                @if (IsEditMode)
+                {
+                    <div class="sidebar-section">
+                        <h5>実績</h5>
+                        <div class="d-flex gap-2">
+                            <div class="mb-2 flex-fill">
+                                <label class="form-label small text-muted">実績開始</label>
+                                <input type="date" class="form-control form-control-sm @(actualDateError != null ? "is-invalid" : "")"
+                                       @bind="actualStartDate" disabled="@IsReadOnly" />
+                            </div>
+                            <div class="mb-2 flex-fill">
+                                <label class="form-label small text-muted">実績終了</label>
+                                <input type="date" class="form-control form-control-sm @(actualDateError != null ? "is-invalid" : "")"
+                                       @bind="actualEndDate" disabled="@IsReadOnly" />
+                            </div>
+                        </div>
+                        @if (actualDateError != null)
+                        {
+                            <div class="text-danger small">@actualDateError</div>
+                        }
+                         <div>
+                            <label class="form-label small text-muted">実績工数 (h)</label>
+                            <input type="number" class="form-control form-control-sm @(actualHoursError != null ? "is-invalid" : "")"
+                                   @bind="actualHours" min="1" disabled="@IsReadOnly" />
+                             @if (actualHoursError != null)
+                            {
+                                <div class="invalid-feedback d-block">@actualHoursError</div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="modal-footer-actions">
+            @if (IsEditMode && !IsReadOnly)
+            {
+                <button class="btn btn-outline-danger me-auto" @onclick="HandleDelete">削除</button>
+            }
+            
+            <button class="btn btn-outline-secondary" @onclick="HandleCancel">@(IsReadOnly ? "閉じる" : "キャンセル")</button>
+            
             @if (!IsReadOnly)
             {
                 @if (isSaving)
@@ -145,11 +145,6 @@
                 {
                     <button class="btn btn-success" @onclick="HandleSave">保存</button>
                 }
-            }
-            <button class="btn btn-secondary" @onclick="HandleCancel">@(IsReadOnly ? "閉じる" : "キャンセル")</button>
-            @if (IsEditMode && !IsReadOnly)
-            {
-                <button class="btn btn-danger" @onclick="HandleDelete">削除</button>
             }
         </div>
     </div>
