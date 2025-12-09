@@ -32,11 +32,17 @@ else
             <a href="/projects" class="back-link">← Back to Projects</a>
         </div>
         <div class="header-center">
-            <h1 class="project-title">@project.Title</h1>
+            <h1 class="project-title">
+                @project.Title
+                <a href="/projects/@Id/edit" class="btn-icon header-edit-btn" title="Edit Project">
+                    Edit
+                </a>
+            </h1>
         </div>
         <div class="header-right">
-            <a href="/projects/@Id/edit" class="btn btn-secondary">Edit Project</a>
-            <button class="btn btn-success" @onclick="ShowCreateTaskModal" disabled="@_isViewingPast">Add Task</button>
+            <button class="btn @(_isRetrospectiveMode ? "btn-primary" : "btn-outline-secondary")" @onclick="ToggleRetrospectiveMode">
+                Retrospective
+            </button>
         </div>
     </div>
 
@@ -51,11 +57,20 @@ else
         }
     </div>
 
-    <!-- タイムラインコントロール（リワインド機能） -->
-    <TimelineControl
-        CurrentDate="_currentViewDate"
-        EditDates="_editDates"
-        OnDateChanged="HandleDateChanged" />
+    <!-- タイムラインコントロール（リワインド機能） - 振り返りモード時のみ表示 -->
+    @if (_isRetrospectiveMode)
+    {
+        <div class="retrospective-panel">
+            <div class="retrospective-header">
+                <h3>Retrospective Mode</h3>
+                <p class="text-muted">Select a date to view the project state at that time.</p>
+            </div>
+            <TimelineControl
+                CurrentDate="_currentViewDate"
+                EditDates="_editDates"
+                OnDateChanged="HandleDateChanged" />
+        </div>
+    }
 
     <!-- 過去表示中の警告バナー -->
     @if (_isViewingPast)
@@ -68,7 +83,15 @@ else
 
     <!-- ガントチャート表示エリア -->
     <div class="tasks-section">
-        <h2 class="section-title">Gantt Chart</h2>
+        <div class="view-header">
+            <div class="view-tabs">
+                <button class="view-tab active">Gantt Chart</button>
+                <button class="view-tab disabled" title="Coming Soon">Kanban</button>
+            </div>
+            <div class="view-actions">
+                <button class="btn btn-success" @onclick="ShowCreateTaskModal" disabled="@_isViewingPast">Add Task</button>
+            </div>
+        </div>
 
         @if (isLoadingTasks)
         {
@@ -114,6 +137,7 @@ else
     private DateTime? _currentViewDate = null; // null = 最新
     private List<DateTime> _editDates = new();
     private bool _isViewingPast => _currentViewDate.HasValue;
+    private bool _isRetrospectiveMode = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -284,6 +308,18 @@ else
         catch (Exception ex)
         {
             errorMessage = $"タスクの期間更新に失敗しました: {ex.Message}";
+        }
+    }
+
+    private async Task ToggleRetrospectiveMode()
+    {
+        _isRetrospectiveMode = !_isRetrospectiveMode;
+        
+        // 振り返りモードを終了する際は、最新状態に戻す
+        if (!_isRetrospectiveMode && _isViewingPast)
+        {
+            _currentViewDate = null;
+            await LoadTasks();
         }
     }
 }
