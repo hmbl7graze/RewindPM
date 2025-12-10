@@ -3,6 +3,7 @@ using RewindPM.Application.Write.Commands.Tasks;
 using RewindPM.Application.Write.Repositories;
 using RewindPM.Domain.Aggregates;
 using RewindPM.Domain.ValueObjects;
+using RewindPM.Domain.Common;
 
 namespace RewindPM.Application.Write.CommandHandlers.Tasks;
 
@@ -12,10 +13,12 @@ namespace RewindPM.Application.Write.CommandHandlers.Tasks;
 public class ChangeTaskActualPeriodCommandHandler : IRequestHandler<ChangeTaskActualPeriodCommand>
 {
     private readonly IAggregateRepository _repository;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public ChangeTaskActualPeriodCommandHandler(IAggregateRepository repository)
+    public ChangeTaskActualPeriodCommandHandler(IAggregateRepository repository, IDateTimeProvider dateTimeProvider)
     {
         _repository = repository;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task Handle(ChangeTaskActualPeriodCommand request, CancellationToken cancellationToken)
@@ -36,7 +39,7 @@ public class ChangeTaskActualPeriodCommandHandler : IRequestHandler<ChangeTaskAc
         );
 
         // 実績期間変更
-        task.ChangeActualPeriod(actualPeriod, request.ChangedBy);
+        task.ChangeActualPeriod(actualPeriod, request.ChangedBy, _dateTimeProvider);
 
         // 保存
         await _repository.SaveAsync(task);

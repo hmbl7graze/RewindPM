@@ -1,11 +1,13 @@
 using RewindPM.Domain.Aggregates;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
+using RewindPM.Domain.Test.TestHelpers;
 
 namespace RewindPM.Domain.Test.Aggregates;
 
 public class ProjectAggregateTests
 {
+    private readonly IDateTimeProvider _dateTimeProvider = new TestDateTimeProvider();
     [Fact(DisplayName = "有効な値でプロジェクトを作成できる")]
     public void Create_WithValidValues_ShouldCreateProject()
     {
@@ -16,7 +18,7 @@ public class ProjectAggregateTests
         var createdBy = "user123";
 
         // Act
-        var project = ProjectAggregate.Create(id, title, description, createdBy);
+        var project = ProjectAggregate.Create(id, title, description, createdBy, _dateTimeProvider);
 
         // Assert
         Assert.Equal(id, project.Id);
@@ -36,7 +38,7 @@ public class ProjectAggregateTests
         var createdBy = "user123";
 
         // Act
-        var project = ProjectAggregate.Create(id, title, description, createdBy);
+        var project = ProjectAggregate.Create(id, title, description, createdBy, _dateTimeProvider);
 
         // Assert
         Assert.Single(project.UncommittedEvents);
@@ -61,7 +63,7 @@ public class ProjectAggregateTests
 
         // Act & Assert
         var exception = Assert.Throws<DomainException>(() =>
-            ProjectAggregate.Create(id, title, description, createdBy));
+            ProjectAggregate.Create(id, title, description, createdBy, _dateTimeProvider));
         Assert.Equal("プロジェクトのタイトルは必須です", exception.Message);
     }
 
@@ -76,7 +78,7 @@ public class ProjectAggregateTests
 
         // Act & Assert
         var exception = Assert.Throws<DomainException>(() =>
-            ProjectAggregate.Create(id, title, description, createdBy));
+            ProjectAggregate.Create(id, title, description, createdBy, _dateTimeProvider));
         Assert.Equal("プロジェクトのタイトルは必須です", exception.Message);
     }
 
@@ -91,7 +93,7 @@ public class ProjectAggregateTests
 
         // Act & Assert
         var exception = Assert.Throws<DomainException>(() =>
-            ProjectAggregate.Create(id, title, description, createdBy));
+            ProjectAggregate.Create(id, title, description, createdBy, _dateTimeProvider));
         Assert.Equal("作成者のユーザーIDは必須です", exception.Message);
     }
 
@@ -105,7 +107,7 @@ public class ProjectAggregateTests
         var createdBy = "user123";
 
         // Act
-        var project = ProjectAggregate.Create(id, title, description, createdBy);
+        var project = ProjectAggregate.Create(id, title, description, createdBy, _dateTimeProvider);
 
         // Assert
         Assert.Equal(string.Empty, project.Description);
@@ -115,7 +117,7 @@ public class ProjectAggregateTests
     public void Update_WithValidValues_ShouldUpdateProject()
     {
         // Arrange
-        var project = ProjectAggregate.Create(Guid.NewGuid(), "旧タイトル", "旧説明", "user123");
+        var project = ProjectAggregate.Create(Guid.NewGuid(), "旧タイトル", "旧説明", "user123", _dateTimeProvider);
         project.ClearUncommittedEvents();
 
         var newTitle = "新タイトル";
@@ -123,7 +125,7 @@ public class ProjectAggregateTests
         var updatedBy = "user456";
 
         // Act
-        project.Update(newTitle, newDescription, updatedBy);
+        project.Update(newTitle, newDescription, updatedBy, _dateTimeProvider);
 
         // Assert
         Assert.Equal(newTitle, project.Title);
@@ -136,7 +138,7 @@ public class ProjectAggregateTests
     public void Update_ShouldRaiseProjectUpdatedEvent()
     {
         // Arrange
-        var project = ProjectAggregate.Create(Guid.NewGuid(), "旧タイトル", "旧説明", "user123");
+        var project = ProjectAggregate.Create(Guid.NewGuid(), "旧タイトル", "旧説明", "user123", _dateTimeProvider);
         project.ClearUncommittedEvents();
 
         var newTitle = "新タイトル";
@@ -144,7 +146,7 @@ public class ProjectAggregateTests
         var updatedBy = "user456";
 
         // Act
-        project.Update(newTitle, newDescription, updatedBy);
+        project.Update(newTitle, newDescription, updatedBy, _dateTimeProvider);
 
         // Assert
         Assert.Single(project.UncommittedEvents);
@@ -162,14 +164,14 @@ public class ProjectAggregateTests
     public void Update_WhenTitleIsNull_ShouldThrowDomainException()
     {
         // Arrange
-        var project = ProjectAggregate.Create(Guid.NewGuid(), "旧タイトル", "旧説明", "user123");
+        var project = ProjectAggregate.Create(Guid.NewGuid(), "旧タイトル", "旧説明", "user123", _dateTimeProvider);
         string newTitle = null!;
         var newDescription = "新説明";
         var updatedBy = "user456";
 
         // Act & Assert
         var exception = Assert.Throws<DomainException>(() =>
-            project.Update(newTitle, newDescription, updatedBy));
+            project.Update(newTitle, newDescription, updatedBy, _dateTimeProvider));
         Assert.Equal("プロジェクトのタイトルは必須です", exception.Message);
     }
 
@@ -177,14 +179,14 @@ public class ProjectAggregateTests
     public void Update_WhenUpdatedByIsNull_ShouldThrowDomainException()
     {
         // Arrange
-        var project = ProjectAggregate.Create(Guid.NewGuid(), "旧タイトル", "旧説明", "user123");
+        var project = ProjectAggregate.Create(Guid.NewGuid(), "旧タイトル", "旧説明", "user123", _dateTimeProvider);
         var newTitle = "新タイトル";
         var newDescription = "新説明";
         string updatedBy = null!;
 
         // Act & Assert
         var exception = Assert.Throws<DomainException>(() =>
-            project.Update(newTitle, newDescription, updatedBy));
+            project.Update(newTitle, newDescription, updatedBy, _dateTimeProvider));
         Assert.Equal("更新者のユーザーIDは必須です", exception.Message);
     }
 

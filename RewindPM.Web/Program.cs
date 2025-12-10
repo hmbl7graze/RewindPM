@@ -124,7 +124,7 @@ using (var scope = app.Services.CreateScope())
             eventPublisher.Subscribe<TaskActualPeriodChanged>(
                 new ScopedEventHandlerAdapter<TaskActualPeriodChanged, TaskActualPeriodChangedEventHandler>(services));
 
-            var seedData = new SeedData(mediator);
+            var seedData = new SeedData(mediator, app.Services);
             await seedData.SeedAsync();
             Console.WriteLine("[Startup] Sample data seeded successfully.");
         }

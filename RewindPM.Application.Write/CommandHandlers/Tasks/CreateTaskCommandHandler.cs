@@ -3,6 +3,7 @@ using RewindPM.Application.Write.Commands.Tasks;
 using RewindPM.Application.Write.Repositories;
 using RewindPM.Domain.Aggregates;
 using RewindPM.Domain.ValueObjects;
+using RewindPM.Domain.Common;
 
 namespace RewindPM.Application.Write.CommandHandlers.Tasks;
 
@@ -12,10 +13,12 @@ namespace RewindPM.Application.Write.CommandHandlers.Tasks;
 public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Guid>
 {
     private readonly IAggregateRepository _repository;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public CreateTaskCommandHandler(IAggregateRepository repository)
+    public CreateTaskCommandHandler(IAggregateRepository repository, IDateTimeProvider dateTimeProvider)
     {
         _repository = repository;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Guid> Handle(CreateTaskCommand request, CancellationToken cancellationToken)
@@ -34,7 +37,8 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Guid>
             request.Title,
             request.Description,
             scheduledPeriod,
-            request.CreatedBy
+            request.CreatedBy,
+            _dateTimeProvider
         );
 
         // 実績期間が設定されている場合は、実績を設定
@@ -45,7 +49,7 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Guid>
                 request.ActualEndDate,
                 request.ActualHours
             );
-            task.ChangeActualPeriod(actualPeriod, request.CreatedBy);
+            task.ChangeActualPeriod(actualPeriod, request.CreatedBy, _dateTimeProvider);
         }
 
         // リポジトリに保存
