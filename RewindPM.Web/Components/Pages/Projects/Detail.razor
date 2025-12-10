@@ -8,8 +8,10 @@
 @using RewindPM.Web.Components.Pages.Tasks
 @using RewindPM.Web.Components.Tasks
 @using RewindPM.Web.Components.Shared
+@using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus
 @inject IMediator Mediator
 @inject NavigationManager Navigation
+@inject ILogger<Detail> Logger
 
 <PageTitle>@(project?.Title ?? "プロジェクト詳細") - RewindPM</PageTitle>
 
@@ -74,8 +76,8 @@ else
     <div class="tasks-section">
         <div class="view-header">
             <div class="view-tabs">
-                <button class="view-tab active">Gantt Chart</button>
-                <button class="view-tab disabled" title="Coming Soon">Kanban</button>
+                <button class="view-tab @(_viewType == "Gantt" ? "active" : "")" @onclick='() => ToggleView("Gantt")'>Gantt Chart</button>
+                <button class="view-tab @(_viewType == "Kanban" ? "active" : "")" @onclick='() => ToggleView("Kanban")'>Kanban</button>
             </div>
             <div class="view-actions">
                 <button class="btn btn-success" @onclick="ShowCreateTaskModal" disabled="@_isViewingPast">Add Task</button>
@@ -86,13 +88,20 @@ else
         {
             <p><em>タスクを読み込み中...</em></p>
         }
-        else
+        else if (_viewType == "Gantt")
         {
             <GanttChart Tasks="@(tasks ?? new List<TaskDto>())"
                         OnTaskClick="ShowTaskDetailModal"
                         OnBarResize="HandleBarResize"
                         ViewDate="_currentViewDate"
                         IsReadOnly="_isViewingPast" />
+        }
+        else
+        {
+            <KanbanBoard Tasks="@(tasks ?? new List<TaskDto>())"
+                         OnTaskClick="ShowTaskDetailModal"
+                         OnTaskStatusChanged="HandleTaskStatusChanged"
+                         IsReadOnly="_isViewingPast" />
         }
     </div>
 
@@ -127,6 +136,39 @@ else
     private List<DateTime> _editDates = new();
     private bool _isViewingPast => _currentViewDate.HasValue;
     private bool _isRetrospectiveMode = false;
+    private string _viewType = "Gantt";
+
+    private void ToggleView(string viewType)
+    {
+        _viewType = viewType;
+    }
+
+    private async Task HandleTaskStatusChanged((TaskDto task, TaskStatus newStatus) changeData)
+    {
+        if (_isViewingPast) return;
+
+        try
+        {
+            var command = new ChangeTaskStatusCommand(
+                TaskId: changeData.task.Id,
+                NewStatus: changeData.newStatus,
+                ChangedBy: GetCurrentUserId() // 認証サービスから取得
+            );
+
+            await Mediator.Send(command);
+            
+            // タスク一覧を再読み込み
+            await LoadTasks();
+            // 編集日一覧も更新
+            await LoadEditDates();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to update task status for task {TaskId}", changeData.task.Id);
+            errorMessage = "ステータスの更新に失敗しました。もう一度お試しください。";
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -310,5 +352,14 @@ else
             _currentViewDate = null;
             await LoadTasks();
         }
+    }
+
+    /// <summary>
+    /// 現在のユーザーIDを取得（未実装）
+    /// </summary>
+    private string GetCurrentUserId()
+    {
+        // TODO: 認証サービスから実際のユーザーIDを取得する
+        throw new NotImplementedException("ユーザー認証が未実装です");
     }
 }
