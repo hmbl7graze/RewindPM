@@ -8,6 +8,7 @@
 @using RewindPM.Web.Components.Pages.Tasks
 @using RewindPM.Web.Components.Tasks
 @using RewindPM.Web.Components.Shared
+@using RewindPM.Web.Components.Statistics
 @inject IMediator Mediator
 @inject NavigationManager Navigation
 
@@ -57,7 +58,7 @@ else
         }
     </div>
 
-    <!-- タイムラインコントロール（リワインド機能） - 振り返りモード時のみ表示 -->
+    <!-- タイムラインコントロール(リワインド機能) - 振り返りモード時のみ表示 -->
     @if (_isRetrospectiveMode)
     {
         <div class="retrospective-panel">
@@ -68,31 +69,37 @@ else
         </div>
     }
 
-
-
-    <!-- ガントチャート表示エリア -->
+    <!-- タスクビュー表示エリア -->
     <div class="tasks-section">
         <div class="view-header">
             <div class="view-tabs">
-                <button class="view-tab active">Gantt Chart</button>
+                <button class="view-tab @(_currentView == "gantt" ? "active" : "")" @onclick='() => SwitchView("gantt")'>Gantt Chart</button>
                 <button class="view-tab disabled" title="Coming Soon">Kanban</button>
+                <button class="view-tab @(_currentView == "statistics" ? "active" : "")" @onclick='() => SwitchView("statistics")'>Statistics</button>
             </div>
             <div class="view-actions">
                 <button class="btn btn-success" @onclick="ShowCreateTaskModal" disabled="@_isViewingPast">Add Task</button>
             </div>
         </div>
 
-        @if (isLoadingTasks)
+        @if (_currentView == "gantt")
         {
-            <p><em>タスクを読み込み中...</em></p>
+            @if (isLoadingTasks)
+            {
+                <p><em>タスクを読み込み中...</em></p>
+            }
+            else
+            {
+                <GanttChart Tasks="@(tasks ?? new List<TaskDto>())"
+                            OnTaskClick="ShowTaskDetailModal"
+                            OnBarResize="HandleBarResize"
+                            ViewDate="_currentViewDate"
+                            IsReadOnly="_isViewingPast" />
+            }
         }
-        else
+        else if (_currentView == "statistics")
         {
-            <GanttChart Tasks="@(tasks ?? new List<TaskDto>())"
-                        OnTaskClick="ShowTaskDetailModal"
-                        OnBarResize="HandleBarResize"
-                        ViewDate="_currentViewDate"
-                        IsReadOnly="_isViewingPast" />
+            <ProjectStatisticsDashboard ProjectId="@Id" AsOfDate="@(_isRetrospectiveMode ? _currentViewDate : null)" />
         }
     </div>
 
@@ -127,6 +134,9 @@ else
     private List<DateTime> _editDates = new();
     private bool _isViewingPast => _currentViewDate.HasValue;
     private bool _isRetrospectiveMode = false;
+    
+    // ビュー切り替え用の状態
+    private string _currentView = "gantt";
 
     protected override async Task OnInitializedAsync()
     {
@@ -298,6 +308,11 @@ else
         {
             errorMessage = $"タスクの期間更新に失敗しました: {ex.Message}";
         }
+    }
+
+    private void SwitchView(string viewName)
+    {
+        _currentView = viewName;
     }
 
     private async Task ToggleRetrospectiveMode()

@@ -1,0 +1,194 @@
+@using MediatR
+@using RewindPM.Application.Read.DTOs
+@using RewindPM.Application.Read.Queries.Statistics
+
+@inject IMediator Mediator
+
+@if (_isLoading)
+{
+    <div class="statistics-loading">
+        <p>統計情報を読み込み中...</p>
+    </div>
+}
+else if (_statistics != null)
+{
+    <div class="statistics-dashboard">
+        <h3>プロジェクト統計</h3>
+        
+        <div class="statistics-grid">
+            <!-- タスク統計カード -->
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <h4>タスク進捗</h4>
+                </div>
+                <div class="stat-card-content">
+                    <div class="stat-primary">
+                        <span class="stat-value">@_statistics.CompletionRate%</span>
+                        <span class="stat-label">完了率</span>
+                    </div>
+                    <div class="stat-details">
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">合計:</span>
+                            <span class="stat-detail-value">@_statistics.TotalTasks</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">完了:</span>
+                            <span class="stat-detail-value stat-completed">@_statistics.CompletedTasks</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">進行中:</span>
+                            <span class="stat-detail-value stat-in-progress">@_statistics.InProgressTasks</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">レビュー中:</span>
+                            <span class="stat-detail-value stat-in-review">@_statistics.InReviewTasks</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">未着手:</span>
+                            <span class="stat-detail-value stat-todo">@_statistics.TodoTasks</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 工数統計カード -->
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <h4>工数統計</h4>
+                </div>
+                <div class="stat-card-content">
+                    <div class="stat-primary">
+                        <span class="stat-value @GetOverrunClass()">@_statistics.OverrunRate%</span>
+                        <span class="stat-label">オーバーラン率</span>
+                    </div>
+                    <div class="stat-details">
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">予定工数:</span>
+                            <span class="stat-detail-value">@_statistics.TotalEstimatedHours h</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">実績工数:</span>
+                            <span class="stat-detail-value">@_statistics.TotalActualHours h</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">残予定工数:</span>
+                            <span class="stat-detail-value">@_statistics.RemainingEstimatedHours h</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">工数差分:</span>
+                            <span class="stat-detail-value @GetOverrunClass()">@GetHoursOverrunText()</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- スケジュール統計カード -->
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <h4>スケジュール統計</h4>
+                </div>
+                <div class="stat-card-content">
+                    <div class="stat-primary">
+                        <span class="stat-value @GetOnTimeRateClass()">@_statistics.OnTimeRate%</span>
+                        <span class="stat-label">期限内完了率</span>
+                    </div>
+                    <div class="stat-details">
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">期限内:</span>
+                            <span class="stat-detail-value stat-on-time">@_statistics.OnTimeTasks</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">遅延:</span>
+                            <span class="stat-detail-value stat-delayed">@_statistics.DelayedTasks</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">平均遅延:</span>
+                            <span class="stat-detail-value">@_statistics.AverageDelayDays 日</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        @if (_statistics.AsOfDate < DateTime.UtcNow.Date)
+        {
+            <div class="rewind-notice">
+                <p>⏰ リワインド表示中: @_statistics.AsOfDate.ToString("yyyy年MM月dd日") 時点の統計</p>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="statistics-error">
+        <p>統計情報を取得できませんでした。</p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public required Guid ProjectId { get; set; }
+    
+    [Parameter]
+    public DateTime? AsOfDate { get; set; }
+
+    private ProjectStatisticsDetailDto? _statistics;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStatisticsAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadStatisticsAsync();
+    }
+
+    private async Task LoadStatisticsAsync()
+    {
+        _isLoading = true;
+        
+        try
+        {
+            var query = new GetProjectStatisticsDetailQuery(ProjectId, AsOfDate);
+            _statistics = await Mediator.Send(query);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string GetOverrunClass()
+    {
+        if (_statistics == null) return "";
+        
+        if (_statistics.HoursOverrun > 0)
+            return "stat-over";
+        else if (_statistics.HoursOverrun < 0)
+            return "stat-under";
+        
+        return "";
+    }
+
+    private string GetHoursOverrunText()
+    {
+        if (_statistics == null) return "";
+        
+        var hours = _statistics.HoursOverrun;
+        return hours > 0 ? $"+{hours} h" : $"{hours} h";
+    }
+
+    private string GetOnTimeRateClass()
+    {
+        if (_statistics == null) return "";
+        
+        if (_statistics.OnTimeRate >= 80)
+            return "stat-good";
+        else if (_statistics.OnTimeRate >= 60)
+            return "stat-warning";
+        
+        return "stat-bad";
+    }
+}
