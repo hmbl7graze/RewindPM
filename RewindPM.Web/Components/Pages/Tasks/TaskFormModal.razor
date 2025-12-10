@@ -261,7 +261,7 @@
         // 予定期間の検証
         if (scheduledStartDate.HasValue && scheduledEndDate.HasValue)
         {
-            if (scheduledEndDate < scheduledStartDate)
+            if (scheduledEndDate <= scheduledStartDate)
             {
                 scheduledDateError = "終了日は開始日より後の日付を指定してください。";
                 isValid = false;
@@ -278,7 +278,7 @@
         // 実績期間の検証（新規作成・編集モード共通）
         if (actualStartDate.HasValue && actualEndDate.HasValue)
         {
-            if (actualEndDate < actualStartDate)
+            if (actualEndDate <= actualStartDate)
             {
                 actualDateError = "終了日は開始日より後の日付を指定してください。";
                 isValid = false;
