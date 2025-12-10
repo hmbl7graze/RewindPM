@@ -5,12 +5,12 @@
 }
 
 .navbar-container {
-    max-width: 1280px;
-    margin: 0 auto;
+    width: 100%;
+    margin: 0;
     padding: 0 2rem;
     display: flex;
     align-items: center;
-    height: 64px;
+    height: 16px;
 }
 
 /* Brand */
@@ -29,129 +29,4 @@
 
 .navbar-brand a:hover {
     opacity: 0.8;
-}
-
-/* Mobile Toggler */
-.navbar-toggler {
-    display: none;
-}
-
-.navbar-toggler-label {
-    display: none;
-    flex-direction: column;
-    cursor: pointer;
-    margin-left: auto;
-}
-
-.navbar-toggler-label span {
-    width: 24px;
-    height: 2px;
-    background-color: var(--text-primary);
-    margin: 3px 0;
-    transition: 0.3s;
-}
-
-/* Nav Menu Items */
-.navbar-menu {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-left: auto;
-}
-
-.nav-link {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    color: var(--text-secondary);
-    text-decoration: none;
-    border-radius: var(--radius);
-    transition: all 0.2s ease;
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.nav-link:hover {
-    background-color: var(--bg-subtle);
-    color: var(--text-primary);
-}
-
-.nav-link.active {
-    background-color: var(--bg-subtle);
-    color: var(--primary);
-    font-weight: 600;
-}
-
-.nav-icon {
-    font-size: 1.1rem;
-}
-
-.nav-text {
-    white-space: nowrap;
-}
-
-/* Mobile Response */
-@media (max-width: 768px) {
-    .navbar-container {
-        padding: 0 1rem;
-    }
-
-    .navbar-toggler-label {
-        display: flex;
-    }
-
-    .navbar-menu {
-        position: fixed;
-        top: 65px;
-        left: 0;
-        right: 0;
-        background-color: var(--bg-surface);
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0;
-        padding: 1rem;
-        border-bottom: 1px solid var(--border-color);
-        box-shadow: var(--shadow-md);
-        transform: translateY(-150%);
-        opacity: 0;
-        transition: all 0.3s ease;
-        pointer-events: none;
-    }
-
-    .navbar-toggler:checked~.navbar-menu {
-        transform: translateY(0);
-        opacity: 1;
-        pointer-events: all;
-    }
-
-    .nav-link {
-        padding: 0.75rem 1rem;
-        border-radius: var(--radius);
-    }
-
-    /* Hamburger Animation */
-    .navbar-toggler:checked~.navbar-toggler-label span:nth-child(1) {
-        transform: rotate(-45deg) translate(-5px, 6px);
-    }
-
-    .navbar-toggler:checked~.navbar-toggler-label span:nth-child(2) {
-        opacity: 0;
-    }
-
-    .navbar-toggler:checked~.navbar-toggler-label span:nth-child(3) {
-        transform: rotate(45deg) translate(-5px, -6px);
-    }
-}
-
-/* Tablet */
-@media (min-width: 769px) and (max-width: 1023px) {
-    /* Optional adjustments */
-}
-
-/* Large Screens */
-@media (min-width: 1400px) {
-    .navbar-container {
-        max-width: 1400px;
-    }
 }
