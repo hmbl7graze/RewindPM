@@ -11,6 +11,7 @@
 @using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus
 @inject IMediator Mediator
 @inject NavigationManager Navigation
+@inject ILogger<Detail> Logger
 
 <PageTitle>@(project?.Title ?? "プロジェクト詳細") - RewindPM</PageTitle>
 
@@ -151,7 +152,7 @@ else
             var command = new ChangeTaskStatusCommand(
                 TaskId: changeData.task.Id,
                 NewStatus: changeData.newStatus,
-                ChangedBy: "current-user" // TODO: 実際のユーザーIDを使用
+                ChangedBy: GetCurrentUserId() // 認証サービスから取得
             );
 
             await Mediator.Send(command);
@@ -164,7 +165,8 @@ else
         }
         catch (Exception ex)
         {
-            errorMessage = $"ステータス更新に失敗しました: {ex.Message}";
+            Logger.LogError(ex, "Failed to update task status for task {TaskId}", changeData.task.Id);
+            errorMessage = "ステータスの更新に失敗しました。もう一度お試しください。";
         }
     }
 
@@ -350,5 +352,14 @@ else
             _currentViewDate = null;
             await LoadTasks();
         }
+    }
+
+    /// <summary>
+    /// 現在のユーザーIDを取得（未実装）
+    /// </summary>
+    private string GetCurrentUserId()
+    {
+        // TODO: 認証サービスから実際のユーザーIDを取得する
+        throw new NotImplementedException("ユーザー認証が未実装です");
     }
 }
