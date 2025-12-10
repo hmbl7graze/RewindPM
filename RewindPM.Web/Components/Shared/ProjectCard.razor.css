@@ -73,3 +73,22 @@
     padding: 0.25rem 0.5rem;
     border-radius: var(--radius);
 }
+
+.project-card-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.stat-item {
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.stat-completion {
+    font-weight: 600;
+    color: var(--primary);
+}

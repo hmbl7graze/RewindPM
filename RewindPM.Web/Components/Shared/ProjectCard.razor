@@ -1,4 +1,9 @@
 @using RewindPM.Application.Read.DTOs
+@using MediatR
+@using RewindPM.Application.Read.Queries.Statistics
+@using Microsoft.Extensions.Logging
+@inject IMediator Mediator
+@inject ILogger<ProjectCard> Logger
 
 <a href="/projects/@Project.Id" class="project-card-link">
     <div class="project-card">
@@ -9,9 +14,35 @@
             <p class="project-card-description">@TruncatedDescription</p>
         </div>
         <div class="project-card-footer">
-            <span class="project-card-stat text-muted">
-                <small>TODO: タスク統計（未実装）</small>
-            </span>
+            @if (statistics == null)
+            {
+                <span class="project-card-stat text-muted">
+                    <small>統計を読み込み中...</small>
+                </span>
+            }
+            else
+            {
+                <div class="project-card-stats">
+                    <span class="stat-item">
+                        📊 @statistics.TotalTasks Tasks
+                    </span>
+                    <span class="stat-item">
+                        ✓ @statistics.CompletedTasks 完了
+                    </span>
+                    @if (statistics.InProgressTasks > 0)
+                    {
+                        <span class="stat-item">
+                            ⏳ @statistics.InProgressTasks 進行中
+                        </span>
+                    }
+                    @if (statistics.TotalTasks > 0)
+                    {
+                        <span class="stat-item stat-completion">
+                            完了率: @statistics.CompletionRate.ToString("F1")%
+                        </span>
+                    }
+                </div>
+            }
         </div>
     </div>
 </a>
@@ -19,6 +50,22 @@
 @code {
     [Parameter]
     public required ProjectDto Project { get; set; }
+
+    private ProjectStatisticsSummaryDto? statistics;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 統計情報を取得
+        try
+        {
+            statistics = await Mediator.Send(new GetProjectStatisticsSummaryQuery(Project.Id));
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "プロジェクトカードの統計情報取得に失敗しました。ProjectId: {ProjectId}", Project.Id);
+            statistics = null;
+        }
+    }
 
     private string TruncatedDescription
     {

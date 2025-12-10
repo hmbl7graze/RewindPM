@@ -28,6 +28,9 @@ public static class DependencyInjection
         // IReadModelRepositoryの実装としてReadModelRepositoryを登録（スコープド：DbContextを使用するため）
         services.AddScoped<IReadModelRepository, ReadModelRepository>();
 
+        // IProjectStatisticsRepositoryの実装としてProjectStatisticsRepositoryを登録
+        services.AddScoped<IProjectStatisticsRepository, ProjectStatisticsRepository>();
+
         return services;
     }
 }

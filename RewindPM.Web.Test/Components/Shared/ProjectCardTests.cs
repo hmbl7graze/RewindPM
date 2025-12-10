@@ -1,7 +1,10 @@
 using Bunit;
+using MediatR;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
 using RewindPM.Application.Read.DTOs;
+using RewindPM.Application.Read.Queries.Statistics;
 using RewindPM.Web.Components.Shared;
 
 namespace RewindPM.Web.Test.Components.Shared;
@@ -21,6 +24,9 @@ public class ProjectCardTests : Bunit.TestContext
             UpdatedAt = null,
             CreatedBy = "test-user"
         };
+
+        var mockMediator = Substitute.For<IMediator>();
+        Services.AddSingleton(mockMediator);
 
         // Act
         var cut = RenderComponent<ProjectCard>(parameters => parameters
@@ -45,14 +51,17 @@ public class ProjectCardTests : Bunit.TestContext
             CreatedBy = "test-user"
         };
 
+        var mockMediator = Substitute.For<IMediator>();
+        Services.AddSingleton(mockMediator);
+
         // Act
         var cut = RenderComponent<ProjectCard>(parameters => parameters
             .Add(p => p.Project, project));
 
         // Assert
+        // 統計情報が読み込まれるまでは「統計を読み込み中...」が表示される
         var stat = cut.Find(".project-card-stat");
-        Assert.Contains("TODO", stat.TextContent);
-        Assert.Contains("タスク統計", stat.TextContent);
+        Assert.Contains("統計を読み込み中", stat.TextContent);
     }
 
     [Fact(DisplayName = "長い説明文を切り詰めて表示する")]
@@ -69,6 +78,9 @@ public class ProjectCardTests : Bunit.TestContext
             UpdatedAt = null,
             CreatedBy = "test-user"
         };
+
+        var mockMediator = Substitute.For<IMediator>();
+        Services.AddSingleton(mockMediator);
 
         // Act
         var cut = RenderComponent<ProjectCard>(parameters => parameters
@@ -93,6 +105,9 @@ public class ProjectCardTests : Bunit.TestContext
             CreatedBy = "test-user"
         };
 
+        var mockMediator = Substitute.For<IMediator>();
+        Services.AddSingleton(mockMediator);
+
         // Act
         var cut = RenderComponent<ProjectCard>(parameters => parameters
             .Add(p => p.Project, project));
@@ -116,6 +131,9 @@ public class ProjectCardTests : Bunit.TestContext
             UpdatedAt = null,
             CreatedBy = "test-user"
         };
+
+        var mockMediator = Substitute.For<IMediator>();
+        Services.AddSingleton(mockMediator);
 
         // Act
         var cut = RenderComponent<ProjectCard>(parameters => parameters
