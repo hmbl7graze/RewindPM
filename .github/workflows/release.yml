@@ -27,8 +27,15 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore RewindPM.slnx
 
-    - name: Run Tests
-      run: dotnet test RewindPM.slnx --configuration Release --verbosity normal
+    - name: Run Tests with Coverage
+      run: dotnet test RewindPM.slnx --configuration Release --verbosity normal --collect:"XPlat Code Coverage"
+
+    - name: Upload Coverage Reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-${{ matrix.runtime }}
+        path: '**/TestResults/**/coverage.cobertura.xml'
+        retention-days: 5
 
     - name: Publish
       run: |
