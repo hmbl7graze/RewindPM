@@ -24,6 +24,9 @@ public class CreateTaskCommandValidatorTests
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(7),
             40,
+            null,
+            null,
+            null,
             "user1"
         );
 
@@ -47,6 +50,9 @@ public class CreateTaskCommandValidatorTests
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(-1),
             40,
+            null,
+            null,
+            null,
             "user1"
         );
 
@@ -55,7 +61,7 @@ public class CreateTaskCommandValidatorTests
 
         // Assert
         Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.PropertyName == nameof(CreateTaskCommand.ScheduledEndDate));
+        Assert.Single(result.Errors);
     }
 
     [Fact(DisplayName = "見積工数が0以下の場合にバリデーションが失敗すること")]
@@ -70,6 +76,9 @@ public class CreateTaskCommandValidatorTests
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(7),
             0,
+            null,
+            null,
+            null,
             "user1"
         );
 
@@ -93,6 +102,9 @@ public class CreateTaskCommandValidatorTests
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(7),
             40,
+            null,
+            null,
+            null,
             "user1"
         );
 
@@ -102,5 +114,109 @@ public class CreateTaskCommandValidatorTests
         // Assert
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, e => e.PropertyName == nameof(CreateTaskCommand.Title));
+    }
+
+    [Fact(DisplayName = "実績終了日が実績開始日より前の場合にバリデーションが失敗すること")]
+    public async Task Validate_ActualEndDateBeforeStartDate_ShouldFail()
+    {
+        // Arrange
+        var command = new CreateTaskCommand(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Test Task",
+            "Test Description",
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddDays(7),
+            40,
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddDays(-1),
+            30,
+            "user1"
+        );
+
+        // Act
+        var result = await _validator.ValidateAsync(command, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Single(result.Errors);
+    }
+
+    [Fact(DisplayName = "実績工数が0以下の場合にバリデーションが失敗すること")]
+    public async Task Validate_ActualHoursZeroOrNegative_ShouldFail()
+    {
+        // Arrange
+        var command = new CreateTaskCommand(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Test Task",
+            "Test Description",
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddDays(7),
+            40,
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddDays(5),
+            0,
+            "user1"
+        );
+
+        // Act
+        var result = await _validator.ValidateAsync(command, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(CreateTaskCommand.ActualHours));
+    }
+
+    [Fact(DisplayName = "実績データがnullの場合にバリデーションが成功すること")]
+    public async Task Validate_NullActualData_ShouldPass()
+    {
+        // Arrange
+        var command = new CreateTaskCommand(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Test Task",
+            "Test Description",
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddDays(7),
+            40,
+            null,
+            null,
+            null,
+            "user1"
+        );
+
+        // Act
+        var result = await _validator.ValidateAsync(command, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsValid);
+        Assert.Empty(result.Errors);
+    }
+
+    [Fact(DisplayName = "予定データがnullの場合にバリデーションが成功すること")]
+    public async Task Validate_NullScheduledData_ShouldPass()
+    {
+        // Arrange
+        var command = new CreateTaskCommand(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Test Task",
+            "Test Description",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            "user1"
+        );
+
+        // Act
+        var result = await _validator.ValidateAsync(command, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(result.IsValid);
+        Assert.Empty(result.Errors);
     }
 }

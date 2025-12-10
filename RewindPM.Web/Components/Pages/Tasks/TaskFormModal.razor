@@ -88,38 +88,35 @@
                     </div>
                 </div>
 
-                <!-- Actuals (Only in Edit Mode) -->
-                @if (IsEditMode)
-                {
-                    <div class="sidebar-section">
-                        <h5>実績</h5>
-                        <div class="d-flex gap-2">
-                            <div class="mb-2 flex-fill">
-                                <label class="form-label small text-muted">実績開始</label>
-                                <input type="date" class="form-control form-control-sm @(actualDateError != null ? "is-invalid" : "")"
-                                       @bind="actualStartDate" disabled="@IsReadOnly" />
-                            </div>
-                            <div class="mb-2 flex-fill">
-                                <label class="form-label small text-muted">実績終了</label>
-                                <input type="date" class="form-control form-control-sm @(actualDateError != null ? "is-invalid" : "")"
-                                       @bind="actualEndDate" disabled="@IsReadOnly" />
-                            </div>
+                <!-- Actuals -->
+                <div class="sidebar-section">
+                    <h5>実績</h5>
+                    <div class="d-flex gap-2">
+                        <div class="mb-2 flex-fill">
+                            <label class="form-label small text-muted">実績開始</label>
+                            <input type="date" class="form-control form-control-sm @(actualDateError != null ? "is-invalid" : "")"
+                                   @bind="actualStartDate" disabled="@IsReadOnly" />
                         </div>
-                        @if (actualDateError != null)
-                        {
-                            <div class="text-danger small">@actualDateError</div>
-                        }
-                         <div>
-                            <label class="form-label small text-muted">実績工数 (h)</label>
-                            <input type="number" class="form-control form-control-sm @(actualHoursError != null ? "is-invalid" : "")"
-                                   @bind="actualHours" min="1" disabled="@IsReadOnly" />
-                             @if (actualHoursError != null)
-                            {
-                                <div class="invalid-feedback d-block">@actualHoursError</div>
-                            }
+                        <div class="mb-2 flex-fill">
+                            <label class="form-label small text-muted">実績終了</label>
+                            <input type="date" class="form-control form-control-sm @(actualDateError != null ? "is-invalid" : "")"
+                                   @bind="actualEndDate" disabled="@IsReadOnly" />
                         </div>
                     </div>
-                }
+                    @if (actualDateError != null)
+                    {
+                        <div class="text-danger small">@actualDateError</div>
+                    }
+                     <div>
+                        <label class="form-label small text-muted">実績工数 (h)</label>
+                        <input type="number" class="form-control form-control-sm @(actualHoursError != null ? "is-invalid" : "")"
+                               @bind="actualHours" min="1" disabled="@IsReadOnly" />
+                         @if (actualHoursError != null)
+                        {
+                            <div class="invalid-feedback d-block">@actualHoursError</div>
+                        }
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -278,8 +275,8 @@
             isValid = false;
         }
 
-        // 実績期間の検証（編集モードのみ）
-        if (IsEditMode && actualStartDate.HasValue && actualEndDate.HasValue)
+        // 実績期間の検証（新規作成・編集モード共通）
+        if (actualStartDate.HasValue && actualEndDate.HasValue)
         {
             if (actualEndDate < actualStartDate)
             {
@@ -334,19 +331,17 @@
 
     private async Task CreateTask()
     {
-        // 予定期間が設定されていない場合、デフォルト値を使用
-        var schedStartDate = scheduledStartDate ?? DateTime.Today;
-        var schedEndDate = scheduledEndDate ?? DateTime.Today.AddDays(1);
-        var estHours = estimatedHours ?? 8;
-
         var command = new CreateTaskCommand(
             Id: Guid.NewGuid(),
             ProjectId: ProjectId,
             Title: title,
             Description: description,
-            ScheduledStartDate: schedStartDate,
-            ScheduledEndDate: schedEndDate,
-            EstimatedHours: estHours,
+            ScheduledStartDate: scheduledStartDate,
+            ScheduledEndDate: scheduledEndDate,
+            EstimatedHours: estimatedHours,
+            ActualStartDate: actualStartDate,
+            ActualEndDate: actualEndDate,
+            ActualHours: actualHours,
             CreatedBy: "admin"
         );
 

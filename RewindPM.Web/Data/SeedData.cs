@@ -40,6 +40,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(-60),
             ScheduledEndDate: DateTime.Now.AddDays(-50),
             EstimatedHours: 40,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
         await _mediator.Send(new ChangeTaskActualPeriodCommand(
@@ -60,6 +63,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(-55),
             ScheduledEndDate: DateTime.Now.AddDays(-48),
             EstimatedHours: 20,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
         await _mediator.Send(new ChangeTaskActualPeriodCommand(
@@ -80,6 +86,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(-48),
             ScheduledEndDate: DateTime.Now.AddDays(-35),
             EstimatedHours: 60,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
         await _mediator.Send(new ChangeTaskActualPeriodCommand(
@@ -100,6 +109,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(-40),
             ScheduledEndDate: DateTime.Now.AddDays(-30),
             EstimatedHours: 35,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
         await _mediator.Send(new ChangeTaskActualPeriodCommand(
@@ -120,6 +132,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(-35),
             ScheduledEndDate: DateTime.Now.AddDays(-28),
             EstimatedHours: 25,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
         await _mediator.Send(new ChangeTaskActualPeriodCommand(
@@ -140,6 +155,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(-28),
             ScheduledEndDate: DateTime.Now.AddDays(-20),
             EstimatedHours: 30,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
         await _mediator.Send(new ChangeTaskActualPeriodCommand(
@@ -160,6 +178,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(-25),
             ScheduledEndDate: DateTime.Now.AddDays(-15),
             EstimatedHours: 45,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
         await _mediator.Send(new ChangeTaskActualPeriodCommand(
@@ -180,6 +201,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(-20),
             ScheduledEndDate: DateTime.Now.AddDays(-12),
             EstimatedHours: 40,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
         await _mediator.Send(new ChangeTaskActualPeriodCommand(
@@ -200,6 +224,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(-15),
             ScheduledEndDate: DateTime.Now.AddDays(-5),
             EstimatedHours: 50,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
         await _mediator.Send(new ChangeTaskActualPeriodCommand(
@@ -220,6 +247,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(-12),
             ScheduledEndDate: DateTime.Now.AddDays(-3),
             EstimatedHours: 35,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
         await _mediator.Send(new ChangeTaskActualPeriodCommand(
@@ -240,6 +270,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(-10),
             ScheduledEndDate: DateTime.Now.AddDays(2),
             EstimatedHours: 40,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
         await _mediator.Send(new ChangeTaskActualPeriodCommand(
@@ -259,6 +292,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(-5),
             ScheduledEndDate: DateTime.Now.AddDays(5),
             EstimatedHours: 30,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
 
@@ -271,6 +307,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(-3),
             ScheduledEndDate: DateTime.Now.AddDays(4),
             EstimatedHours: 20,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
 
@@ -283,6 +322,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(1),
             ScheduledEndDate: DateTime.Now.AddDays(8),
             EstimatedHours: 25,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
 
@@ -295,6 +337,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(3),
             ScheduledEndDate: DateTime.Now.AddDays(15),
             EstimatedHours: 60,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
 
@@ -307,6 +352,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(5),
             ScheduledEndDate: DateTime.Now.AddDays(12),
             EstimatedHours: 30,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
 
@@ -319,6 +367,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(10),
             ScheduledEndDate: DateTime.Now.AddDays(18),
             EstimatedHours: 40,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
 
@@ -331,6 +382,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(12),
             ScheduledEndDate: DateTime.Now.AddDays(20),
             EstimatedHours: 35,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
 
@@ -343,6 +397,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(15),
             ScheduledEndDate: DateTime.Now.AddDays(25),
             EstimatedHours: 50,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
 
@@ -355,6 +412,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(20),
             ScheduledEndDate: DateTime.Now.AddDays(30),
             EstimatedHours: 45,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
 
@@ -367,6 +427,9 @@ public class SeedData
             ScheduledStartDate: DateTime.Now.AddDays(28),
             ScheduledEndDate: DateTime.Now.AddDays(32),
             EstimatedHours: 20,
+            ActualStartDate: null,
+            ActualEndDate: null,
+            ActualHours: null,
             CreatedBy: "admin"
         ));
 
