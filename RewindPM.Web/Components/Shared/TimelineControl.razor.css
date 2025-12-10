@@ -1,13 +1,115 @@
-.timeline-control {
+.timeline-toolbar {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1rem 1.5rem;
-    background-color: #f6f8fa;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background-color: transparent;
+    /* Seamless blend */
     border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.timeline-toolbar.viewing-past {
+    background-color: #fff8e1;
+    border: 1px solid #ffc107;
+}
+
+/* Icons / Buttons */
+.timeline-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
     border: 1px solid #d0d7de;
-    margin-bottom: 1.5rem;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
+    border-radius: 6px;
+    background-color: #ffffff;
+    color: #656d76;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.timeline-btn:hover:not(:disabled) {
+    background-color: #f3f4f6;
+    color: #1f2328;
+    border-color: #1f2328;
+}
+
+.timeline-btn:active:not(:disabled) {
+    background-color: #ebecf0;
+}
+
+.timeline-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f6f8fa;
+    border-color: #d0d7de;
+}
+
+/* Reset Button (Latest) */
+.timeline-btn-reset {
+    width: auto;
+    padding: 0 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #ce3a12;
+    /* Warning/Action color */
+    border-color: #ce3a12;
+    background-color: #fff;
+    margin-left: 8px;
+}
+
+.timeline-btn-reset:hover {
+    background-color: #ce3a12;
+    color: #fff;
+}
+
+/* Info Area */
+.timeline-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 140px;
+}
+
+.timeline-date {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2328;
+    font-family: monospace;
+    /* For stable width */
+    line-height: 1.2;
+}
+
+.timeline-toolbar.viewing-past .timeline-date {
+    color: #b45309;
+}
+
+.timeline-badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #b45309;
+}
+
+.badge-live {
+    color: #1a7f37;
+    /* Green */
+}
+
+/* Responsive */
+@media (max-width: 500px) {
+    .timeline-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .timeline-info {
+        order: -1;
+        flex-basis: 100%;
+        margin-bottom: 8px;
+    }
 }
 
 .timeline-control.viewing-past {
@@ -136,9 +238,11 @@
     0% {
         background-color: #fff8e1;
     }
+
     50% {
         background-color: #ffecb3;
     }
+
     100% {
         background-color: #fff8e1;
     }
