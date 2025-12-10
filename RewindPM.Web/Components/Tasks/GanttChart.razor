@@ -19,100 +19,86 @@
     }
     else
     {
-        <div class="gantt-container" @ref="scrollWrapperRef">
-            @* ヘッダー行 *@
-            <div class="gantt-header">
-                <div class="gantt-header-task-name">タスク名</div>
-                <div class="gantt-header-timeline-wrapper">
-                    <div class="gantt-header-timeline">
-                        @* 月の行 *@
-                        <div class="gantt-month-row">
-                            <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, minmax(40px, 1fr));">
-                                @foreach (var monthGroup in GetMonthGroups())
-                                {
-                                    <div class="gantt-month-cell" style="grid-column: @monthGroup.StartColumn / @monthGroup.EndColumn;">
-                                        @monthGroup.Year/@monthGroup.Month
-                                    </div>
-                                }
-                            </div>
+        <div class="gantt-scroll-container">
+            @* Header Row *@
+            <div class="gantt-row gantt-header-row">
+                <div class="gantt-cell gantt-sticky-left gantt-header-corner">タスク名</div>
+                <div class="gantt-timeline-area">
+                    @* Month Row *@
+                    <div class="gantt-timeline-subrow">
+                        <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, minmax(40px, 1fr));">
+                            @foreach (var monthGroup in GetMonthGroups())
+                            {
+                                <div class="gantt-month-cell" style="grid-column: @monthGroup.StartColumn / @monthGroup.EndColumn;">
+                                    @monthGroup.Year/@monthGroup.Month
+                                </div>
+                            }
                         </div>
-                        @* 日の行 *@
-                        <div class="gantt-date-row">
-                            <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, minmax(40px, 1fr));">
-                                @for (int i = 0; i < TotalDays; i++)
-                                {
-                                    var date = TimelineStart.Value.AddDays(i);
-                                    <div class="gantt-date-cell">
-                                        <div class="gantt-date-label">@date.Day</div>
-                                    </div>
-                                }
-                            </div>
+                    </div>
+                    @* Date Row *@
+                    <div class="gantt-timeline-subrow">
+                        <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, minmax(40px, 1fr));">
+                            @for (int i = 0; i < TotalDays; i++)
+                            {
+                                var date = TimelineStart.Value.AddDays(i);
+                                <div class="gantt-date-cell">
+                                    <div class="gantt-date-label">@date.Day</div>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
             </div>
 
-            @* コンテンツ行 *@
-            <div class="gantt-content">
-                @* タスク名列 *@
-                <div class="gantt-task-names">
-                    @foreach (var task in Tasks)
-                    {
-                        <div class="gantt-task-name-cell" title="@task.Title" @onclick="() => HandleTaskClick(task)">
-                            <span class="gantt-task-title">@task.Title</span>
-                            <span class="gantt-task-status gantt-status-@GetStatusClass(task.Status)">
-                                @GetStatusLabel(task.Status)
-                            </span>
-                        </div>
-                    }
-                </div>
-
-                @* タイムライン列（横スクロール） *@
-                <div class="gantt-timeline-scroll" @ref="headerTimelineRef">
-                    <div class="gantt-timeline-rows">
-                        @foreach (var (task, index) in Tasks.Select((t, i) => (t, i)))
-                        {
-                            <div class="gantt-timeline-row" @ref="@timelineRefs[index]">
-                                <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, minmax(40px, 1fr));">
-                                    @* 予定期間バー *@
-                                    @if (task.ScheduledStartDate.HasValue && task.ScheduledEndDate.HasValue)
+            @* Task Rows *@
+            @foreach (var (task, index) in Tasks.Select((t, i) => (t, i)))
+            {
+                <div class="gantt-row gantt-task-row">
+                    <div class="gantt-cell gantt-sticky-left gantt-task-name-cell" title="@task.Title" @onclick="() => HandleTaskClick(task)">
+                        <span class="gantt-task-title">@task.Title</span>
+                        <span class="gantt-task-status gantt-status-@GetStatusClass(task.Status)">
+                            @GetStatusLabel(task.Status)
+                        </span>
+                    </div>
+                    <div class="gantt-timeline-area">
+                        <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, minmax(40px, 1fr));">
+                            @* Scheduled Bar *@
+                            @if (task.ScheduledStartDate.HasValue && task.ScheduledEndDate.HasValue)
+                            {
+                                var gridColumn = GetGridColumn(task.ScheduledStartDate.Value, task.ScheduledEndDate.Value);
+                                <div class="gantt-bar gantt-bar-scheduled"
+                                     style="grid-column: @gridColumn;"
+                                     title="予定: @task.ScheduledStartDate.Value.ToString("yyyy/MM/dd") - @task.ScheduledEndDate.Value.ToString("yyyy/MM/dd")"
+                                     data-task-id="@task.Id"
+                                     data-bar-type="scheduled">
+                                    @if (!IsReadOnly)
                                     {
-                                        var gridColumn = GetGridColumn(task.ScheduledStartDate.Value, task.ScheduledEndDate.Value);
-                                        <div class="gantt-bar gantt-bar-scheduled"
-                                             style="grid-column: @gridColumn;"
-                                             title="予定: @task.ScheduledStartDate.Value.ToString("yyyy/MM/dd") - @task.ScheduledEndDate.Value.ToString("yyyy/MM/dd")"
-                                             data-task-id="@task.Id"
-                                             data-bar-type="scheduled">
-                                            @if (!IsReadOnly)
-                                            {
-                                                <div class="gantt-resize-handle gantt-resize-handle-left"></div>
-                                                <div class="gantt-resize-handle gantt-resize-handle-right"></div>
-                                            }
-                                        </div>
-                                    }
-
-                                    @* 実績期間バー *@
-                                    @if (task.ActualStartDate.HasValue && task.ActualEndDate.HasValue)
-                                    {
-                                        var gridColumn = GetGridColumn(task.ActualStartDate.Value, task.ActualEndDate.Value);
-                                        <div class="gantt-bar gantt-bar-actual"
-                                             style="grid-column: @gridColumn;"
-                                             title="実績: @task.ActualStartDate.Value.ToString("yyyy/MM/dd") - @task.ActualEndDate.Value.ToString("yyyy/MM/dd")"
-                                             data-task-id="@task.Id"
-                                             data-bar-type="actual">
-                                            @if (!IsReadOnly)
-                                            {
-                                                <div class="gantt-resize-handle gantt-resize-handle-left"></div>
-                                                <div class="gantt-resize-handle gantt-resize-handle-right"></div>
-                                            }
-                                        </div>
+                                        <div class="gantt-resize-handle gantt-resize-handle-left"></div>
+                                        <div class="gantt-resize-handle gantt-resize-handle-right"></div>
                                     }
                                 </div>
-                            </div>
-                        }
+                            }
+
+                            @* Actual Bar *@
+                            @if (task.ActualStartDate.HasValue && task.ActualEndDate.HasValue)
+                            {
+                                var gridColumn = GetGridColumn(task.ActualStartDate.Value, task.ActualEndDate.Value);
+                                <div class="gantt-bar gantt-bar-actual"
+                                     style="grid-column: @gridColumn;"
+                                     title="実績: @task.ActualStartDate.Value.ToString("yyyy/MM/dd") - @task.ActualEndDate.Value.ToString("yyyy/MM/dd")"
+                                     data-task-id="@task.Id"
+                                     data-bar-type="actual">
+                                    @if (!IsReadOnly)
+                                    {
+                                        <div class="gantt-resize-handle gantt-resize-handle-left"></div>
+                                        <div class="gantt-resize-handle gantt-resize-handle-right"></div>
+                                    }
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
         </div>
     }
 </div>
@@ -137,20 +123,12 @@
     private DateTime? TimelineEnd { get; set; }
     private int TotalDays { get; set; }
 
-    private ElementReference headerTimelineRef;
-    private ElementReference[] timelineRefs = Array.Empty<ElementReference>();
-    private ElementReference scrollWrapperRef;
     private DotNetObjectReference<GanttChart>? dotNetRef;
     private bool scriptsInitialized = false;
 
     protected override void OnParametersSet()
     {
         CalculateTimeline();
-        // タスク数に応じてElementReference配列を再初期化
-        if (Tasks != null)
-        {
-            timelineRefs = new ElementReference[Tasks.Count];
-        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -160,7 +138,8 @@
             try
             {
                 dotNetRef = DotNetObjectReference.Create(this);
-                await JSRuntime.InvokeVoidAsync("ganttScrollSync.initialize", scrollWrapperRef, headerTimelineRef, timelineRefs, dotNetRef);
+                // Only initialize resize handles and pass dotnet ref for callbacks
+                await JSRuntime.InvokeVoidAsync("ganttScrollSync.initialize", dotNetRef);
                 scriptsInitialized = true;
             }
             catch (Exception)
