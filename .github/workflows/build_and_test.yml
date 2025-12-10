@@ -9,9 +9,6 @@ on:
 
   # developブランチへのプッシュ時
   push:
-    branches:
-      - develop
-      - main
 
 jobs:
   build-and-test:
