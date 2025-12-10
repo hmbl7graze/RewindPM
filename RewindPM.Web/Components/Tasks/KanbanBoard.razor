@@ -6,6 +6,8 @@
     @foreach (var status in _statuses)
     {
         <div class="kanban-column" 
+             role="region"
+             aria-label="@GetStatusLabel(status)"
              ondragover="event.preventDefault();"
              @ondrop="() => HandleDrop(status)">
             <div class="column-header">
@@ -17,17 +19,21 @@
                 {
                     <div class="task-card"
                          draggable="@(IsReadOnly ? "false" : "true")"
+                         tabindex="0"
+                         role="button"
+                         aria-label="@($"{task.Title} - {GetStatusLabel(task.Status)}")"
                          @ondragstart="() => HandleDragStart(task)"
-                         @onclick="() => OnTaskClick.InvokeAsync(task)">
+                         @onclick="() => OnTaskClick.InvokeAsync(task)"
+                         @onkeydown="(e) => HandleKeyDown(e, task)">
                         <div class="task-title">@task.Title</div>
                         <div class="task-meta">
                             @if (task.EstimatedHours.HasValue)
                             {
-                                <span class="badge estimate">@task.EstimatedHours h</span>
+                                <span class="badge estimate">@task.EstimatedHours 時間</span>
                             }
-                            @if (!string.IsNullOrEmpty(task.CreatedBy))
+                            @if (!string.IsNullOrWhiteSpace(task.CreatedBy))
                             {
-                                <span class="avatar" title="@task.CreatedBy">@task.CreatedBy.Substring(0, 1)</span>
+                                <span class="avatar" title="@task.CreatedBy">@task.CreatedBy[0]</span>
                             }
                         </div>
                     </div>
@@ -90,5 +96,14 @@
         }
 
         _draggedTask = null;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e, TaskDto task)
+    {
+        // Enter または Space キーでタスクをクリック
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            await OnTaskClick.InvokeAsync(task);
+        }
     }
 }
