@@ -41,6 +41,29 @@
     font-weight: 600;
     color: #1f2328;
     margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.header-edit-btn {
+    font-size: 0.875rem;
+    font-weight: normal;
+    color: #656d76;
+    text-decoration: none;
+    padding: 2px 8px;
+    border: 1px solid #d0d7de;
+    border-radius: 4px;
+    background-color: #f6f8fa;
+    transition: all 0.2s ease;
+}
+
+.header-edit-btn:hover {
+    color: #0969da;
+    background-color: #f3f4f6;
+    border-color: #0969da;
+    text-decoration: none;
 }
 
 /* プロジェクト情報 */
@@ -75,13 +98,53 @@
     margin-top: 32px;
 }
 
-.section-title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #1f2328;
+.view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 16px;
     padding-bottom: 8px;
     border-bottom: 1px solid #d0d7de;
+}
+
+.view-tabs {
+    display: flex;
+    gap: 8px;
+}
+
+.view-tab {
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #656d76;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.view-tab:hover:not(.disabled) {
+    color: #1f2328;
+    background-color: #f6f8fa;
+    border-radius: 4px 4px 0 0;
+}
+
+.view-tab.active {
+    color: #1f2328;
+    font-weight: 600;
+    border-bottom-color: #fd8c73;
+    /* RewindPM accent color? Or just a standard active color */
+}
+
+.view-tab.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.view-actions {
+    display: flex;
+    gap: 8px;
 }
 
 .empty-tasks {
@@ -209,4 +272,45 @@
     text-align: center;
     padding: 60px 20px;
     color: #656d76;
+}
+
+/* Retrospective Mode */
+.retrospective-panel {
+    background-color: #f6f8fa;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 24px;
+    animation: slideDown 0.3s ease-out;
+}
+
+.retrospective-header {
+    margin-bottom: 16px;
+    border-bottom: 1px solid #d0d7de;
+    padding-bottom: 8px;
+}
+
+.retrospective-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2328;
+    margin: 0 0 4px 0;
+}
+
+.retrospective-header p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #656d76;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

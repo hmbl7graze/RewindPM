@@ -1,7 +1,7 @@
 @if (IsVisible)
 {
     <div class="modal-overlay" @onclick="HandleOverlayClick">
-        <div class="modal-container" @onclick:stopPropagation="true">
+        <div class="@ContainerClass" @onclick:stopPropagation="true">
             <div class="modal-header">
                 <h2 class="modal-title">@Title</h2>
                 <button class="modal-close-btn" @onclick="Close" type="button">×</button>
@@ -28,6 +28,18 @@
 
     [Parameter]
     public bool CloseOnOverlayClick { get; set; } = true;
+
+    [Parameter]
+    public ModalSize Size { get; set; } = ModalSize.Default;
+
+    private string ContainerClass => $"modal-container {GetSizeClass()}";
+
+    private string GetSizeClass() => Size switch
+    {
+        ModalSize.Large => "modal-width-large",
+        ModalSize.ExtraLarge => "modal-width-xl",
+        _ => ""
+    };
 
     private async Task Close()
     {

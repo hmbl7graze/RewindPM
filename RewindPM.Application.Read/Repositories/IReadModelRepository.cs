@@ -55,4 +55,14 @@ public interface IReadModelRepository
     /// <param name="projectId">プロジェクトID</param>
     /// <param name="pointInTime">取得する時点</param>
     Task<List<TaskDto>> GetTasksByProjectIdAtTimeAsync(Guid projectId, DateTime pointInTime);
+
+    /// <summary>
+    /// 指定されたプロジェクトの編集日一覧を取得（リワインド機能用）
+    /// タスクが作成・更新された日付のリストを返す
+    /// </summary>
+    /// <param name="projectId">プロジェクトID</param>
+    /// <param name="ascending">昇順（古い順）かどうか。デフォルトはfalse（新しい順）</param>
+    /// <param name="cancellationToken">キャンセルトークン</param>
+    /// <returns>編集日のリスト</returns>
+    Task<List<DateTime>> GetProjectEditDatesAsync(Guid projectId, bool ascending = false, CancellationToken cancellationToken = default);
 }

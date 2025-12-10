@@ -27,8 +27,15 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore RewindPM.slnx
 
-    - name: Run Tests
-      run: dotnet test RewindPM.slnx --configuration Release --verbosity normal
+    - name: Run Tests with Coverage
+      run: dotnet test RewindPM.slnx --configuration Release --verbosity normal --collect:"XPlat Code Coverage"
+
+    - name: Upload Coverage Reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-${{ matrix.runtime }}
+        path: '**/TestResults/**/coverage.cobertura.xml'
+        retention-days: 5
 
     - name: Publish
       run: |
@@ -40,22 +47,32 @@ jobs:
           -p:PublishTrimmed=true \
           --output ./publish/${{ matrix.runtime }}
 
-    - name: Create Archive
+    - name: Create Archive (Windows)
+      if: startsWith(matrix.runtime, 'win-')
       run: |
         cd ./publish/${{ matrix.runtime }}
-        if [[ "${{ matrix.runtime }}" == win-* ]]; then
-          zip -r ../../RewindPM-${{ github.ref_name }}-${{ matrix.runtime }}.zip .
-        else
-          tar -czf ../../RewindPM-${{ github.ref_name }}-${{ matrix.runtime }}.tar.gz .
-        fi
+        zip -r ../../RewindPM-${{ github.ref_name }}-${{ matrix.runtime }}.zip .
 
-    - name: Upload artifacts
+    - name: Create Archive (Unix)
+      if: ${{ !startsWith(matrix.runtime, 'win-') }}
+      run: |
+        cd ./publish/${{ matrix.runtime }}
+        tar -czf ../../RewindPM-${{ github.ref_name }}-${{ matrix.runtime }}.tar.gz .
+
+    - name: Upload artifacts (Windows)
+      if: startsWith(matrix.runtime, 'win-')
       uses: actions/upload-artifact@v4
       with:
         name: RewindPM-${{ matrix.runtime }}
-        path: |
-          RewindPM-${{ github.ref_name }}-${{ matrix.runtime }}.zip
-          RewindPM-${{ github.ref_name }}-${{ matrix.runtime }}.tar.gz
+        path: RewindPM-${{ github.ref_name }}-${{ matrix.runtime }}.zip
+        retention-days: 1
+
+    - name: Upload artifacts (Unix)
+      if: ${{ !startsWith(matrix.runtime, 'win-') }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: RewindPM-${{ matrix.runtime }}
+        path: RewindPM-${{ github.ref_name }}-${{ matrix.runtime }}.tar.gz
         retention-days: 1
 
   create-release:
