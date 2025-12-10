@@ -28,13 +28,27 @@ public class CreateTaskCommandValidator : AbstractValidator<CreateTaskCommand>
             .NotNull()
             .WithMessage("タスクの説明は必須です（空文字列は可）");
 
-        RuleFor(x => x.ScheduledEndDate)
-            .GreaterThan(x => x.ScheduledStartDate)
+        // 予定期間のバリデーション（両方設定されている場合のみ）
+        RuleFor(x => x)
+            .Must(x => !x.ScheduledStartDate.HasValue || !x.ScheduledEndDate.HasValue || 
+                       x.ScheduledEndDate.Value > x.ScheduledStartDate.Value)
             .WithMessage("予定終了日は予定開始日より後でなければなりません");
 
         RuleFor(x => x.EstimatedHours)
             .GreaterThan(0)
+            .When(x => x.EstimatedHours.HasValue)
             .WithMessage("見積工数は正の数でなければなりません");
+
+        // 実績期間のバリデーション（両方設定されている場合のみ）
+        RuleFor(x => x)
+            .Must(x => !x.ActualStartDate.HasValue || !x.ActualEndDate.HasValue || 
+                       x.ActualEndDate.Value > x.ActualStartDate.Value)
+            .WithMessage("実績終了日は実績開始日より後でなければなりません");
+
+        RuleFor(x => x.ActualHours)
+            .GreaterThan(0)
+            .When(x => x.ActualHours.HasValue)
+            .WithMessage("実績工数は正の数でなければなりません");
 
         RuleFor(x => x.CreatedBy)
             .NotEmpty()

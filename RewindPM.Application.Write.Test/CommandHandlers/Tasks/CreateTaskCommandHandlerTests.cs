@@ -31,6 +31,9 @@ public class CreateTaskCommandHandlerTests
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(7),
             40,
+            null,
+            null,
+            null,
             "user1"
         );
 
@@ -63,6 +66,9 @@ public class CreateTaskCommandHandlerTests
             startDate,
             endDate,
             40,
+            null,
+            null,
+            null,
             "user1"
         );
 
@@ -78,5 +84,71 @@ public class CreateTaskCommandHandlerTests
         Assert.Equal(startDate, savedTask.ScheduledPeriod.StartDate);
         Assert.Equal(endDate, savedTask.ScheduledPeriod.EndDate);
         Assert.Equal(40, savedTask.ScheduledPeriod.EstimatedHours);
+    }
+
+    [Fact(DisplayName = "実績期間付きでタスクを作成し、実績が正しく設定されること")]
+    public async Task Handle_CommandWithActualPeriod_ShouldCreateTaskWithActualPeriod()
+    {
+        // Arrange
+        var actualStartDate = DateTime.UtcNow;
+        var actualEndDate = actualStartDate.AddDays(5);
+        var command = new CreateTaskCommand(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Test Task",
+            "Test Description",
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddDays(7),
+            40,
+            actualStartDate,
+            actualEndDate,
+            30,
+            "user1"
+        );
+
+        TaskAggregate? savedTask = null;
+        await _repository.SaveAsync(Arg.Do<TaskAggregate>(t => savedTask = t));
+
+        // Act
+        await _handler.Handle(command, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotNull(savedTask);
+        Assert.NotNull(savedTask.ActualPeriod);
+        Assert.Equal(actualStartDate, savedTask.ActualPeriod.StartDate);
+        Assert.Equal(actualEndDate, savedTask.ActualPeriod.EndDate);
+        Assert.Equal(30, savedTask.ActualPeriod.ActualHours);
+    }
+
+    [Fact(DisplayName = "実績期間なしでタスクを作成し、実績が未設定であること")]
+    public async Task Handle_CommandWithoutActualPeriod_ShouldCreateTaskWithoutActualPeriod()
+    {
+        // Arrange
+        var command = new CreateTaskCommand(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "Test Task",
+            "Test Description",
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddDays(7),
+            40,
+            null,
+            null,
+            null,
+            "user1"
+        );
+
+        TaskAggregate? savedTask = null;
+        await _repository.SaveAsync(Arg.Do<TaskAggregate>(t => savedTask = t));
+
+        // Act
+        await _handler.Handle(command, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotNull(savedTask);
+        Assert.NotNull(savedTask.ActualPeriod);
+        Assert.Null(savedTask.ActualPeriod.StartDate);
+        Assert.Null(savedTask.ActualPeriod.EndDate);
+        Assert.Null(savedTask.ActualPeriod.ActualHours);
     }
 }

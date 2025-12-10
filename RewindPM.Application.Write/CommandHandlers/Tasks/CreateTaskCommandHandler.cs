@@ -37,6 +37,17 @@ public class CreateTaskCommandHandler : IRequestHandler<CreateTaskCommand, Guid>
             request.CreatedBy
         );
 
+        // 実績期間が設定されている場合は、実績を設定
+        if (request.ActualStartDate.HasValue || request.ActualEndDate.HasValue || request.ActualHours.HasValue)
+        {
+            var actualPeriod = new ActualPeriod(
+                request.ActualStartDate,
+                request.ActualEndDate,
+                request.ActualHours
+            );
+            task.ChangeActualPeriod(actualPeriod, request.CreatedBy);
+        }
+
         // リポジトリに保存
         await _repository.SaveAsync(task);
 

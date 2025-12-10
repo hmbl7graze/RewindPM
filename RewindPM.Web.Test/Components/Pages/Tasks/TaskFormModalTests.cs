@@ -344,8 +344,8 @@ public class TaskFormModalTests : Bunit.TestContext
             Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "タスク作成時にデフォルト値が使用される")]
-    public async Task TaskFormModal_UsesDefaultValues_WhenCreatingTaskWithoutSchedule()
+    [Fact(DisplayName = "タスク作成時に予定・実績がnullで送信される")]
+    public async Task TaskFormModal_SendsNullValues_WhenCreatingTaskWithoutScheduleAndActual()
     {
         // Arrange
         var expectedTaskId = Guid.NewGuid();
@@ -365,12 +365,15 @@ public class TaskFormModalTests : Bunit.TestContext
         await cut.InvokeAsync(() => titleInput.Change("New Task"));
         await cut.InvokeAsync(() => saveButton.Click());
 
-        // Assert - デフォルト値が使用されていることを確認
+        // Assert - null値が送信されていることを確認
         await _mediatorMock.Received(1).Send(
             Arg.Is<CreateTaskCommand>(cmd =>
-                cmd.ScheduledStartDate == DateTime.Today &&
-                cmd.ScheduledEndDate == DateTime.Today.AddDays(1) &&
-                cmd.EstimatedHours == 8),
+                cmd.ScheduledStartDate == null &&
+                cmd.ScheduledEndDate == null &&
+                cmd.EstimatedHours == null &&
+                cmd.ActualStartDate == null &&
+                cmd.ActualEndDate == null &&
+                cmd.ActualHours == null),
             Arg.Any<CancellationToken>());
     }
 
@@ -424,5 +427,61 @@ public class TaskFormModalTests : Bunit.TestContext
         // Assert
         var errorMessage = cut.Find(".alert-danger");
         Assert.Contains("Test error", errorMessage.TextContent);
+    }
+
+    [Fact(DisplayName = "新規作成モードで実績期間フィールドが表示される")]
+    public void TaskFormModal_DisplaysActualPeriodFields_InCreateMode()
+    {
+        // Arrange & Act
+        var cut = RenderComponent<TaskFormModal>(parameters => parameters
+            .Add(p => p.IsVisible, true)
+            .Add(p => p.ProjectId, _testProjectId));
+
+        // Assert - 予定2つ + 実績2つ = 4つのdate入力フィールド
+        var dateInputs = cut.FindAll("input[type='date']");
+        Assert.True(dateInputs.Count >= 4);
+        
+        // 予定工数 + 実績工数 = 2つのnumber入力フィールド
+        var numberInputs = cut.FindAll("input[type='number']");
+        Assert.True(numberInputs.Count >= 2);
+    }
+
+    [Fact(DisplayName = "新規作成時に実績データを入力してタスクを作成できる")]
+    public async Task TaskFormModal_CanCreateTaskWithActualData_InCreateMode()
+    {
+        // Arrange
+        var expectedTaskId = Guid.NewGuid();
+        _mediatorMock
+            .Send(Arg.Any<CreateTaskCommand>(), Arg.Any<CancellationToken>())
+            .Returns(expectedTaskId);
+
+        var cut = RenderComponent<TaskFormModal>(parameters => parameters
+            .Add(p => p.IsVisible, true)
+            .Add(p => p.ProjectId, _testProjectId)
+            .Add(p => p.OnSuccess, EventCallback.Factory.Create(this, () => { })));
+
+        // Act
+        var scheduledStartDate = DateTime.Today;
+        var scheduledEndDate = DateTime.Today.AddDays(7);
+        var actualStartDate = DateTime.Today;
+        var actualEndDate = DateTime.Today.AddDays(5);
+
+        await cut.InvokeAsync(() => cut.Find(".task-title-input").Change("Task with Actuals"));
+        await cut.InvokeAsync(() => cut.FindAll("input[type='date']")[0].Change(scheduledStartDate.ToString("yyyy-MM-dd")));
+        await cut.InvokeAsync(() => cut.FindAll("input[type='date']")[1].Change(scheduledEndDate.ToString("yyyy-MM-dd")));
+        await cut.InvokeAsync(() => cut.FindAll("input[type='number']")[0].Change("40"));
+        await cut.InvokeAsync(() => cut.FindAll("input[type='date']")[2].Change(actualStartDate.ToString("yyyy-MM-dd")));
+        await cut.InvokeAsync(() => cut.FindAll("input[type='date']")[3].Change(actualEndDate.ToString("yyyy-MM-dd")));
+        await cut.InvokeAsync(() => cut.FindAll("input[type='number']")[1].Change("30"));
+        await cut.InvokeAsync(() => cut.FindAll("button").First(b => b.TextContent.Contains("保存")).Click());
+
+        // Assert - 実績データが含まれたコマンドが送信される
+        await _mediatorMock.Received(1).Send(
+            Arg.Is<CreateTaskCommand>(cmd =>
+                cmd.Title == "Task with Actuals" &&
+                cmd.ActualStartDate == actualStartDate &&
+                cmd.ActualEndDate == actualEndDate &&
+                cmd.ActualHours == 30),
+            Arg.Any<CancellationToken>());
     }
 }
