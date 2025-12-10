@@ -1,21 +1,24 @@
 name: CI/CD
 
 on:
-  # developからmainへのPR時
+  # mainへのPR時
   pull_request:
     branches:
       - main
     types: [opened, synchronize, reopened]
 
-  # developブランチへのプッシュ時
+  # dev-*ブランチとmainへのプッシュ時
   push:
+    branches:
+      - main
+      - 'dev-*'
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    # PRの場合はdevelopブランチからのPRのみ実行
-    if: github.event_name == 'push' || github.head_ref == 'develop'
+    # PRの場合はdev-*ブランチからのPRで実行
+    if: github.event_name == 'push' || startsWith(github.head_ref, 'dev-')
 
     steps:
     - name: Checkout code
