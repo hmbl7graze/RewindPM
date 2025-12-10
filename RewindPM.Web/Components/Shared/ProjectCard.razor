@@ -1,7 +1,9 @@
 @using RewindPM.Application.Read.DTOs
 @using MediatR
 @using RewindPM.Application.Read.Queries.Statistics
+@using Microsoft.Extensions.Logging
 @inject IMediator Mediator
+@inject ILogger<ProjectCard> Logger
 
 <a href="/projects/@Project.Id" class="project-card-link">
     <div class="project-card">
@@ -58,9 +60,9 @@
         {
             statistics = await Mediator.Send(new GetProjectStatisticsSummaryQuery(Project.Id));
         }
-        catch
+        catch (Exception ex)
         {
-            // エラーが発生した場合は統計を表示しない
+            Logger.LogWarning(ex, "プロジェクトカードの統計情報取得に失敗しました。ProjectId: {ProjectId}", Project.Id);
             statistics = null;
         }
     }

@@ -56,19 +56,21 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
         DateTime asOfDate,
         CancellationToken cancellationToken = default)
     {
-        // プロジェクトの存在確認
-        var projectExists = await _context.Projects
-            .AnyAsync(p => p.Id == projectId, cancellationToken);
-
-        if (!projectExists)
-        {
-            return null;
-        }
-
         // 指定日時以前に作成されたタスクを取得
         var tasks = await _context.Tasks
             .Where(t => t.ProjectId == projectId && t.CreatedAt <= asOfDate)
             .ToListAsync(cancellationToken);
+
+        // タスクが1件もなければプロジェクトの存在確認
+        if (!tasks.Any())
+        {
+            var projectExists = await _context.Projects
+                .AnyAsync(p => p.Id == projectId, cancellationToken);
+            if (!projectExists)
+            {
+                return null;
+            }
+        }
 
         // タスクステータスのカウント
         var totalTasks = tasks.Count;

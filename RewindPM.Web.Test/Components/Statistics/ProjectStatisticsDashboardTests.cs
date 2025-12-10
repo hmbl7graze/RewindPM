@@ -57,8 +57,8 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             Assert.Contains("5", markup); // CompletedTasks
         });
 
-        // OnInitializedAsyncとOnParametersSetAsyncの両方が呼ばれるため2回
-        _mediator.Received(2).Send(
+        // パラメータ変更チェックにより、初期化時は1回のみ呼ばれる
+        _mediator.Received(1).Send(
             Arg.Is<GetProjectStatisticsDetailQuery>(q => q.ProjectId == projectId),
             Arg.Any<CancellationToken>());
     }
@@ -101,8 +101,8 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             Assert.Contains("2024年01月01日", markup);
         });
 
-        // OnInitializedAsyncとOnParametersSetAsyncの両方が呼ばれるため2回
-        _mediator.Received(2).Send(
+        // パラメータ変更チェックにより、初期化時は1回のみ呼ばれる
+        _mediator.Received(1).Send(
             Arg.Is<GetProjectStatisticsDetailQuery>(q => 
                 q.ProjectId == projectId && q.AsOfDate == asOfDate),
             Arg.Any<CancellationToken>());
@@ -325,9 +325,9 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             Assert.Contains("20", markup); // 新しいプロジェクトのTotalTasks
         });
 
-        // 初期レンダリング: projectId1でOnInitializedAsync + OnParametersSetAsyncが実行されて2回
-        // パラメータ変更: projectId2でOnParametersSetAsyncのみ実行されて1回
-        _mediator.Received(2).Send(
+        // 初期レンダリング: projectId1でOnInitializedAsyncが実行されて1回
+        // パラメータ変更: projectId2でOnParametersSetAsyncが実行されて1回
+        _mediator.Received(1).Send(
             Arg.Is<GetProjectStatisticsDetailQuery>(q => q.ProjectId == projectId1),
             Arg.Any<CancellationToken>());
         _mediator.Received(1).Send(

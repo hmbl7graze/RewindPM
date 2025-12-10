@@ -1,8 +1,10 @@
 @using MediatR
 @using RewindPM.Application.Read.DTOs
 @using RewindPM.Application.Read.Queries.Statistics
+@using Microsoft.Extensions.Logging
 
 @inject IMediator Mediator
+@inject ILogger<ProjectStatisticsDashboard> Logger
 
 @if (_isLoading)
 {
@@ -110,7 +112,7 @@ else if (_statistics != null)
             </div>
         </div>
         
-        @if (_statistics.AsOfDate < DateTime.UtcNow.Date)
+        @if (_statistics.AsOfDate.Date < DateTime.UtcNow.Date)
         {
             <div class="rewind-notice">
                 <p>⏰ リワインド表示中: @_statistics.AsOfDate.ToString("yyyy年MM月dd日") 時点の統計</p>
@@ -134,15 +136,28 @@ else
 
     private ProjectStatisticsDetailDto? _statistics;
     private bool _isLoading = true;
+    
+    // パラメータ変更検知用
+    private Guid _prevProjectId;
+    private DateTime? _prevAsOfDate;
 
     protected override async Task OnInitializedAsync()
     {
+        // 初期化時は必ず読み込む
         await LoadStatisticsAsync();
+        _prevProjectId = ProjectId;
+        _prevAsOfDate = AsOfDate;
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        await LoadStatisticsAsync();
+        // パラメータが変更された場合のみ再読み込み
+        if (_prevProjectId != ProjectId || _prevAsOfDate != AsOfDate)
+        {
+            await LoadStatisticsAsync();
+            _prevProjectId = ProjectId;
+            _prevAsOfDate = AsOfDate;
+        }
     }
 
     private async Task LoadStatisticsAsync()
@@ -153,6 +168,11 @@ else
         {
             var query = new GetProjectStatisticsDetailQuery(ProjectId, AsOfDate);
             _statistics = await Mediator.Send(query);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "プロジェクト統計情報の取得に失敗しました。ProjectId: {ProjectId}, AsOfDate: {AsOfDate}", ProjectId, AsOfDate);
+            _statistics = null;
         }
         finally
         {
