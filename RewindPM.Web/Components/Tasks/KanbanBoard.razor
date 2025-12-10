@@ -1,0 +1,109 @@
+@using RewindPM.Application.Read.DTOs
+@using RewindPM.Domain.ValueObjects
+@using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus
+
+<div class="kanban-board">
+    @foreach (var status in _statuses)
+    {
+        <div class="kanban-column" 
+             role="region"
+             aria-label="@GetStatusLabel(status)"
+             ondragover="event.preventDefault();"
+             @ondrop="() => HandleDrop(status)">
+            <div class="column-header">
+                <h3>@GetStatusLabel(status)</h3>
+                <span class="task-count">@GetTasksByStatus(status).Count()</span>
+            </div>
+            <div class="task-list">
+                @foreach (var task in GetTasksByStatus(status))
+                {
+                    <div class="task-card"
+                         draggable="@(IsReadOnly ? "false" : "true")"
+                         tabindex="0"
+                         role="button"
+                         aria-label="@($"{task.Title} - {GetStatusLabel(task.Status)}")"
+                         @ondragstart="() => HandleDragStart(task)"
+                         @onclick="() => OnTaskClick.InvokeAsync(task)"
+                         @onkeydown="(e) => HandleKeyDown(e, task)">
+                        <div class="task-title">@task.Title</div>
+                        <div class="task-meta">
+                            @if (task.EstimatedHours.HasValue)
+                            {
+                                <span class="badge estimate">@task.EstimatedHours 時間</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(task.CreatedBy))
+                            {
+                                <span class="avatar" title="@task.CreatedBy">@task.CreatedBy[0]</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public List<TaskDto> Tasks { get; set; } = new();
+
+    [Parameter]
+    public bool IsReadOnly { get; set; }
+
+    [Parameter]
+    public EventCallback<TaskDto> OnTaskClick { get; set; }
+
+    [Parameter]
+    public EventCallback<(TaskDto task, TaskStatus newStatus)> OnTaskStatusChanged { get; set; }
+
+    private TaskDto? _draggedTask;
+
+    private readonly List<TaskStatus> _statuses = new()
+    {
+        TaskStatus.Todo,
+        TaskStatus.InProgress,
+        TaskStatus.InReview,
+        TaskStatus.Done
+    };
+
+    private IEnumerable<TaskDto> GetTasksByStatus(TaskStatus status)
+    {
+        return Tasks.Where(t => t.Status == status);
+    }
+
+    private string GetStatusLabel(TaskStatus status) => status switch
+    {
+        TaskStatus.Todo => "To Do",
+        TaskStatus.InProgress => "In Progress",
+        TaskStatus.InReview => "In Review",
+        TaskStatus.Done => "Done",
+        _ => status.ToString()
+    };
+
+    private void HandleDragStart(TaskDto task)
+    {
+        if (IsReadOnly) return;
+        _draggedTask = task;
+    }
+
+    private async Task HandleDrop(TaskStatus newStatus)
+    {
+        if (IsReadOnly || _draggedTask == null) return;
+
+        if (_draggedTask.Status != newStatus)
+        {
+            await OnTaskStatusChanged.InvokeAsync((_draggedTask, newStatus));
+        }
+
+        _draggedTask = null;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e, TaskDto task)
+    {
+        // Enter または Space キーでタスクをクリック
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            await OnTaskClick.InvokeAsync(task);
+        }
+    }
+}

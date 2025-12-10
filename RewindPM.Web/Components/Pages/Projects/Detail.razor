@@ -9,8 +9,10 @@
 @using RewindPM.Web.Components.Tasks
 @using RewindPM.Web.Components.Shared
 @using RewindPM.Web.Components.Statistics
+@using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus
 @inject IMediator Mediator
 @inject NavigationManager Navigation
+@inject ILogger<Detail> Logger
 
 <PageTitle>@(project?.Title ?? "プロジェクト詳細") - RewindPM</PageTitle>
 
@@ -73,16 +75,16 @@ else
     <div class="tasks-section">
         <div class="view-header">
             <div class="view-tabs">
-                <button class="view-tab @(_currentView == "gantt" ? "active" : "")" @onclick='() => SwitchView("gantt")'>Gantt Chart</button>
-                <button class="view-tab disabled" title="Coming Soon">Kanban</button>
-                <button class="view-tab @(_currentView == "statistics" ? "active" : "")" @onclick='() => SwitchView("statistics")'>Statistics</button>
+                <button class="view-tab @(_viewType == "Gantt" ? "active" : "")" @onclick='() => ToggleView("Gantt")'>Gantt Chart</button>
+                <button class="view-tab @(_viewType == "Kanban" ? "active" : "")" @onclick='() => ToggleView("Kanban")'>Kanban</button>
+                <button class="view-tab @(_viewType == "Statistics" ? "active" : "")" @onclick='() => ToggleView("Statistics")'>Statistics</button>
             </div>
             <div class="view-actions">
                 <button class="btn btn-success" @onclick="ShowCreateTaskModal" disabled="@_isViewingPast">Add Task</button>
             </div>
         </div>
 
-        @if (_currentView == "gantt")
+        @if (_viewType == "Gantt")
         {
             @if (isLoadingTasks)
             {
@@ -97,9 +99,16 @@ else
                             IsReadOnly="_isViewingPast" />
             }
         }
-        else if (_currentView == "statistics")
+        else if (_viewType == "Statistics")
         {
             <ProjectStatisticsDashboard ProjectId="@Id" AsOfDate="@(_isRetrospectiveMode ? _currentViewDate : null)" />
+        }
+        else
+        {
+            <KanbanBoard Tasks="@(tasks ?? new List<TaskDto>())"
+                         OnTaskClick="ShowTaskDetailModal"
+                         OnTaskStatusChanged="HandleTaskStatusChanged"
+                         IsReadOnly="_isViewingPast" />
         }
     </div>
 
@@ -136,7 +145,39 @@ else
     private bool _isRetrospectiveMode = false;
     
     // ビュー切り替え用の状態
-    private string _currentView = "gantt";
+    private string _viewType = "Gantt";
+
+    private void ToggleView(string viewType)
+    {
+        _viewType = viewType;
+    }
+
+    private async Task HandleTaskStatusChanged((TaskDto task, TaskStatus newStatus) changeData)
+    {
+        if (_isViewingPast) return;
+
+        try
+        {
+            var command = new ChangeTaskStatusCommand(
+                TaskId: changeData.task.Id,
+                NewStatus: changeData.newStatus,
+                ChangedBy: GetCurrentUserId() // 認証サービスから取得
+            );
+
+            await Mediator.Send(command);
+            
+            // タスク一覧を再読み込み
+            await LoadTasks();
+            // 編集日一覧も更新
+            await LoadEditDates();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to update task status for task {TaskId}", changeData.task.Id);
+            errorMessage = "ステータスの更新に失敗しました。もう一度お試しください。";
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -310,11 +351,6 @@ else
         }
     }
 
-    private void SwitchView(string viewName)
-    {
-        _currentView = viewName;
-    }
-
     private async Task ToggleRetrospectiveMode()
     {
         _isRetrospectiveMode = !_isRetrospectiveMode;
@@ -325,5 +361,14 @@ else
             _currentViewDate = null;
             await LoadTasks();
         }
+    }
+
+    /// <summary>
+    /// 現在のユーザーIDを取得（未実装）
+    /// </summary>
+    private string GetCurrentUserId()
+    {
+        // TODO: 認証サービスから実際のユーザーIDを取得する
+        throw new NotImplementedException("ユーザー認証が未実装です");
     }
 }
