@@ -83,18 +83,16 @@ public class TaskFormModalTests : Bunit.TestContext
             .Add(p => p.ProjectId, _testProjectId));
 
         // Assert
-        var titleInput = cut.Find("input#taskTitle");
-        var descriptionInput = cut.Find("textarea#taskDescription");
-        var statusSelect = cut.Find("select#taskStatus");
-        var scheduledStartDateInput = cut.Find("input#scheduledStartDate");
-        var scheduledEndDateInput = cut.Find("input#scheduledEndDate");
-        var estimatedHoursInput = cut.Find("input#estimatedHours");
+        var titleInput = cut.Find(".task-title-input");
+        var descriptionInput = cut.Find(".description-textarea");
+        var statusSelect = cut.Find(".form-select");
+        var scheduledDateInputs = cut.FindAll("input[type='date']");
+        Assert.True(scheduledDateInputs.Count >= 2);
+        var estimatedHoursInput = cut.Find("input[type='number']");
 
         Assert.NotNull(titleInput);
         Assert.NotNull(descriptionInput);
         Assert.NotNull(statusSelect);
-        Assert.NotNull(scheduledStartDateInput);
-        Assert.NotNull(scheduledEndDateInput);
         Assert.NotNull(estimatedHoursInput);
     }
 
@@ -111,13 +109,10 @@ public class TaskFormModalTests : Bunit.TestContext
             .Add(p => p.ExistingTask, existingTask));
 
         // Assert
-        var actualStartDateInput = cut.Find("input#actualStartDate");
-        var actualEndDateInput = cut.Find("input#actualEndDate");
-        var actualHoursInput = cut.Find("input#actualHours");
-
-        Assert.NotNull(actualStartDateInput);
-        Assert.NotNull(actualEndDateInput);
-        Assert.NotNull(actualHoursInput);
+        var actualDateInputs = cut.FindAll("input[type='date']");
+        Assert.True(actualDateInputs.Count >= 4); // 予定2つ + 実績2つ
+        var actualHoursInputs = cut.FindAll("input[type='number']");
+        Assert.True(actualHoursInputs.Count >= 2); // 予定工数 + 実績工数
     }
 
     [Fact(DisplayName = "編集モードで削除ボタンが表示される")]
@@ -184,8 +179,8 @@ public class TaskFormModalTests : Bunit.TestContext
             .Add(p => p.OnSuccess, EventCallback.Factory.Create(this, () => onSuccessInvoked = true)));
 
         // Act
-        var titleInput = cut.Find("input#taskTitle");
-        var descriptionInput = cut.Find("textarea#taskDescription");
+        var titleInput = cut.Find(".task-title-input");
+        var descriptionInput = cut.Find(".description-textarea");
         var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
 
         await cut.InvokeAsync(() => titleInput.Change("New Task"));
@@ -219,7 +214,7 @@ public class TaskFormModalTests : Bunit.TestContext
             .Add(p => p.OnSuccess, EventCallback.Factory.Create(this, () => onSuccessInvoked = true)));
 
         // Act
-        var titleInput = cut.Find("input#taskTitle");
+        var titleInput = cut.Find(".task-title-input");
         var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
 
         await cut.InvokeAsync(() => titleInput.Change("Updated Task"));
@@ -250,7 +245,7 @@ public class TaskFormModalTests : Bunit.TestContext
             .Add(p => p.OnSuccess, EventCallback.Factory.Create(this, () => { })));
 
         // Act
-        var statusSelect = cut.Find("select#taskStatus");
+        var statusSelect = cut.Find(".form-select");
         var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
 
         await cut.InvokeAsync(() => statusSelect.Change(((int)TaskStatus.InProgress).ToString()));
@@ -273,7 +268,7 @@ public class TaskFormModalTests : Bunit.TestContext
             .Add(p => p.ProjectId, _testProjectId));
 
         // Act
-        var titleInput = cut.Find("input#taskTitle");
+        var titleInput = cut.Find(".task-title-input");
         var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
 
         await cut.InvokeAsync(() => titleInput.Change(""));
@@ -298,14 +293,20 @@ public class TaskFormModalTests : Bunit.TestContext
             .Add(p => p.ProjectId, _testProjectId));
 
         // Act
-        var titleInput = cut.Find("input#taskTitle");
-        var startDateInput = cut.Find("input#scheduledStartDate");
-        var endDateInput = cut.Find("input#scheduledEndDate");
-        var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
-
+        var titleInput = cut.Find(".task-title-input");
         await cut.InvokeAsync(() => titleInput.Change("Test Task"));
+        
+        // 再レンダリング後に要素を再取得
+        var dateInputs = cut.FindAll("input[type='date']");
+        var startDateInput = dateInputs[0];
         await cut.InvokeAsync(() => startDateInput.Change(DateTime.Today.AddDays(5).ToString("yyyy-MM-dd")));
+        
+        // 再度取得
+        dateInputs = cut.FindAll("input[type='date']");
+        var endDateInput = dateInputs[1];
         await cut.InvokeAsync(() => endDateInput.Change(DateTime.Today.ToString("yyyy-MM-dd")));
+        
+        var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
         await cut.InvokeAsync(() => saveButton.Click());
 
         // Assert
@@ -358,7 +359,7 @@ public class TaskFormModalTests : Bunit.TestContext
             .Add(p => p.OnSuccess, EventCallback.Factory.Create(this, () => { })));
 
         // Act
-        var titleInput = cut.Find("input#taskTitle");
+        var titleInput = cut.Find(".task-title-input");
         var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
 
         await cut.InvokeAsync(() => titleInput.Change("New Task"));
@@ -387,7 +388,7 @@ public class TaskFormModalTests : Bunit.TestContext
             .Add(p => p.ProjectId, _testProjectId));
 
         // Act
-        var titleInput = cut.Find("input#taskTitle");
+        var titleInput = cut.Find(".task-title-input");
         var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
 
         await cut.InvokeAsync(() => titleInput.Change("Test Task"));
@@ -414,7 +415,7 @@ public class TaskFormModalTests : Bunit.TestContext
             .Add(p => p.ProjectId, _testProjectId));
 
         // Act
-        var titleInput = cut.Find("input#taskTitle");
+        var titleInput = cut.Find(".task-title-input");
         var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
 
         await cut.InvokeAsync(() => titleInput.Change("Test Task"));

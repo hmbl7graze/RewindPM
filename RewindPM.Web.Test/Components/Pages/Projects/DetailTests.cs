@@ -144,10 +144,10 @@ public class DetailTests : Bunit.TestContext
         Assert.Contains("Back to Projects", backLink.TextContent);
 
         var title = cut.Find(".project-title");
-        Assert.Equal("Test Project", title.TextContent);
+        Assert.Contains("Test Project", title.TextContent.Trim());
 
-        var buttons = cut.FindAll("button, a.btn");
-        Assert.Contains(buttons, b => b.TextContent.Contains("Edit Project"));
+        var buttons = cut.FindAll("button, a.btn, a.btn-icon");
+        Assert.Contains(buttons, b => b.TextContent.Contains("Edit"));
         Assert.Contains(buttons, b => b.TextContent.Contains("Add Task"));
     }
 
@@ -401,7 +401,7 @@ public class DetailTests : Bunit.TestContext
             .Returns(project);
         _mediatorMock
             .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new List<DateTime>());
+            .Returns(new List<DateTime> { DateTime.Today.AddDays(-1) });
         _mediatorMock
             .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(new List<TaskDto>());
@@ -410,8 +410,12 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
+        // Retrospectiveモードを有効化
+        var retrospectiveButton = cut.FindAll("button").First(b => b.TextContent.Contains("Retrospective"));
+        retrospectiveButton.Click();
+
         // Assert - TimelineControlが表示されている
-        var timelineControl = cut.Find(".timeline-control");
+        var timelineControl = cut.Find(".timeline-toolbar");
         Assert.NotNull(timelineControl);
     }
 

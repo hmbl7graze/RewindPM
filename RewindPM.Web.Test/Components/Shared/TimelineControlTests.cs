@@ -1,4 +1,4 @@
-using Bunit;
+﻿using Bunit;
 using Microsoft.AspNetCore.Components;
 using RewindPM.Web.Components.Shared;
 
@@ -32,7 +32,7 @@ public class TimelineControlTests : Bunit.TestContext
 
         // Assert
         var dateDisplay = cut.Find(".timeline-date");
-        Assert.Equal("2025年01月15日", dateDisplay.TextContent);
+        Assert.Equal("2025/01/15", dateDisplay.TextContent);
     }
 
     [Fact(DisplayName = "過去表示時にviewing-pastクラスが付与される")]
@@ -47,7 +47,7 @@ public class TimelineControlTests : Bunit.TestContext
             .Add(p => p.EditDates, new List<DateTime> { date }));
 
         // Assert
-        var control = cut.Find(".timeline-control");
+        var control = cut.Find(".timeline-toolbar");
         Assert.Contains("viewing-past", control.ClassName);
     }
 
@@ -60,7 +60,7 @@ public class TimelineControlTests : Bunit.TestContext
             .Add(p => p.EditDates, new List<DateTime>()));
 
         // Assert
-        var control = cut.Find(".timeline-control");
+        var control = cut.Find(".timeline-toolbar");
         Assert.DoesNotContain("viewing-past", control.ClassName);
     }
 
@@ -73,7 +73,7 @@ public class TimelineControlTests : Bunit.TestContext
             .Add(p => p.EditDates, new List<DateTime>()));
 
         // Assert
-        var prevButton = cut.Find(".timeline-button-prev");
+        var prevButton = cut.Find(".timeline-btn-prev");
         Assert.True(prevButton.HasAttribute("disabled"));
     }
 
@@ -86,7 +86,7 @@ public class TimelineControlTests : Bunit.TestContext
             .Add(p => p.EditDates, new List<DateTime> { new DateTime(2025, 1, 15) }));
 
         // Assert
-        var prevButton = cut.Find(".timeline-button-prev");
+        var prevButton = cut.Find(".timeline-btn-prev");
         Assert.False(prevButton.HasAttribute("disabled"));
     }
 
@@ -99,7 +99,7 @@ public class TimelineControlTests : Bunit.TestContext
             .Add(p => p.EditDates, new List<DateTime> { new DateTime(2025, 1, 15) }));
 
         // Assert
-        var nextButton = cut.Find(".timeline-button-next");
+        var nextButton = cut.Find(".timeline-btn-next");
         Assert.True(nextButton.HasAttribute("disabled"));
     }
 
@@ -123,7 +123,7 @@ public class TimelineControlTests : Bunit.TestContext
             })));
 
         // Act
-        var prevButton = cut.Find(".timeline-button-prev");
+        var prevButton = cut.Find(".timeline-btn-prev");
         prevButton.Click();
 
         // Assert
@@ -152,7 +152,7 @@ public class TimelineControlTests : Bunit.TestContext
             })));
 
         // Act
-        var nextButton = cut.Find(".timeline-button-next");
+        var nextButton = cut.Find(".timeline-btn-next");
         nextButton.Click();
 
         // Assert
@@ -169,7 +169,7 @@ public class TimelineControlTests : Bunit.TestContext
             .Add(p => p.EditDates, new List<DateTime> { new DateTime(2025, 1, 15) }));
 
         // Assert - 過去表示時はボタンが存在
-        var todayButtons = cutPast.FindAll(".timeline-button-today");
+        var todayButtons = cutPast.FindAll(".timeline-btn-reset");
         Assert.Single(todayButtons);
 
         // Arrange - 最新表示
@@ -178,7 +178,7 @@ public class TimelineControlTests : Bunit.TestContext
             .Add(p => p.EditDates, new List<DateTime> { new DateTime(2025, 1, 15) }));
 
         // Assert - 最新表示時はボタンが存在しない
-        var todayButtonsLatest = cutLatest.FindAll(".timeline-button-today");
+        var todayButtonsLatest = cutLatest.FindAll(".timeline-btn-reset");
         Assert.Empty(todayButtonsLatest);
     }
 
@@ -198,7 +198,7 @@ public class TimelineControlTests : Bunit.TestContext
             })));
 
         // Act
-        var todayButton = cut.Find(".timeline-button-today");
+        var todayButton = cut.Find(".timeline-btn-reset");
         todayButton.Click();
 
         // Assert
@@ -227,7 +227,7 @@ public class TimelineControlTests : Bunit.TestContext
             })));
 
         // Act
-        var prevButton = cut.Find(".timeline-button-prev");
+        var prevButton = cut.Find(".timeline-btn-prev");
         prevButton.Click();
 
         // Assert - 1月5日（より古い日付）に移動
@@ -257,7 +257,7 @@ public class TimelineControlTests : Bunit.TestContext
             })));
 
         // Act
-        var nextButton = cut.Find(".timeline-button-next");
+        var nextButton = cut.Find(".timeline-btn-next");
         nextButton.Click();
 
         // Assert - 1月15日（より新しい日付）に移動
@@ -282,7 +282,7 @@ public class TimelineControlTests : Bunit.TestContext
             .Add(p => p.EditDates, editDates));
 
         // Assert
-        var prevButton = cut.Find(".timeline-button-prev");
+        var prevButton = cut.Find(".timeline-btn-prev");
         Assert.True(prevButton.HasAttribute("disabled"));
     }
 
@@ -302,8 +302,8 @@ public class TimelineControlTests : Bunit.TestContext
             .Add(p => p.CurrentDate, new DateTime(2025, 1, 15))
             .Add(p => p.EditDates, editDates));
 
-        // Assert
-        var nextButton = cut.Find(".timeline-button-next");
-        Assert.True(nextButton.HasAttribute("disabled"));
+        // Assert - 最新の編集日でも最新状態に戻れるため有効
+        var nextButton = cut.Find(".timeline-btn-next");
+        Assert.False(nextButton.HasAttribute("disabled"));
     }
 }
