@@ -68,6 +68,7 @@ public class TaskAggregate : AggregateRoot
     /// <param name="description">タスクの説明</param>
     /// <param name="scheduledPeriod">予定期間と工数</param>
     /// <param name="createdBy">作成者のユーザーID</param>
+    /// <param name="dateTimeProvider">時刻プロバイダー</param>
     /// <returns>新しいTaskAggregateインスタンス</returns>
     public static TaskAggregate Create(
         Guid id,
@@ -75,7 +76,8 @@ public class TaskAggregate : AggregateRoot
         string title,
         string description,
         ScheduledPeriod scheduledPeriod,
-        string createdBy)
+        string createdBy,
+        IDateTimeProvider dateTimeProvider)
     {
         if (string.IsNullOrWhiteSpace(title))
         {
@@ -101,6 +103,7 @@ public class TaskAggregate : AggregateRoot
         task.ApplyEvent(new TaskCreated
         {
             AggregateId = id,
+            OccurredAt = dateTimeProvider.UtcNow,
             ProjectId = projectId,
             Title = title,
             Description = description ?? string.Empty,
@@ -116,7 +119,8 @@ public class TaskAggregate : AggregateRoot
     /// </summary>
     /// <param name="newStatus">新しいステータス</param>
     /// <param name="changedBy">変更者のユーザーID</param>
-    public void ChangeStatus(TaskStatus newStatus, string changedBy)
+    /// <param name="dateTimeProvider">時刻プロバイダー</param>
+    public void ChangeStatus(TaskStatus newStatus, string changedBy, IDateTimeProvider dateTimeProvider)
     {
         if (Status == newStatus)
         {
@@ -131,6 +135,7 @@ public class TaskAggregate : AggregateRoot
         ApplyEvent(new TaskStatusChanged
         {
             AggregateId = Id,
+            OccurredAt = dateTimeProvider.UtcNow,
             OldStatus = Status,
             NewStatus = newStatus,
             ChangedBy = changedBy
@@ -143,7 +148,8 @@ public class TaskAggregate : AggregateRoot
     /// <param name="title">新しいタイトル</param>
     /// <param name="description">新しい説明</param>
     /// <param name="updatedBy">更新者のユーザーID</param>
-    public void Update(string title, string description, string updatedBy)
+    /// <param name="dateTimeProvider">時刻プロバイダー</param>
+    public void Update(string title, string description, string updatedBy, IDateTimeProvider dateTimeProvider)
     {
         if (string.IsNullOrWhiteSpace(title))
         {
@@ -158,6 +164,7 @@ public class TaskAggregate : AggregateRoot
         ApplyEvent(new TaskUpdated
         {
             AggregateId = Id,
+            OccurredAt = dateTimeProvider.UtcNow,
             Title = title,
             Description = description ?? string.Empty,
             UpdatedBy = updatedBy
@@ -169,7 +176,8 @@ public class TaskAggregate : AggregateRoot
     /// </summary>
     /// <param name="scheduledPeriod">新しい予定期間</param>
     /// <param name="changedBy">変更者のユーザーID</param>
-    public void ChangeSchedule(ScheduledPeriod scheduledPeriod, string changedBy)
+    /// <param name="dateTimeProvider">時刻プロバイダー</param>
+    public void ChangeSchedule(ScheduledPeriod scheduledPeriod, string changedBy, IDateTimeProvider dateTimeProvider)
     {
         if (scheduledPeriod == null)
         {
@@ -184,6 +192,7 @@ public class TaskAggregate : AggregateRoot
         ApplyEvent(new TaskScheduledPeriodChanged
         {
             AggregateId = Id,
+            OccurredAt = dateTimeProvider.UtcNow,
             ScheduledPeriod = scheduledPeriod,
             ChangedBy = changedBy
         });
@@ -194,7 +203,8 @@ public class TaskAggregate : AggregateRoot
     /// </summary>
     /// <param name="actualPeriod">新しい実績期間</param>
     /// <param name="changedBy">変更者のユーザーID</param>
-    public void ChangeActualPeriod(ActualPeriod actualPeriod, string changedBy)
+    /// <param name="dateTimeProvider">時刻プロバイダー</param>
+    public void ChangeActualPeriod(ActualPeriod actualPeriod, string changedBy, IDateTimeProvider dateTimeProvider)
     {
         if (actualPeriod == null)
         {
@@ -209,6 +219,7 @@ public class TaskAggregate : AggregateRoot
         ApplyEvent(new TaskActualPeriodChanged
         {
             AggregateId = Id,
+            OccurredAt = dateTimeProvider.UtcNow,
             ActualPeriod = actualPeriod,
             ChangedBy = changedBy
         });

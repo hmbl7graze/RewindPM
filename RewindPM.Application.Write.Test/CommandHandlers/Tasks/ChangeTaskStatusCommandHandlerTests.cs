@@ -4,6 +4,7 @@ using RewindPM.Application.Write.Commands.Tasks;
 using RewindPM.Application.Write.Repositories;
 using RewindPM.Domain.Aggregates;
 using RewindPM.Domain.ValueObjects;
+using RewindPM.Domain.Common;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 
 namespace RewindPM.Application.Write.Test.CommandHandlers.Tasks;
@@ -11,12 +12,15 @@ namespace RewindPM.Application.Write.Test.CommandHandlers.Tasks;
 public class ChangeTaskStatusCommandHandlerTests
 {
     private readonly IAggregateRepository _repository;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ChangeTaskStatusCommandHandler _handler;
 
     public ChangeTaskStatusCommandHandlerTests()
     {
         _repository = Substitute.For<IAggregateRepository>();
-        _handler = new ChangeTaskStatusCommandHandler(_repository);
+        _dateTimeProvider = Substitute.For<IDateTimeProvider>();
+        _dateTimeProvider.UtcNow.Returns(DateTime.UtcNow);
+        _handler = new ChangeTaskStatusCommandHandler(_repository, _dateTimeProvider);
     }
 
     [Fact(DisplayName = "既存のタスクのステータスを変更できること")]
@@ -30,7 +34,8 @@ public class ChangeTaskStatusCommandHandlerTests
             "Test Task",
             "Description",
             new ScheduledPeriod(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), 40),
-            "user1"
+            "user1",
+            _dateTimeProvider
         );
 
         _repository.GetByIdAsync<TaskAggregate>(taskId)

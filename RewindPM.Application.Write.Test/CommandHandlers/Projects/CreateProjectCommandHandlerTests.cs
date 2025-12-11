@@ -3,18 +3,22 @@ using RewindPM.Application.Write.CommandHandlers.Projects;
 using RewindPM.Application.Write.Commands.Projects;
 using RewindPM.Application.Write.Repositories;
 using RewindPM.Domain.Aggregates;
+using RewindPM.Domain.Common;
 
 namespace RewindPM.Application.Write.Test.CommandHandlers.Projects;
 
 public class CreateProjectCommandHandlerTests
 {
     private readonly IAggregateRepository _repository;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly CreateProjectCommandHandler _handler;
 
     public CreateProjectCommandHandlerTests()
     {
         _repository = Substitute.For<IAggregateRepository>();
-        _handler = new CreateProjectCommandHandler(_repository);
+        _dateTimeProvider = Substitute.For<IDateTimeProvider>();
+        _dateTimeProvider.UtcNow.Returns(DateTime.UtcNow);
+        _handler = new CreateProjectCommandHandler(_repository, _dateTimeProvider);
     }
 
     [Fact(DisplayName = "有効なコマンドでプロジェクトを作成し、IDを返すこと")]

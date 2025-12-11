@@ -2,6 +2,7 @@ using MediatR;
 using RewindPM.Application.Write.Commands.Projects;
 using RewindPM.Application.Write.Repositories;
 using RewindPM.Domain.Aggregates;
+using RewindPM.Domain.Common;
 
 namespace RewindPM.Application.Write.CommandHandlers.Projects;
 
@@ -11,10 +12,12 @@ namespace RewindPM.Application.Write.CommandHandlers.Projects;
 public class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectCommand>
 {
     private readonly IAggregateRepository _repository;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public UpdateProjectCommandHandler(IAggregateRepository repository)
+    public UpdateProjectCommandHandler(IAggregateRepository repository, IDateTimeProvider dateTimeProvider)
     {
         _repository = repository;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task Handle(UpdateProjectCommand request, CancellationToken cancellationToken)
@@ -28,7 +31,7 @@ public class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectCommand>
         }
 
         // 更新
-        project.Update(request.Title, request.Description, request.UpdatedBy);
+        project.Update(request.Title, request.Description, request.UpdatedBy, _dateTimeProvider);
 
         // 保存
         await _repository.SaveAsync(project);

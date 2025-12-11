@@ -2,12 +2,14 @@ using RewindPM.Domain.Aggregates;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
 using RewindPM.Domain.ValueObjects;
+using RewindPM.Domain.Test.TestHelpers;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 
 namespace RewindPM.Domain.Test.Aggregates;
 
 public class TaskAggregateTests
 {
+    private readonly IDateTimeProvider _dateTimeProvider = new TestDateTimeProvider();
     private readonly Guid _projectId = Guid.NewGuid();
     private readonly ScheduledPeriod _scheduledPeriod = new(
         new DateTime(2025, 1, 1),
@@ -24,7 +26,7 @@ public class TaskAggregateTests
         var createdBy = "user123";
 
         // Act
-        var task = TaskAggregate.Create(id, _projectId, title, description, _scheduledPeriod, createdBy);
+        var task = TaskAggregate.Create(id, _projectId, title, description, _scheduledPeriod, createdBy, _dateTimeProvider);
 
         // Assert
         Assert.Equal(id, task.Id);
@@ -49,7 +51,7 @@ public class TaskAggregateTests
         var createdBy = "user123";
 
         // Act
-        var task = TaskAggregate.Create(id, _projectId, title, description, _scheduledPeriod, createdBy);
+        var task = TaskAggregate.Create(id, _projectId, title, description, _scheduledPeriod, createdBy, _dateTimeProvider);
 
         // Assert
         Assert.Single(task.UncommittedEvents);
@@ -76,7 +78,7 @@ public class TaskAggregateTests
 
         // Act & Assert
         var exception = Assert.Throws<DomainException>(() =>
-            TaskAggregate.Create(id, _projectId, title, description, _scheduledPeriod, createdBy));
+            TaskAggregate.Create(id, _projectId, title, description, _scheduledPeriod, createdBy, _dateTimeProvider));
         Assert.Equal("タスクのタイトルは必須です", exception.Message);
     }
 
@@ -92,7 +94,7 @@ public class TaskAggregateTests
 
         // Act & Assert
         var exception = Assert.Throws<DomainException>(() =>
-            TaskAggregate.Create(id, projectId, title, description, _scheduledPeriod, createdBy));
+            TaskAggregate.Create(id, projectId, title, description, _scheduledPeriod, createdBy, _dateTimeProvider));
         Assert.Equal("プロジェクトIDは必須です", exception.Message);
     }
 
@@ -108,7 +110,7 @@ public class TaskAggregateTests
 
         // Act & Assert
         var exception = Assert.Throws<DomainException>(() =>
-            TaskAggregate.Create(id, _projectId, title, description, scheduledPeriod, createdBy));
+            TaskAggregate.Create(id, _projectId, title, description, scheduledPeriod, createdBy, _dateTimeProvider));
         Assert.Equal("予定期間は必須です", exception.Message);
     }
 
@@ -123,7 +125,7 @@ public class TaskAggregateTests
 
         // Act & Assert
         var exception = Assert.Throws<DomainException>(() =>
-            TaskAggregate.Create(id, _projectId, title, description, _scheduledPeriod, createdBy));
+            TaskAggregate.Create(id, _projectId, title, description, _scheduledPeriod, createdBy, _dateTimeProvider));
         Assert.Equal("作成者のユーザーIDは必須です", exception.Message);
     }
 
@@ -131,14 +133,14 @@ public class TaskAggregateTests
     public void ChangeStatus_WithValidValues_ShouldChangeStatus()
     {
         // Arrange
-        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123");
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
         task.ClearUncommittedEvents();
 
         var newStatus = TaskStatus.InProgress;
         var changedBy = "user456";
 
         // Act
-        task.ChangeStatus(newStatus, changedBy);
+        task.ChangeStatus(newStatus, changedBy, _dateTimeProvider);
 
         // Assert
         Assert.Equal(newStatus, task.Status);
@@ -149,7 +151,7 @@ public class TaskAggregateTests
     public void ChangeStatus_ShouldRaiseTaskStatusChangedEvent()
     {
         // Arrange
-        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123");
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
         task.ClearUncommittedEvents();
 
         var oldStatus = TaskStatus.Todo;
@@ -157,7 +159,7 @@ public class TaskAggregateTests
         var changedBy = "user456";
 
         // Act
-        task.ChangeStatus(newStatus, changedBy);
+        task.ChangeStatus(newStatus, changedBy, _dateTimeProvider);
 
         // Assert
         Assert.Single(task.UncommittedEvents);
@@ -174,11 +176,11 @@ public class TaskAggregateTests
     public void ChangeStatus_WhenSameStatus_ShouldBeIgnored()
     {
         // Arrange
-        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123");
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
         task.ClearUncommittedEvents();
 
         // Act
-        task.ChangeStatus(TaskStatus.Todo, "user456");
+        task.ChangeStatus(TaskStatus.Todo, "user456", _dateTimeProvider);
 
         // Assert
         Assert.Empty(task.UncommittedEvents);
@@ -188,7 +190,7 @@ public class TaskAggregateTests
     public void Update_WithValidValues_ShouldUpdateTask()
     {
         // Arrange
-        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "旧タイトル", "旧説明", _scheduledPeriod, "user123");
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "旧タイトル", "旧説明", _scheduledPeriod, "user123", _dateTimeProvider);
         task.ClearUncommittedEvents();
 
         var newTitle = "新タイトル";
@@ -196,7 +198,7 @@ public class TaskAggregateTests
         var updatedBy = "user456";
 
         // Act
-        task.Update(newTitle, newDescription, updatedBy);
+        task.Update(newTitle, newDescription, updatedBy, _dateTimeProvider);
 
         // Assert
         Assert.Equal(newTitle, task.Title);
@@ -208,7 +210,7 @@ public class TaskAggregateTests
     public void Update_ShouldRaiseTaskUpdatedEvent()
     {
         // Arrange
-        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "旧タイトル", "旧説明", _scheduledPeriod, "user123");
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "旧タイトル", "旧説明", _scheduledPeriod, "user123", _dateTimeProvider);
         task.ClearUncommittedEvents();
 
         var newTitle = "新タイトル";
@@ -216,7 +218,7 @@ public class TaskAggregateTests
         var updatedBy = "user456";
 
         // Act
-        task.Update(newTitle, newDescription, updatedBy);
+        task.Update(newTitle, newDescription, updatedBy, _dateTimeProvider);
 
         // Assert
         Assert.Single(task.UncommittedEvents);
@@ -233,7 +235,7 @@ public class TaskAggregateTests
     public void ChangeSchedule_WithValidValues_ShouldChangeSchedule()
     {
         // Arrange
-        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123");
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
         task.ClearUncommittedEvents();
 
         var newSchedule = new ScheduledPeriod(
@@ -243,7 +245,7 @@ public class TaskAggregateTests
         var changedBy = "user456";
 
         // Act
-        task.ChangeSchedule(newSchedule, changedBy);
+        task.ChangeSchedule(newSchedule, changedBy, _dateTimeProvider);
 
         // Assert
         Assert.Equal(newSchedule, task.ScheduledPeriod);
@@ -254,7 +256,7 @@ public class TaskAggregateTests
     public void ChangeSchedule_ShouldRaiseTaskScheduledPeriodChangedEvent()
     {
         // Arrange
-        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123");
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
         task.ClearUncommittedEvents();
 
         var newSchedule = new ScheduledPeriod(
@@ -264,7 +266,7 @@ public class TaskAggregateTests
         var changedBy = "user456";
 
         // Act
-        task.ChangeSchedule(newSchedule, changedBy);
+        task.ChangeSchedule(newSchedule, changedBy, _dateTimeProvider);
 
         // Assert
         Assert.Single(task.UncommittedEvents);
@@ -280,7 +282,7 @@ public class TaskAggregateTests
     public void ChangeActualPeriod_WithValidValues_ShouldChangeActualPeriod()
     {
         // Arrange
-        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123");
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
         task.ClearUncommittedEvents();
 
         var actualPeriod = new ActualPeriod(
@@ -290,7 +292,7 @@ public class TaskAggregateTests
         var changedBy = "user456";
 
         // Act
-        task.ChangeActualPeriod(actualPeriod, changedBy);
+        task.ChangeActualPeriod(actualPeriod, changedBy, _dateTimeProvider);
 
         // Assert
         Assert.Equal(actualPeriod, task.ActualPeriod);
@@ -301,7 +303,7 @@ public class TaskAggregateTests
     public void ChangeActualPeriod_ShouldRaiseTaskActualPeriodChangedEvent()
     {
         // Arrange
-        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123");
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
         task.ClearUncommittedEvents();
 
         var actualPeriod = new ActualPeriod(
@@ -311,7 +313,7 @@ public class TaskAggregateTests
         var changedBy = "user456";
 
         // Act
-        task.ChangeActualPeriod(actualPeriod, changedBy);
+        task.ChangeActualPeriod(actualPeriod, changedBy, _dateTimeProvider);
 
         // Assert
         Assert.Single(task.UncommittedEvents);

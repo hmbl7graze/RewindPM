@@ -44,8 +44,9 @@ public class ProjectAggregate : AggregateRoot
     /// <param name="title">プロジェクトのタイトル</param>
     /// <param name="description">プロジェクトの説明</param>
     /// <param name="createdBy">作成者のユーザーID</param>
+    /// <param name="dateTimeProvider">時刻プロバイダー</param>
     /// <returns>新しいProjectAggregateインスタンス</returns>
-    public static ProjectAggregate Create(Guid id, string title, string description, string createdBy)
+    public static ProjectAggregate Create(Guid id, string title, string description, string createdBy, IDateTimeProvider dateTimeProvider)
     {
         if (string.IsNullOrWhiteSpace(title))
         {
@@ -61,6 +62,7 @@ public class ProjectAggregate : AggregateRoot
         project.ApplyEvent(new ProjectCreated
         {
             AggregateId = id,
+            OccurredAt = dateTimeProvider.UtcNow,
             Title = title,
             Description = description ?? string.Empty,
             CreatedBy = createdBy
@@ -75,7 +77,8 @@ public class ProjectAggregate : AggregateRoot
     /// <param name="title">新しいタイトル</param>
     /// <param name="description">新しい説明</param>
     /// <param name="updatedBy">更新者のユーザーID</param>
-    public void Update(string title, string description, string updatedBy)
+    /// <param name="dateTimeProvider">時刻プロバイダー</param>
+    public void Update(string title, string description, string updatedBy, IDateTimeProvider dateTimeProvider)
     {
         if (string.IsNullOrWhiteSpace(title))
         {
@@ -90,6 +93,7 @@ public class ProjectAggregate : AggregateRoot
         ApplyEvent(new ProjectUpdated
         {
             AggregateId = Id,
+            OccurredAt = dateTimeProvider.UtcNow,
             Title = title,
             Description = description ?? string.Empty,
             UpdatedBy = updatedBy

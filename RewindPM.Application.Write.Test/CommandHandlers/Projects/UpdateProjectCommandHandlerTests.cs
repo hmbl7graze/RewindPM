@@ -3,18 +3,22 @@ using RewindPM.Application.Write.CommandHandlers.Projects;
 using RewindPM.Application.Write.Commands.Projects;
 using RewindPM.Application.Write.Repositories;
 using RewindPM.Domain.Aggregates;
+using RewindPM.Domain.Common;
 
 namespace RewindPM.Application.Write.Test.CommandHandlers.Projects;
 
 public class UpdateProjectCommandHandlerTests
 {
     private readonly IAggregateRepository _repository;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly UpdateProjectCommandHandler _handler;
 
     public UpdateProjectCommandHandlerTests()
     {
         _repository = Substitute.For<IAggregateRepository>();
-        _handler = new UpdateProjectCommandHandler(_repository);
+        _dateTimeProvider = Substitute.For<IDateTimeProvider>();
+        _dateTimeProvider.UtcNow.Returns(DateTime.UtcNow);
+        _handler = new UpdateProjectCommandHandler(_repository, _dateTimeProvider);
     }
 
     [Fact(DisplayName = "既存のプロジェクトを更新できること")]
@@ -26,7 +30,8 @@ public class UpdateProjectCommandHandlerTests
             projectId,
             "Original Title",
             "Original Description",
-            "user1"
+            "user1",
+            _dateTimeProvider
         );
 
         _repository.GetByIdAsync<ProjectAggregate>(projectId)

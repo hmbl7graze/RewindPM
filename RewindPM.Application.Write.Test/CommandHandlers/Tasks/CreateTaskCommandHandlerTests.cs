@@ -3,18 +3,22 @@ using RewindPM.Application.Write.CommandHandlers.Tasks;
 using RewindPM.Application.Write.Commands.Tasks;
 using RewindPM.Application.Write.Repositories;
 using RewindPM.Domain.Aggregates;
+using RewindPM.Domain.Common;
 
 namespace RewindPM.Application.Write.Test.CommandHandlers.Tasks;
 
 public class CreateTaskCommandHandlerTests
 {
     private readonly IAggregateRepository _repository;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly CreateTaskCommandHandler _handler;
 
     public CreateTaskCommandHandlerTests()
     {
         _repository = Substitute.For<IAggregateRepository>();
-        _handler = new CreateTaskCommandHandler(_repository);
+        _dateTimeProvider = Substitute.For<IDateTimeProvider>();
+        _dateTimeProvider.UtcNow.Returns(DateTime.UtcNow);
+        _handler = new CreateTaskCommandHandler(_repository, _dateTimeProvider);
     }
 
     [Fact(DisplayName = "有効なコマンドでタスクを作成し、IDを返すこと")]
