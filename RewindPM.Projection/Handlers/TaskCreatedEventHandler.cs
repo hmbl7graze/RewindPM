@@ -4,6 +4,7 @@ using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
 using RewindPM.Infrastructure.Read.Entities;
 using RewindPM.Infrastructure.Read.Persistence;
+using RewindPM.Infrastructure.Read.Services;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 
 namespace RewindPM.Projection.Handlers;
@@ -14,13 +15,16 @@ namespace RewindPM.Projection.Handlers;
 public class TaskCreatedEventHandler : IEventHandler<TaskCreated>
 {
     private readonly ReadModelDbContext _context;
+    private readonly ITimeZoneService _timeZoneService;
     private readonly ILogger<TaskCreatedEventHandler> _logger;
 
     public TaskCreatedEventHandler(
         ReadModelDbContext context,
+        ITimeZoneService timeZoneService,
         ILogger<TaskCreatedEventHandler> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _timeZoneService = timeZoneService ?? throw new ArgumentNullException(nameof(timeZoneService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -53,7 +57,7 @@ public class TaskCreatedEventHandler : IEventHandler<TaskCreated>
         _context.Tasks.Add(task);
 
         // 初回スナップショットをTaskHistoriesテーブルに追加
-        var snapshotDate = @event.OccurredAt.Date;
+        var snapshotDate = _timeZoneService.GetSnapshotDate(@event.OccurredAt);
         var snapshot = new TaskHistoryEntity
         {
             Id = Guid.NewGuid(),

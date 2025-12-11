@@ -4,6 +4,7 @@ using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
 using RewindPM.Infrastructure.Read.Entities;
 using RewindPM.Infrastructure.Read.Persistence;
+using RewindPM.Infrastructure.Read.Services;
 
 namespace RewindPM.Projection.Handlers;
 
@@ -13,13 +14,16 @@ namespace RewindPM.Projection.Handlers;
 public class TaskUpdatedEventHandler : IEventHandler<TaskUpdated>
 {
     private readonly ReadModelDbContext _context;
+    private readonly ITimeZoneService _timeZoneService;
     private readonly ILogger<TaskUpdatedEventHandler> _logger;
 
     public TaskUpdatedEventHandler(
         ReadModelDbContext context,
+        ITimeZoneService timeZoneService,
         ILogger<TaskUpdatedEventHandler> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _timeZoneService = timeZoneService ?? throw new ArgumentNullException(nameof(timeZoneService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -52,7 +56,7 @@ public class TaskUpdatedEventHandler : IEventHandler<TaskUpdated>
 
     private async Task UpsertTaskSnapshotAsync(Guid taskId, TaskEntity currentState, DateTime occurredAt)
     {
-        var snapshotDate = occurredAt.Date;
+        var snapshotDate = _timeZoneService.GetSnapshotDate(occurredAt);
         var snapshot = await _context.TaskHistories
             .FirstOrDefaultAsync(h => h.TaskId == taskId && h.SnapshotDate == snapshotDate);
 

@@ -4,6 +4,7 @@ using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
 using RewindPM.Infrastructure.Read.Entities;
 using RewindPM.Infrastructure.Read.Persistence;
+using RewindPM.Infrastructure.Read.Services;
 
 namespace RewindPM.Projection.Handlers;
 
@@ -13,13 +14,16 @@ namespace RewindPM.Projection.Handlers;
 public class ProjectUpdatedEventHandler : IEventHandler<ProjectUpdated>
 {
     private readonly ReadModelDbContext _context;
+    private readonly ITimeZoneService _timeZoneService;
     private readonly ILogger<ProjectUpdatedEventHandler> _logger;
 
     public ProjectUpdatedEventHandler(
         ReadModelDbContext context,
+        ITimeZoneService timeZoneService,
         ILogger<ProjectUpdatedEventHandler> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _timeZoneService = timeZoneService ?? throw new ArgumentNullException(nameof(timeZoneService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -43,7 +47,7 @@ public class ProjectUpdatedEventHandler : IEventHandler<ProjectUpdated>
         project.UpdatedBy = @event.UpdatedBy;
 
         // 当日のスナップショットを作成または更新
-        var snapshotDate = @event.OccurredAt.Date;
+        var snapshotDate = _timeZoneService.GetSnapshotDate(@event.OccurredAt);
         var snapshot = await _context.ProjectHistories
             .FirstOrDefaultAsync(h => h.ProjectId == @event.AggregateId && h.SnapshotDate == snapshotDate);
 
