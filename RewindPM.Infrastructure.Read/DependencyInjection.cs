@@ -28,11 +28,8 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         // TimeZone設定を登録
-        services.Configure<TimeZoneSettings>(options =>
-        {
-            var section = configuration.GetSection(TimeZoneSettings.SectionName);
-            ConfigurationBinder.Bind(section, options);
-        });
+        services.Configure<TimeZoneSettings>(
+            configuration.GetSection(TimeZoneSettings.SectionName));
 
         // TimeZoneServiceをシングルトンとして登録
         services.AddSingleton<ITimeZoneService, TimeZoneService>();

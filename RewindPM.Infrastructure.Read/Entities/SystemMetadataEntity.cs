@@ -6,6 +6,11 @@ namespace RewindPM.Infrastructure.Read.Entities;
 public class SystemMetadataEntity
 {
     /// <summary>
+    /// タイムゾーンIDのメタデータキー
+    /// </summary>
+    public const string TimeZoneMetadataKey = "CurrentTimeZoneId";
+
+    /// <summary>
     /// メタデータのキー（主キー）
     /// </summary>
     public string Key { get; set; } = string.Empty;

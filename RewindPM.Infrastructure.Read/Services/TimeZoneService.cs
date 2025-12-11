@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RewindPM.Infrastructure.Read.Configuration;
 
@@ -8,6 +9,8 @@ namespace RewindPM.Infrastructure.Read.Services;
 /// </summary>
 public class TimeZoneService : ITimeZoneService
 {
+    private readonly ILogger<TimeZoneService> _logger;
+
     /// <summary>
     /// 設定されているタイムゾーン
     /// </summary>
@@ -17,9 +20,22 @@ public class TimeZoneService : ITimeZoneService
     /// コンストラクタ
     /// </summary>
     /// <param name="settings">タイムゾーン設定</param>
-    public TimeZoneService(IOptions<TimeZoneSettings> settings)
+    /// <param name="logger">ロガー</param>
+    public TimeZoneService(IOptions<TimeZoneSettings> settings, ILogger<TimeZoneService> logger)
     {
-        TimeZone = settings.Value.GetTimeZoneInfo();
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        
+        var timeZoneId = settings.Value.TimeZoneId;
+        try
+        {
+            TimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+            _logger.LogInformation("TimeZone initialized: {TimeZoneId} ({DisplayName})", TimeZone.Id, TimeZone.DisplayName);
+        }
+        catch (TimeZoneNotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Invalid TimeZone ID '{TimeZoneId}' specified. Falling back to UTC.", timeZoneId);
+            TimeZone = TimeZoneInfo.Utc;
+        }
     }
 
     /// <summary>

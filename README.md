@@ -203,11 +203,44 @@ RewindPMは日単位でプロジェクトの振り返りを行うため、タイ
 ```
 
 **利用可能なタイムゾーンID:**
+
+RewindPMは.NETの標準タイムゾーンIDを使用します。プラットフォームによって使用可能なタイムゾーンIDが異なるため、注意が必要です。
+
+**Windows環境:**
+- `UTC` - 協定世界時
+- `Tokyo Standard Time` - 日本標準時 (JST, UTC+9)
+- `Eastern Standard Time` - 米国東部時間
+- `GMT Standard Time` - 英国時間
+- その他、Windowsの標準タイムゾーンID（[一覧はこちら](https://learn.microsoft.com/ja-jp/windows-hardware/manufacture/desktop/default-time-zones)）
+
+**Linux/macOS環境（IANA形式）:**
 - `UTC` - 協定世界時
 - `Asia/Tokyo` - 日本標準時 (JST, UTC+9)
 - `America/New_York` - 米国東部時間
 - `Europe/London` - 英国時間
-- その他、.NETの標準タイムゾーンID
+- その他、IANA タイムゾーンデータベースのID
+
+**クロスプラットフォーム対応:**
+
+異なるプラットフォームで同じアプリケーションを実行する場合、環境に応じた設定ファイルを用意することをお勧めします:
+
+```json
+// appsettings.Development.json (Windows開発環境)
+{
+  "TimeZone": {
+    "TimeZoneId": "Tokyo Standard Time"
+  }
+}
+
+// appsettings.Production.json (Linux本番環境)
+{
+  "TimeZone": {
+    "TimeZoneId": "Asia/Tokyo"
+  }
+}
+```
+
+無効なタイムゾーンIDが指定された場合、自動的にUTCにフォールバックされ、警告がログに記録されます。
 
 #### タイムゾーン変更時の注意
 

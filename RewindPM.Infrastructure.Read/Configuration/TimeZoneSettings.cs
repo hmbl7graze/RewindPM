@@ -14,21 +14,4 @@ public class TimeZoneSettings
     /// タイムゾーンID (例: "UTC", "Asia/Tokyo", "America/New_York")
     /// </summary>
     public string TimeZoneId { get; set; } = "UTC";
-
-    /// <summary>
-    /// TimeZoneInfo インスタンスを取得
-    /// </summary>
-    /// <returns>TimeZoneInfo インスタンス</returns>
-    public TimeZoneInfo GetTimeZoneInfo()
-    {
-        try
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById(TimeZoneId);
-        }
-        catch (TimeZoneNotFoundException)
-        {
-            // フォールバック: 無効なIDの場合はUTCを返す
-            return TimeZoneInfo.Utc;
-        }
-    }
 }
