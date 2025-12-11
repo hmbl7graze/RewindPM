@@ -316,3 +316,41 @@
 .gantt-container::-webkit-scrollbar-thumb:hover {
     background: var(--text-muted);
 }
+
+/* ========================================
+   ガントチャートバーのトランジション
+   ======================================== */
+
+/* バーの位置とサイズ変更にトランジションを適用 */
+.gantt-bar {
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: grid-column;
+}
+
+/* バーが追加された時のフェードイン */
+@keyframes barFadeIn {
+    from {
+        opacity: 0;
+        transform: scaleX(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+}
+
+.gantt-bar {
+    animation: barFadeIn 0.3s ease-out;
+}
+
+/* ホバー時の効果 */
+.gantt-bar:hover {
+    filter: brightness(1.1);
+    z-index: 10;
+    position: relative;
+}
+
+/* リードオンリーモード時はトランジションを高速化 */
+.gantt-chart.readonly-mode .gantt-bar {
+    transition-duration: 0.3s;
+}

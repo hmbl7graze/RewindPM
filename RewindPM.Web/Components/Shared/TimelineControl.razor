@@ -126,6 +126,10 @@
     /// </summary>
     private int _pendingSliderValue = 0;
 
+    private const string LiveStateLabel = "最新の状態";
+    private const string DateFormat = "yyyy/MM/dd";
+    private const string ShortDateFormat = "MM/dd";
+
     /// <summary>
     /// 前の編集日へ移動可能かどうか
     /// </summary>
@@ -133,37 +137,24 @@
     {
         get
         {
-            if (EditDates == null || EditDates.Count == 0)
+            if (!HasEditDates)
                 return false;
 
-            if (!CurrentDate.HasValue)
-            {
-                // 最新表示中の場合、編集日があれば移動可能
+            if (IsViewingLatest)
                 return EditDates.Count > 0;
-            }
 
-            // 現在の日付より古い日付が存在するか確認
-            return EditDates.Any(d => d < CurrentDate.Value);
+            return HasOlderDates();
         }
     }
 
     /// <summary>
     /// 次の編集日へ移動可能かどうか
     /// </summary>
-    private bool CanMoveToNext
-    {
-        get
-        {
-            // If viewing past, we can always move "next" at least to the Live state
-            // unless we are already at Live state (CurrentDate is null)
-            if (!CurrentDate.HasValue)
-                return false;
+    private bool CanMoveToNext => IsViewingPast;
 
-            // If we are viewing a past date, we can definitely move "next".
-            // Even if there are no newer EditDates, the "Next" step is "Live".
-            return true;
-        }
-    }
+    private bool HasEditDates => EditDates != null && EditDates.Count > 0;
+    private bool IsViewingLatest => !CurrentDate.HasValue;
+    private bool HasOlderDates() => EditDates.Any(d => d < CurrentDate!.Value);
 
     /// <summary>
     /// 前の編集日（より古い日付）へ移動
@@ -173,31 +164,28 @@
         if (!CanMoveToPrevious)
             return;
 
-        DateTime? newDate;
+        var newDate = IsViewingLatest 
+            ? GetLatestEditDate() 
+            : GetPreviousEditDate();
 
-        if (!CurrentDate.HasValue)
+        if (newDate.HasValue)
         {
-            // 最新表示中の場合、最新の編集日（リストの先頭）へ
-            newDate = EditDates.FirstOrDefault();
-        }
-        else
-        {
-            // 現在の日付より古い日付のうち、最も新しいものを取得
-            newDate = EditDates
-                .Where(d => d < CurrentDate.Value)
-                .OrderByDescending(d => d)
-                .FirstOrDefault();
-        }
-
-        if (newDate != default(DateTime))
-        {
-            await OnDateChanged.InvokeAsync(newDate);
+            await OnDateChanged.InvokeAsync(newDate.Value);
         }
     }
 
-    /// <summary>
-    /// 次の編集日（より新しい日付）へ移動
-    /// </summary>
+    private DateTime? GetLatestEditDate() => EditDates.FirstOrDefault();
+
+    private DateTime? GetPreviousEditDate()
+    {
+        var previousDate = EditDates
+            .Where(d => d < CurrentDate!.Value)
+            .OrderByDescending(d => d)
+            .FirstOrDefault();
+
+        return previousDate != default ? previousDate : null;
+    }
+
     /// <summary>
     /// 次の編集日（より新しい日付）へ移動。最新の編集日より後は「最新状態」に戻る。
     /// </summary>
@@ -206,22 +194,26 @@
         if (!CanMoveToNext)
             return;
 
-        // 現在の日付より新しい日付のうち、最も古いものを取得
-        var newDate = EditDates
+        var newDate = GetNextEditDate();
+
+        if (newDate.HasValue)
+        {
+            await OnDateChanged.InvokeAsync(newDate.Value);
+        }
+        else
+        {
+            await MoveToLatest();
+        }
+    }
+
+    private DateTime? GetNextEditDate()
+    {
+        var nextDate = EditDates
             .Where(d => d > CurrentDate!.Value)
             .OrderBy(d => d)
             .FirstOrDefault();
 
-        // もし新しい日付がなければ（＝現在が最新の過去スナップショット）、
-        // または見つからなければ、最新状態(null)に戻る
-        if (newDate == default(DateTime))
-        {
-            await MoveToLatest();
-        }
-        else
-        {
-            await OnDateChanged.InvokeAsync(newDate);
-        }
+        return nextDate != default ? nextDate : null;
     }
 
     /// <summary>
@@ -293,14 +285,14 @@
     private string GetSliderTooltip()
     {
         if (CurrentSliderValue == MaxSliderValue)
-            return "最新の状態";
-        if (CurrentSliderValue >= 0 && CurrentSliderValue < MaxSliderValue)
+            return LiveStateLabel;
+
+        if (TryGetEditDateAtSliderValue(CurrentSliderValue, out var date))
         {
-            var index = MaxSliderValue - 1 - CurrentSliderValue;
-            if (index >= 0 && index < EditDates?.Count)
-                return EditDates[index].ToString("yyyy/MM/dd");
+            return date.ToString(DateFormat);
         }
-        return "";
+
+        return string.Empty;
     }
 
     /// <summary>
@@ -308,14 +300,31 @@
     /// </summary>
     private string GetCenterDateLabel()
     {
-        if (EditDates == null || EditDates.Count == 0)
-            return "";
+        if (!HasEditDates)
+            return string.Empty;
 
         var middleIndex = EditDates.Count / 2;
-        if (middleIndex >= 0 && middleIndex < EditDates.Count)
-        {
-            return EditDates[middleIndex].ToString("MM/dd");
-        }
-        return "";
+        return IsValidEditDateIndex(middleIndex) 
+            ? EditDates[middleIndex].ToString(ShortDateFormat) 
+            : string.Empty;
+    }
+
+    private bool TryGetEditDateAtSliderValue(int sliderValue, out DateTime date)
+    {
+        date = default;
+        if (sliderValue < 0 || sliderValue >= MaxSliderValue)
+            return false;
+
+        var index = MaxSliderValue - 1 - sliderValue;
+        if (!IsValidEditDateIndex(index))
+            return false;
+
+        date = EditDates[index];
+        return true;
+    }
+
+    private bool IsValidEditDateIndex(int index)
+    {
+        return index >= 0 && index < EditDates?.Count;
     }
 }

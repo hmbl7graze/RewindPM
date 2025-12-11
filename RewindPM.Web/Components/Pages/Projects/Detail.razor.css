@@ -314,3 +314,22 @@
         transform: translateY(0);
     }
 }
+
+/* ========================================
+   ローディングオーバーレイ
+   ======================================== */
+.loading-overlay {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    padding: 40px;
+    background: linear-gradient(135deg, #f6f8fa 0%, #ffffff 100%);
+    border-radius: 6px;
+}
+
+.loading-overlay p {
+    color: #656d76;
+    font-size: 1rem;
+    margin: 0;
+}
