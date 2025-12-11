@@ -1,6 +1,3 @@
-using MediatR;
-using RewindPM.Application.Write.Commands.Projects;
-using RewindPM.Application.Write.Commands.Tasks;
 using RewindPM.Application.Write.Repositories;
 using RewindPM.Domain.Aggregates;
 using RewindPM.Domain.Common;
@@ -22,9 +19,9 @@ public class SeedData
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly FixedDateTimeProvider _dateTimeProvider;
-    private DateTime _projectStartDate;
+    private readonly DateTime _projectStartDate;
 
-    public SeedData(IMediator mediator, IServiceProvider serviceProvider)
+    public SeedData(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
 
@@ -106,7 +103,7 @@ public class SeedData
             await repository.SaveAsync(task);
         }
 
-        Console.WriteLine("[SeedData] Initial plan created: 16 tasks scheduled to complete in 60 days");
+        Console.WriteLine("[SeedData] Initial plan created: 15 tasks scheduled to complete in 60 days");
 
         // ========== タスク実行開始 ==========
 
@@ -129,10 +126,10 @@ public class SeedData
             (8, 3, 24),   // 開発環境（予定2日→実3日、+1日遅延）
             (9, 8, 64),   // フロントエンド基盤（予定5日→実8日、+3日遅延）
             (10, 8, 64),  // フロントエンド画面（予定6日→実8日、+2日遅延）
-            (11, 9, 72),  // バックエンドAPI（認証・商品）（予定6日→実7日、+1日遅延）
+            (11, 9, 72),  // バックエンドAPI（認証・商品）（予定6日→実9日、+3日遅延）
             (12, 6, 48),  // フロントエンド購入フロー（予定5日→実6日、+1日遅延）
 
-            // Phase 3: 残りの3タスク
+            // Phase 3: 残りの2タスク
             (13, 5, 40),  // バックエンドAPI（注文・決済）（予定4日→実5日、+1日遅延）
             (14, 3, 24),  // 統合テスト（予定2日→実3日、+1日遅延）
         };
@@ -269,12 +266,12 @@ public class SeedData
         Console.WriteLine($"[SeedData] Project start: {_projectStartDate:yyyy-MM-dd}");
         Console.WriteLine($"[SeedData] Current date: {_dateTimeProvider.UtcNow:yyyy-MM-dd}");
         Console.WriteLine($"[SeedData] Actual days elapsed: {elapsedDays} days");
-        Console.WriteLine("[SeedData] Initial plan: 60 days, 16 tasks");
-        Console.WriteLine($"[SeedData] Actual result: {elapsedDays} days, 20 tasks (16 planned + 3 unplanned + 1 in progress)");
-        Console.WriteLine("[SeedData] Month 1 Review (Day 30): Rescheduled due to delays");
-        Console.WriteLine("[SeedData] Month 2 Review (Day 60): Rescheduled due to continued delays");
+        Console.WriteLine("[SeedData] Initial plan: 60 days, 15 tasks");
+        Console.WriteLine($"[SeedData] Actual result: {elapsedDays} days, 18 tasks (15 planned + 3 unplanned)");
+        Console.WriteLine("[SeedData] Month 1 Review (Day 31): Rescheduled due to delays");
+        Console.WriteLine("[SeedData] Month 2 Review (Day 65): Rescheduled due to continued delays");
         Console.WriteLine($"[SeedData] Total delay: {elapsedDays - 60} days from original 60-day plan");
-        Console.WriteLine("[SeedData] Status: 18 tasks completed, 1 task in progress");
+        Console.WriteLine("[SeedData] Status: 17 tasks completed, 1 task in progress");
     }
 
     /// <summary>
@@ -347,7 +344,7 @@ public class SeedData
         );
         await repository.SaveAsync(task);
 
-        // 翌営業日の9:00にタスク開始（前のタスク完了の翌日）s
+        // 翌営業日の9:00にタスク開始（前のタスク完了の翌日）
         _dateTimeProvider.SetCurrentTime(_dateTimeProvider.UtcNow.Date.AddDays(1).AddHours(9));
     }
 
