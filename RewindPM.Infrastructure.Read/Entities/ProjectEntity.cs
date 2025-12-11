@@ -24,12 +24,12 @@ public class ProjectEntity
     /// <summary>
     /// 作成日時（UTC）
     /// </summary>
-    public DateTime CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
     /// 更新日時（UTC）
     /// </summary>
-    public DateTime? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
 
     /// <summary>
     /// 作成者

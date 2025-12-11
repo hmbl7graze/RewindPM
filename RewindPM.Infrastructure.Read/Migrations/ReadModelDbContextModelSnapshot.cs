@@ -23,7 +23,7 @@ namespace RewindPM.Infrastructure.Read.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -41,7 +41,7 @@ namespace RewindPM.Infrastructure.Read.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UpdatedBy")
@@ -59,7 +59,7 @@ namespace RewindPM.Infrastructure.Read.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -75,7 +75,7 @@ namespace RewindPM.Infrastructure.Read.Migrations
                     b.Property<Guid>("ProjectId")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("SnapshotCreatedAt")
+                    b.Property<DateTimeOffset>("SnapshotCreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("SnapshotDate")
@@ -86,7 +86,7 @@ namespace RewindPM.Infrastructure.Read.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UpdatedBy")
@@ -108,6 +108,22 @@ namespace RewindPM.Infrastructure.Read.Migrations
                     b.ToTable("ProjectHistories", (string)null);
                 });
 
+            modelBuilder.Entity("RewindPM.Infrastructure.Read.Entities.SystemMetadataEntity", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("SystemMetadata", (string)null);
+                });
+
             modelBuilder.Entity("RewindPM.Infrastructure.Read.Entities.TaskEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -123,7 +139,7 @@ namespace RewindPM.Infrastructure.Read.Migrations
                     b.Property<DateTime?>("ActualStartDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -156,7 +172,7 @@ namespace RewindPM.Infrastructure.Read.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UpdatedBy")
@@ -186,7 +202,7 @@ namespace RewindPM.Infrastructure.Read.Migrations
                     b.Property<DateTime?>("ActualStartDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CreatedBy")
@@ -211,7 +227,7 @@ namespace RewindPM.Infrastructure.Read.Migrations
                     b.Property<DateTime?>("ScheduledStartDate")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("SnapshotCreatedAt")
+                    b.Property<DateTimeOffset>("SnapshotCreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("SnapshotDate")
@@ -228,7 +244,7 @@ namespace RewindPM.Infrastructure.Read.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("UpdatedAt")
+                    b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UpdatedBy")

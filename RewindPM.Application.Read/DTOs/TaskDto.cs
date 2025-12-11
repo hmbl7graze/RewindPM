@@ -23,8 +23,8 @@ public record TaskDto
     public DateTime? ActualEndDate { get; init; }
     public int? ActualHours { get; init; }
 
-    public required DateTime CreatedAt { get; init; }
-    public required DateTime? UpdatedAt { get; init; }
+    public required DateTimeOffset CreatedAt { get; init; }
+    public required DateTimeOffset? UpdatedAt { get; init; }
     public required string CreatedBy { get; init; }
     public string? UpdatedBy { get; init; }
 }
