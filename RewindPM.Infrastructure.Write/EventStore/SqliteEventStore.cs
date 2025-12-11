@@ -65,7 +65,7 @@ public class SqliteEventStore : IEventStore
                     EventData = _serializer.Serialize(domainEvent),
                     OccurredAt = domainEvent.OccurredAt,
                     Version = version,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTimeOffset.UtcNow
                 };
 
                 _context.Events.Add(eventEntity);
@@ -99,7 +99,7 @@ public class SqliteEventStore : IEventStore
     /// <summary>
     /// 指定された時点までのイベントを取得する（タイムトラベル用）
     /// </summary>
-    public async Task<List<IDomainEvent>> GetEventsUntilAsync(Guid aggregateId, DateTime pointInTime)
+    public async Task<List<IDomainEvent>> GetEventsUntilAsync(Guid aggregateId, DateTimeOffset pointInTime)
     {
         var eventEntities = await _context.Events
             .Where(e => e.AggregateId == aggregateId && e.OccurredAt <= pointInTime)
@@ -114,7 +114,7 @@ public class SqliteEventStore : IEventStore
     /// <summary>
     /// 指定されたイベント種別のイベントを期間指定で取得する
     /// </summary>
-    public async Task<List<IDomainEvent>> GetEventsByTypeAsync(string eventType, DateTime? from = null, DateTime? to = null)
+    public async Task<List<IDomainEvent>> GetEventsByTypeAsync(string eventType, DateTimeOffset? from = null, DateTimeOffset? to = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(eventType);
 

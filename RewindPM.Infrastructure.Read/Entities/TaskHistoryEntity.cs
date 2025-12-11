@@ -79,13 +79,13 @@ public class TaskHistoryEntity
     /// <summary>
     /// 作成日時（UTC）
     /// </summary>
-    public DateTime CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
     /// 更新日時（UTC）
     /// この時点での最終更新日時
     /// </summary>
-    public DateTime? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
 
     /// <summary>
     /// 作成者
@@ -102,5 +102,5 @@ public class TaskHistoryEntity
     /// スナップショット作成日時（UTC）
     /// このレコードがいつ作成されたか
     /// </summary>
-    public DateTime SnapshotCreatedAt { get; set; }
+    public DateTimeOffset SnapshotCreatedAt { get; set; }
 }

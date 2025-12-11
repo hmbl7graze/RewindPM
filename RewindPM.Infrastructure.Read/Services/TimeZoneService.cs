@@ -27,9 +27,9 @@ public class TimeZoneService : ITimeZoneService
     /// </summary>
     /// <param name="utcDateTime">UTC時刻</param>
     /// <returns>ローカル時刻の日付部分</returns>
-    public DateTime GetSnapshotDate(DateTime utcDateTime)
+    public DateTime GetSnapshotDate(DateTimeOffset utcDateTime)
     {
-        var localDateTime = TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, TimeZone);
+        var localDateTime = TimeZoneInfo.ConvertTime(utcDateTime, TimeZone);
         return localDateTime.Date; // ローカル時刻の日付部分のみ
     }
 
@@ -38,8 +38,8 @@ public class TimeZoneService : ITimeZoneService
     /// </summary>
     /// <param name="utcDateTime">UTC時刻</param>
     /// <returns>ローカル時刻</returns>
-    public DateTime ConvertUtcToLocal(DateTime utcDateTime)
+    public DateTimeOffset ConvertUtcToLocal(DateTimeOffset utcDateTime)
     {
-        return TimeZoneInfo.ConvertTimeFromUtc(utcDateTime, TimeZone);
+        return TimeZoneInfo.ConvertTime(utcDateTime, TimeZone);
     }
 }

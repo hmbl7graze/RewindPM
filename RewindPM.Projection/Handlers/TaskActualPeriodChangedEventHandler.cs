@@ -55,7 +55,7 @@ public class TaskActualPeriodChangedEventHandler : IEventHandler<TaskActualPerio
         _logger.LogInformation("Successfully updated actual period for task {TaskId}", @event.AggregateId);
     }
 
-    private async Task UpsertTaskSnapshotAsync(Guid taskId, TaskEntity currentState, DateTime occurredAt)
+    private async Task UpsertTaskSnapshotAsync(Guid taskId, TaskEntity currentState, DateTimeOffset occurredAt)
     {
         var snapshotDate = _timeZoneService.GetSnapshotDate(occurredAt);
         var snapshot = await _context.TaskHistories
@@ -101,7 +101,7 @@ public class TaskActualPeriodChangedEventHandler : IEventHandler<TaskActualPerio
                 UpdatedAt = occurredAt,
                 CreatedBy = currentState.CreatedBy,
                 UpdatedBy = currentState.UpdatedBy,
-                SnapshotCreatedAt = DateTime.UtcNow
+                SnapshotCreatedAt = DateTimeOffset.UtcNow
             };
 
             _context.TaskHistories.Add(snapshot);

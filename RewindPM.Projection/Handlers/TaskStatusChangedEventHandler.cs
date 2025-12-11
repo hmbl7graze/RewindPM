@@ -54,7 +54,7 @@ public class TaskStatusChangedEventHandler : IEventHandler<TaskStatusChanged>
         _logger.LogInformation("Successfully updated task status for {TaskId}", @event.AggregateId);
     }
 
-    private async Task UpsertTaskSnapshotAsync(Guid taskId, TaskEntity currentState, DateTime occurredAt)
+    private async Task UpsertTaskSnapshotAsync(Guid taskId, TaskEntity currentState, DateTimeOffset occurredAt)
     {
         var snapshotDate = _timeZoneService.GetSnapshotDate(occurredAt);
         var snapshot = await _context.TaskHistories
@@ -100,7 +100,7 @@ public class TaskStatusChangedEventHandler : IEventHandler<TaskStatusChanged>
                 UpdatedAt = occurredAt,
                 CreatedBy = currentState.CreatedBy,
                 UpdatedBy = currentState.UpdatedBy,
-                SnapshotCreatedAt = DateTime.UtcNow
+                SnapshotCreatedAt = DateTimeOffset.UtcNow
             };
 
             _context.TaskHistories.Add(snapshot);

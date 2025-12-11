@@ -15,12 +15,12 @@ public interface ITimeZoneService
     /// </summary>
     /// <param name="utcDateTime">UTC時刻</param>
     /// <returns>ローカル時刻の日付部分</returns>
-    DateTime GetSnapshotDate(DateTime utcDateTime);
+    DateTime GetSnapshotDate(DateTimeOffset utcDateTime);
 
     /// <summary>
     /// UTC時刻をローカル時刻に変換
     /// </summary>
     /// <param name="utcDateTime">UTC時刻</param>
     /// <returns>ローカル時刻</returns>
-    DateTime ConvertUtcToLocal(DateTime utcDateTime);
+    DateTimeOffset ConvertUtcToLocal(DateTimeOffset utcDateTime);
 }

@@ -77,7 +77,7 @@ public class TaskCreatedEventHandler : IEventHandler<TaskCreated>
             UpdatedAt = null,
             CreatedBy = @event.CreatedBy,
             UpdatedBy = null,
-            SnapshotCreatedAt = DateTime.UtcNow
+            SnapshotCreatedAt = DateTimeOffset.UtcNow
         };
 
         _context.TaskHistories.Add(snapshot);

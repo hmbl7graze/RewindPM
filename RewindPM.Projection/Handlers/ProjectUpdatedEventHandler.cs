@@ -76,7 +76,7 @@ public class ProjectUpdatedEventHandler : IEventHandler<ProjectUpdated>
                 UpdatedAt = @event.OccurredAt,
                 CreatedBy = project.CreatedBy,
                 UpdatedBy = @event.UpdatedBy,
-                SnapshotCreatedAt = DateTime.UtcNow
+                SnapshotCreatedAt = DateTimeOffset.UtcNow
             };
 
             _context.ProjectHistories.Add(snapshot);

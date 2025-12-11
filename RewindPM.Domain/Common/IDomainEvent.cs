@@ -19,7 +19,7 @@ public interface IDomainEvent
     /// <summary>
     /// イベントが発生した日時（UTC）
     /// </summary>
-    DateTime OccurredAt { get; }
+    DateTimeOffset OccurredAt { get; }
 
     /// <summary>
     /// イベントの型名（イベントストアでの識別用）

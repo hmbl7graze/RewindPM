@@ -312,7 +312,7 @@ public class EventPublisherTests
     {
         public Guid EventId { get; set; }
         public Guid AggregateId { get; set; }
-        public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
+        public DateTimeOffset OccurredAt { get; set; } = DateTimeOffset.UtcNow;
         public string EventType => nameof(TestEvent);
         public string TestData { get; set; } = string.Empty;
     }
@@ -321,7 +321,7 @@ public class EventPublisherTests
     {
         public Guid EventId { get; set; }
         public Guid AggregateId { get; set; }
-        public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
+        public DateTimeOffset OccurredAt { get; set; } = DateTimeOffset.UtcNow;
         public string EventType => nameof(AnotherTestEvent);
     }
 
