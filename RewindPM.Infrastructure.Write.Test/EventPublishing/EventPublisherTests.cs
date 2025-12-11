@@ -144,21 +144,22 @@ public class EventPublisherTests
         var handler2 = Substitute.For<IEventHandler<TestEvent>>();
         var handler3 = Substitute.For<IEventHandler<TestEvent>>();
 
+        // NSubstituteのモックは、非同期メソッドを正しく設定する必要がある
         handler1.HandleAsync(Arg.Any<TestEvent>()).Returns(async _ =>
         {
-            await Task.Delay(50);
+            await Task.Delay(50).ConfigureAwait(false);
             lock (executionOrder) { executionOrder.Add(1); }
         });
 
         handler2.HandleAsync(Arg.Any<TestEvent>()).Returns(async _ =>
         {
-            await Task.Delay(30);
+            await Task.Delay(30).ConfigureAwait(false);
             lock (executionOrder) { executionOrder.Add(2); }
         });
 
         handler3.HandleAsync(Arg.Any<TestEvent>()).Returns(async _ =>
         {
-            await Task.Delay(10);
+            await Task.Delay(10).ConfigureAwait(false);
             lock (executionOrder) { executionOrder.Add(3); }
         });
 
