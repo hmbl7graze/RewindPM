@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace RewindPM.Infrastructure.Write.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialEventStore : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

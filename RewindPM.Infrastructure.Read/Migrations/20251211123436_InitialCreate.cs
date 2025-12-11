@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace RewindPM.Infrastructure.Read.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialReadModel : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -20,11 +20,11 @@ namespace RewindPM.Infrastructure.Read.Migrations
                     SnapshotDate = table.Column<DateTime>(type: "TEXT", nullable: false),
                     Title = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: true),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     UpdatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    SnapshotCreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    SnapshotCreatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -38,14 +38,26 @@ namespace RewindPM.Infrastructure.Read.Migrations
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     Title = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: true),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     UpdatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Projects", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SystemMetadata",
+                columns: table => new
+                {
+                    Key = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
+                    Value = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SystemMetadata", x => x.Key);
                 });
 
             migrationBuilder.CreateTable(
@@ -65,11 +77,11 @@ namespace RewindPM.Infrastructure.Read.Migrations
                     ActualStartDate = table.Column<DateTime>(type: "TEXT", nullable: true),
                     ActualEndDate = table.Column<DateTime>(type: "TEXT", nullable: true),
                     ActualHours = table.Column<int>(type: "INTEGER", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: true),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     UpdatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
-                    SnapshotCreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    SnapshotCreatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -91,8 +103,8 @@ namespace RewindPM.Infrastructure.Read.Migrations
                     ActualStartDate = table.Column<DateTime>(type: "TEXT", nullable: true),
                     ActualEndDate = table.Column<DateTime>(type: "TEXT", nullable: true),
                     ActualHours = table.Column<int>(type: "INTEGER", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "TEXT", nullable: true),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: true),
                     CreatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: false),
                     UpdatedBy = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true)
                 },
@@ -157,6 +169,9 @@ namespace RewindPM.Infrastructure.Read.Migrations
 
             migrationBuilder.DropTable(
                 name: "Projects");
+
+            migrationBuilder.DropTable(
+                name: "SystemMetadata");
 
             migrationBuilder.DropTable(
                 name: "TaskHistories");
