@@ -48,9 +48,9 @@ public class ProjectionHandlerTests : IAsyncDisposable
     {
         public TimeZoneInfo TimeZone => TimeZoneInfo.Utc;
 
-        public DateTime GetSnapshotDate(DateTimeOffset utcDateTime)
+        public DateTimeOffset GetSnapshotDate(DateTimeOffset utcDateTime)
         {
-            return utcDateTime.Date;
+            return new DateTimeOffset(utcDateTime.Date, TimeSpan.Zero);
         }
 
         public DateTimeOffset ConvertUtcToLocal(DateTimeOffset utcDateTime)

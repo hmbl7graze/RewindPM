@@ -112,12 +112,27 @@ else if (_statistics != null)
             </div>
         </div>
         
-        @if (_statistics.AsOfDate.Date < DateTime.UtcNow.Date)
+        @if (_statistics.AsOfDate.Date < DateTimeOffset.UtcNow.Date)
         {
             <div class="rewind-notice">
                 <p>⏰ リワインド表示中: @_statistics.AsOfDate.ToString("yyyy年MM月dd日") 時点の統計</p>
             </div>
         }
+
+        <!-- サンプルチャート（動作確認用） -->
+        <div class="chart-section">
+            <h4>サンプルチャート（動作確認）</h4>
+            <ApexChart TItem="SampleDataPoint"
+                       Title="Sample Line Chart">
+                <ApexPointSeries TItem="SampleDataPoint"
+                                 Items="@_sampleData"
+                                 Name="Sample Series"
+                                 SeriesType="SeriesType.Line"
+                                 XValue="@(e => e.X)"
+                                 YAggregate="@(e => e.Sum(y => y.Y))"
+                                 OrderBy="e => e.X" />
+            </ApexChart>
+        </div>
     </div>
 }
 else
@@ -132,14 +147,14 @@ else
     public required Guid ProjectId { get; set; }
     
     [Parameter]
-    public DateTime? AsOfDate { get; set; }
+    public DateTimeOffset? AsOfDate { get; set; }
 
     private ProjectStatisticsDetailDto? _statistics;
     private bool _isLoading = true;
     
     // パラメータ変更検知用
     private Guid _prevProjectId;
-    private DateTime? _prevAsOfDate;
+    private DateTimeOffset? _prevAsOfDate;
 
     protected override async Task OnInitializedAsync()
     {
@@ -203,12 +218,28 @@ else
     private string GetOnTimeRateClass()
     {
         if (_statistics == null) return "";
-        
+
         if (_statistics.OnTimeRate >= 80)
             return "stat-good";
         else if (_statistics.OnTimeRate >= 60)
             return "stat-warning";
-        
+
         return "stat-bad";
+    }
+
+    // サンプルデータ（動作確認用）
+    private List<SampleDataPoint> _sampleData = new()
+    {
+        new SampleDataPoint { X = "Day 1", Y = 10 },
+        new SampleDataPoint { X = "Day 2", Y = 20 },
+        new SampleDataPoint { X = "Day 3", Y = 15 },
+        new SampleDataPoint { X = "Day 4", Y = 25 },
+        new SampleDataPoint { X = "Day 5", Y = 30 }
+    };
+
+    private class SampleDataPoint
+    {
+        public string X { get; set; } = string.Empty;
+        public int Y { get; set; }
     }
 }

@@ -111,10 +111,10 @@
     public EventCallback<TaskDto> OnTaskClick { get; set; }
 
     [Parameter]
-    public EventCallback<(Guid taskId, string barType, DateTime newStartDate, DateTime newEndDate)> OnBarResize { get; set; }
+    public EventCallback<(Guid taskId, string barType, DateTimeOffset newStartDate, DateTimeOffset newEndDate)> OnBarResize { get; set; }
 
     [Parameter]
-    public DateTime? ViewDate { get; set; }
+    public DateTimeOffset? ViewDate { get; set; }
 
     [Parameter]
     public bool IsReadOnly { get; set; } = false;
@@ -156,9 +156,9 @@
 
         if (!Guid.TryParse(taskIdStr, out var taskId)) return;
 
-        // インデックスから日付を計算
-        var newStartDate = TimelineStart.Value.AddDays(startDayIndex);
-        var newEndDate = TimelineStart.Value.AddDays(endDayIndex);
+        // インデックスから日付を計算（UTC offsetで統一）
+        var newStartDate = new DateTimeOffset(TimelineStart.Value.AddDays(startDayIndex), TimeSpan.Zero);
+        var newEndDate = new DateTimeOffset(TimelineStart.Value.AddDays(endDayIndex), TimeSpan.Zero);
 
         // コールバックを呼び出し
         if (OnBarResize.HasDelegate)
@@ -189,7 +189,7 @@
         }
 
         // 全タスクの最も早い開始日と最も遅い終了日を取得
-        var allDates = new List<DateTime>();
+        var allDates = new List<DateTimeOffset>();
 
         foreach (var task in Tasks)
         {
@@ -216,7 +216,7 @@
         TotalDays = (int)(TimelineEnd.Value - TimelineStart.Value).TotalDays + 1;
     }
 
-    private string GetGridColumn(DateTime startDate, DateTime endDate)
+    private string GetGridColumn(DateTimeOffset startDate, DateTimeOffset endDate)
     {
         if (TimelineStart == null) return "1 / 2";
 

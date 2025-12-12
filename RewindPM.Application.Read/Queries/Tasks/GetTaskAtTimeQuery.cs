@@ -8,4 +8,4 @@ namespace RewindPM.Application.Read.Queries.Tasks;
 /// </summary>
 /// <param name="TaskId">タスクID</param>
 /// <param name="PointInTime">取得する時点</param>
-public record GetTaskAtTimeQuery(Guid TaskId, DateTime PointInTime) : IRequest<TaskDto?>;
+public record GetTaskAtTimeQuery(Guid TaskId, DateTimeOffset PointInTime) : IRequest<TaskDto?>;

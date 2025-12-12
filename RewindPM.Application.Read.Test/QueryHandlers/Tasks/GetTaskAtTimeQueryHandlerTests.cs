@@ -23,7 +23,7 @@ public class GetTaskAtTimeQueryHandlerTests
     {
         // Arrange
         var taskId = Guid.NewGuid();
-        var pointInTime = DateTime.UtcNow.AddDays(-1);
+        var pointInTime = DateTimeOffset.UtcNow.AddDays(-1);
         var task = new TaskDto
         {
             Id = taskId,
@@ -31,7 +31,7 @@ public class GetTaskAtTimeQueryHandlerTests
             Title = "Past Task",
             Description = "Past Description",
             Status = TaskStatus.InProgress,
-            CreatedAt = DateTime.UtcNow.AddDays(-2),
+            CreatedAt = DateTimeOffset.UtcNow.AddDays(-2),
             UpdatedAt = pointInTime,
             CreatedBy = "user1",
             UpdatedBy = "user2"
@@ -56,7 +56,7 @@ public class GetTaskAtTimeQueryHandlerTests
     {
         // Arrange
         var taskId = Guid.NewGuid();
-        var pointInTime = DateTime.UtcNow.AddDays(-1);
+        var pointInTime = DateTimeOffset.UtcNow.AddDays(-1);
         _repository.GetTaskAtTimeAsync(taskId, pointInTime).Returns((TaskDto?)null);
         var query = new GetTaskAtTimeQuery(taskId, pointInTime);
 

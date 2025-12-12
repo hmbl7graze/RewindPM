@@ -46,7 +46,7 @@ public class SqliteEventStoreTests : IDisposable
         // Arrange
         var aggregateId = Guid.NewGuid();
         var projectId = Guid.NewGuid();
-        var now = DateTime.UtcNow;
+        var now = DateTimeOffset.UtcNow;
 
         var events = new List<IDomainEvent>
         {
@@ -78,7 +78,7 @@ public class SqliteEventStoreTests : IDisposable
         // Arrange
         var aggregateId = Guid.NewGuid();
         var projectId = Guid.NewGuid();
-        var now = DateTime.UtcNow;
+        var now = DateTimeOffset.UtcNow;
 
         var event1 = new TaskCreated
         {
@@ -115,7 +115,7 @@ public class SqliteEventStoreTests : IDisposable
         // Arrange
         var aggregateId = Guid.NewGuid();
         var projectId = Guid.NewGuid();
-        var now = DateTime.UtcNow;
+        var now = DateTimeOffset.UtcNow;
 
         var event1 = new TaskCreated
         {
@@ -153,7 +153,7 @@ public class SqliteEventStoreTests : IDisposable
         // Arrange
         var aggregateId = Guid.NewGuid();
         var projectId = Guid.NewGuid();
-        var time1 = DateTime.UtcNow;
+        var time1 = DateTimeOffset.UtcNow;
 
         var event1 = new TaskCreated
         {
@@ -170,11 +170,11 @@ public class SqliteEventStoreTests : IDisposable
 
         // 少し待ってから2つ目のイベントを作成
         await Task.Delay(100, TestContext.Current.CancellationToken);
-        var time2 = DateTime.UtcNow;
+        var time2 = DateTimeOffset.UtcNow;
         var cutoffTime = time2;
 
         await Task.Delay(100, TestContext.Current.CancellationToken);
-        var time3 = DateTime.UtcNow;
+        var time3 = DateTimeOffset.UtcNow;
 
         var event2 = new TaskStatusChanged
         {
@@ -202,7 +202,7 @@ public class SqliteEventStoreTests : IDisposable
         var aggregateId1 = Guid.NewGuid();
         var aggregateId2 = Guid.NewGuid();
         var projectId = Guid.NewGuid();
-        var now = DateTime.UtcNow;
+        var now = DateTimeOffset.UtcNow;
 
         var event1 = new TaskCreated
         {
@@ -250,9 +250,9 @@ public class SqliteEventStoreTests : IDisposable
         // Arrange
         var aggregateId = Guid.NewGuid();
         var projectId = Guid.NewGuid();
-        var time1 = DateTime.UtcNow.AddHours(-2);
-        var time2 = DateTime.UtcNow.AddHours(-1);
-        var time3 = DateTime.UtcNow;
+        var time1 = DateTimeOffset.UtcNow.AddHours(-2);
+        var time2 = DateTimeOffset.UtcNow.AddHours(-1);
+        var time3 = DateTimeOffset.UtcNow;
 
         var event1 = new TaskCreated
         {

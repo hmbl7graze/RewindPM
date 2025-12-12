@@ -20,7 +20,7 @@ public class ProjectHistoryEntity
     /// スナップショット日付（日単位、UTC）
     /// この日の最後の状態を保存
     /// </summary>
-    public DateTime SnapshotDate { get; set; }
+    public DateTimeOffset SnapshotDate { get; set; }
 
     /// <summary>
     /// プロジェクト名

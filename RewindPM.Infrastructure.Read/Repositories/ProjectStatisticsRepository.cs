@@ -53,7 +53,7 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
     /// </summary>
     public async Task<ProjectStatisticsDetailDto?> GetProjectStatisticsDetailAsync(
         Guid projectId,
-        DateTime asOfDate,
+        DateTimeOffset asOfDate,
         CancellationToken cancellationToken = default)
     {
         // 指定日時以前に作成されたタスクを取得

@@ -65,7 +65,7 @@ public class ReadModelRepository : IReadModelRepository
     /// <summary>
     /// 指定された時点のプロジェクト状態を取得（タイムトラベル用）
     /// </summary>
-    public async Task<ProjectDto?> GetProjectAtTimeAsync(Guid projectId, DateTime pointInTime)
+    public async Task<ProjectDto?> GetProjectAtTimeAsync(Guid projectId, DateTimeOffset pointInTime)
     {
         // 指定された時点の日付（日単位）
         var targetDate = pointInTime.Date;
@@ -82,7 +82,7 @@ public class ReadModelRepository : IReadModelRepository
     /// <summary>
     /// 指定された時点のタスク状態を取得（タイムトラベル用）
     /// </summary>
-    public async Task<TaskDto?> GetTaskAtTimeAsync(Guid taskId, DateTime pointInTime)
+    public async Task<TaskDto?> GetTaskAtTimeAsync(Guid taskId, DateTimeOffset pointInTime)
     {
         // 指定された時点の日付（日単位）
         var targetDate = pointInTime.Date;
@@ -99,7 +99,7 @@ public class ReadModelRepository : IReadModelRepository
     /// <summary>
     /// 指定された時点のプロジェクトに属する全タスクを取得（タイムトラベル用）
     /// </summary>
-    public async Task<List<TaskDto>> GetTasksByProjectIdAtTimeAsync(Guid projectId, DateTime pointInTime)
+    public async Task<List<TaskDto>> GetTasksByProjectIdAtTimeAsync(Guid projectId, DateTimeOffset pointInTime)
     {
         // 指定された時点の日付（日単位）
         var targetDate = pointInTime.Date;
@@ -131,7 +131,7 @@ public class ReadModelRepository : IReadModelRepository
     /// <summary>
     /// 指定されたプロジェクトの編集日一覧を取得（リワインド機能用）
     /// </summary>
-    public async Task<List<DateTime>> GetProjectEditDatesAsync(Guid projectId, bool ascending = false, CancellationToken cancellationToken = default)
+    public async Task<List<DateTimeOffset>> GetProjectEditDatesAsync(Guid projectId, bool ascending = false, CancellationToken cancellationToken = default)
     {
         // プロジェクトに属するタスクの履歴から、編集日（SnapshotDate）を取得
         var query = _context.TaskHistories

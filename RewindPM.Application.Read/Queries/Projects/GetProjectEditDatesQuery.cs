@@ -8,4 +8,4 @@ namespace RewindPM.Application.Read.Queries.Projects;
 /// </summary>
 /// <param name="ProjectId">プロジェクトID</param>
 /// <param name="Ascending">昇順（古い順）かどうか。デフォルトはfalse（新しい順）</param>
-public record GetProjectEditDatesQuery(Guid ProjectId, bool Ascending = false) : IRequest<List<DateTime>>;
+public record GetProjectEditDatesQuery(Guid ProjectId, bool Ascending = false) : IRequest<List<DateTimeOffset>>;

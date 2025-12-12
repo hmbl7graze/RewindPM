@@ -8,4 +8,4 @@ namespace RewindPM.Application.Read.Queries.Projects;
 /// </summary>
 /// <param name="ProjectId">プロジェクトID</param>
 /// <param name="PointInTime">取得する時点</param>
-public record GetProjectAtTimeQuery(Guid ProjectId, DateTime PointInTime) : IRequest<ProjectDto?>;
+public record GetProjectAtTimeQuery(Guid ProjectId, DateTimeOffset PointInTime) : IRequest<ProjectDto?>;

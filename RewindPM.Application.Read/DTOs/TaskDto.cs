@@ -14,13 +14,13 @@ public record TaskDto
     public required TaskStatus Status { get; init; }
 
     // 予定期間
-    public DateTime? ScheduledStartDate { get; init; }
-    public DateTime? ScheduledEndDate { get; init; }
+    public DateTimeOffset? ScheduledStartDate { get; init; }
+    public DateTimeOffset? ScheduledEndDate { get; init; }
     public int? EstimatedHours { get; init; }
 
     // 実績期間
-    public DateTime? ActualStartDate { get; init; }
-    public DateTime? ActualEndDate { get; init; }
+    public DateTimeOffset? ActualStartDate { get; init; }
+    public DateTimeOffset? ActualEndDate { get; init; }
     public int? ActualHours { get; init; }
 
     public required DateTimeOffset CreatedAt { get; init; }

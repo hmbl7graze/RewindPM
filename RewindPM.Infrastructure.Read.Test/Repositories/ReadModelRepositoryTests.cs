@@ -36,7 +36,7 @@ public class ReadModelRepositoryTests : IDisposable
             Id = Guid.NewGuid(),
             Title = "Project 1",
             Description = "Description 1",
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = null,
             CreatedBy = "user1"
         };
@@ -45,7 +45,7 @@ public class ReadModelRepositoryTests : IDisposable
             Id = Guid.NewGuid(),
             Title = "Project 2",
             Description = "Description 2",
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = null,
             CreatedBy = "user1"
         };
@@ -72,7 +72,7 @@ public class ReadModelRepositoryTests : IDisposable
             Id = projectId,
             Title = "Test Project",
             Description = "Test Description",
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = null,
             CreatedBy = "user1"
         };
@@ -114,7 +114,7 @@ public class ReadModelRepositoryTests : IDisposable
             Title = "Task 1",
             Description = "Description 1",
             Status = TaskStatus.Todo,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = null,
             CreatedBy = "user1"
         };
@@ -125,7 +125,7 @@ public class ReadModelRepositoryTests : IDisposable
             Title = "Task 2",
             Description = "Description 2",
             Status = TaskStatus.InProgress,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = null,
             CreatedBy = "user1"
         };
@@ -153,7 +153,7 @@ public class ReadModelRepositoryTests : IDisposable
             Title = "Test Task",
             Description = "Test Description",
             Status = TaskStatus.Todo,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = null,
             CreatedBy = "user1"
         };
@@ -188,7 +188,7 @@ public class ReadModelRepositoryTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var baseDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var baseDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         // 1月1日のスナップショット
         var history1 = new ProjectHistoryEntity
@@ -237,7 +237,7 @@ public class ReadModelRepositoryTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var baseDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var baseDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         var history1 = new ProjectHistoryEntity
         {
@@ -283,7 +283,7 @@ public class ReadModelRepositoryTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var baseDate = new DateTime(2024, 1, 5, 0, 0, 0, DateTimeKind.Utc);
+        var baseDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero);
 
         var history = new ProjectHistoryEntity
         {
@@ -314,7 +314,7 @@ public class ReadModelRepositoryTests : IDisposable
         // Arrange
         var taskId = Guid.NewGuid();
         var projectId = Guid.NewGuid();
-        var baseDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var baseDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         var history = new TaskHistoryEntity
         {
@@ -351,7 +351,7 @@ public class ReadModelRepositoryTests : IDisposable
         var projectId = Guid.NewGuid();
         var task1Id = Guid.NewGuid();
         var task2Id = Guid.NewGuid();
-        var baseDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var baseDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         var history1 = new TaskHistoryEntity
         {
@@ -400,7 +400,7 @@ public class ReadModelRepositoryTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var baseDate = new DateTime(2024, 1, 5, 0, 0, 0, DateTimeKind.Utc);
+        var baseDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero);
 
         var history = new TaskHistoryEntity
         {
@@ -432,7 +432,7 @@ public class ReadModelRepositoryTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var baseDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var baseDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         // 複数の日付でタスク履歴を作成
         var history1 = new TaskHistoryEntity
@@ -495,7 +495,7 @@ public class ReadModelRepositoryTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var baseDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var baseDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         var history1 = new TaskHistoryEntity
         {
@@ -542,7 +542,7 @@ public class ReadModelRepositoryTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var baseDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var baseDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         // 同じ日付（1月1日）に3つのタスク履歴を作成
         var history1 = new TaskHistoryEntity
@@ -617,7 +617,7 @@ public class ReadModelRepositoryTests : IDisposable
         // Arrange
         var projectId1 = Guid.NewGuid();
         var projectId2 = Guid.NewGuid();
-        var baseDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var baseDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         // プロジェクト1のタスク履歴
         var history1 = new TaskHistoryEntity

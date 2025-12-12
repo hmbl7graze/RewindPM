@@ -22,13 +22,13 @@ public class GetProjectAtTimeQueryHandlerTests
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var pointInTime = DateTime.UtcNow.AddDays(-1);
+        var pointInTime = DateTimeOffset.UtcNow.AddDays(-1);
         var project = new ProjectDto
         {
             Id = projectId,
             Title = "Past Project",
             Description = "Past Description",
-            CreatedAt = DateTime.UtcNow.AddDays(-2),
+            CreatedAt = DateTimeOffset.UtcNow.AddDays(-2),
             UpdatedAt = pointInTime,
             CreatedBy = "user1",
             UpdatedBy = "user2"
@@ -52,7 +52,7 @@ public class GetProjectAtTimeQueryHandlerTests
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var pointInTime = DateTime.UtcNow.AddDays(-1);
+        var pointInTime = DateTimeOffset.UtcNow.AddDays(-1);
         _repository.GetProjectAtTimeAsync(projectId, pointInTime).Returns((ProjectDto?)null);
         var query = new GetProjectAtTimeQuery(projectId, pointInTime);
 

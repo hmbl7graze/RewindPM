@@ -26,7 +26,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var asOfDate = DateTime.UtcNow;
+        var asOfDate = DateTimeOffset.UtcNow;
 
         _context.Projects.Add(new ProjectEntity
         {
@@ -136,7 +136,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var asOfDate = DateTime.UtcNow;
+        var asOfDate = DateTimeOffset.UtcNow;
 
         // Act
         var result = await _repository.GetProjectStatisticsDetailAsync(
@@ -153,7 +153,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var asOfDate = new DateTime(2024, 6, 1, 0, 0, 0, DateTimeKind.Utc);
+        var asOfDate = new DateTimeOffset(2024, 6, 1, 0, 0, 0, TimeSpan.Zero);
 
         _context.Projects.Add(new ProjectEntity
         {
@@ -209,7 +209,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var asOfDate = DateTime.UtcNow;
+        var asOfDate = DateTimeOffset.UtcNow;
 
         _context.Projects.Add(new ProjectEntity
         {
@@ -257,7 +257,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var asOfDate = DateTime.UtcNow;
+        var asOfDate = DateTimeOffset.UtcNow;
 
         _context.Projects.Add(new ProjectEntity
         {
@@ -304,7 +304,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var asOfDate = DateTime.UtcNow;
+        var asOfDate = DateTimeOffset.UtcNow;
 
         _context.Projects.Add(new ProjectEntity
         {

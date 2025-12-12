@@ -22,6 +22,6 @@ public interface IProjectStatisticsRepository
     /// <param name="cancellationToken">キャンセルトークン</param>
     Task<ProjectStatisticsDetailDto?> GetProjectStatisticsDetailAsync(
         Guid projectId,
-        DateTime asOfDate,
+        DateTimeOffset asOfDate,
         CancellationToken cancellationToken = default);
 }

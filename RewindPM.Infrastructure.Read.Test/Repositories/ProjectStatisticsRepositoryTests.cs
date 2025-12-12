@@ -170,7 +170,7 @@ public class ProjectStatisticsRepositoryTests : IDisposable
             Title = $"Task {Guid.NewGuid()}",
             Description = "Test Description",
             Status = status,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             CreatedBy = "test-user"
         };
     }
