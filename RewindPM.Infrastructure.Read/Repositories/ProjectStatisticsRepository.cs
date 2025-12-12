@@ -57,9 +57,12 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
         CancellationToken cancellationToken = default)
     {
         // 指定日時以前に作成されたタスクを取得
-        var tasks = await _context.Tasks
-            .Where(t => t.ProjectId == projectId && t.CreatedAt <= asOfDate)
+        // SQLiteはDateTimeOffsetの比較をサポートしないため、クライアント側でフィルタ
+        var allTasks = await _context.Tasks
+            .Where(t => t.ProjectId == projectId)
             .ToListAsync(cancellationToken);
+
+        var tasks = allTasks.Where(t => t.CreatedAt <= asOfDate).ToList();
 
         // タスクが1件もなければプロジェクトの存在確認
         if (!tasks.Any())
