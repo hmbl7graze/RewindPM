@@ -56,82 +56,175 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
         DateTimeOffset asOfDate,
         CancellationToken cancellationToken = default)
     {
-        // 指定日時以前に作成されたタスクを取得
-        // SQLiteはDateTimeOffsetの比較をサポートしないため、クライアント側でフィルタ
-        var allTasks = await _context.Tasks
-            .Where(t => t.ProjectId == projectId)
-            .ToListAsync(cancellationToken);
-
-        var tasks = allTasks.Where(t => t.CreatedAt <= asOfDate).ToList();
-
-        // タスクが1件もなければプロジェクトの存在確認
-        if (!tasks.Any())
+        // プロジェクトの存在確認
+        var projectExists = await _context.Projects
+            .AnyAsync(p => p.Id == projectId, cancellationToken);
+        if (!projectExists)
         {
-            var projectExists = await _context.Projects
-                .AnyAsync(p => p.Id == projectId, cancellationToken);
-            if (!projectExists)
-            {
-                return null;
-            }
+            return null;
         }
 
-        // タスクステータスのカウント
-        var totalTasks = tasks.Count;
-        var completedTasks = tasks.Count(t => t.Status == TaskStatus.Done);
-        var inProgressTasks = tasks.Count(t => t.Status == TaskStatus.InProgress);
-        var inReviewTasks = tasks.Count(t => t.Status == TaskStatus.InReview);
-        var todoTasks = tasks.Count(t => t.Status == TaskStatus.Todo);
+        // 指定日時時点でのタスク状態を取得
+        // まずTaskHistoriesから過去の状態を復元する
+        // SQLiteはDateTimeOffsetの比較をサポートしないため、クライアント側でフィルタ
+        var allTaskHistories = await _context.TaskHistories
+            .Where(th => th.ProjectId == projectId)
+            .ToListAsync(cancellationToken);
+
+        // 指定日時以前のスナップショットから、各タスクの最新状態を取得
+        // SnapshotDateを使用して、その日の時点でのタスクの状態を取得
+        var tasksFromHistory = allTaskHistories
+            .Where(th => th.SnapshotDate <= asOfDate)
+            .GroupBy(th => th.TaskId)
+            .Select(g => g.OrderByDescending(th => th.SnapshotDate).First())
+            .ToList();
+
+        // TaskHistoriesにデータがない場合は、現在のTasksテーブルからフォールバック
+        // （最新の状態を取得する場合や、TaskHistoriesがまだ作成されていない場合）
+        if (tasksFromHistory.Count == 0)
+        {
+            var allTasks = await _context.Tasks
+                .Where(t => t.ProjectId == projectId)
+                .ToListAsync(cancellationToken);
+
+            // Tasksテーブルから取得した場合も、CreatedAtでフィルタ
+            var tasks = allTasks.Where(t => t.CreatedAt <= asOfDate).ToList();
+
+            // タスクが1件もなければ空の統計を返す
+            if (tasks.Count == 0)
+            {
+                return new ProjectStatisticsDetailDto
+                {
+                    TotalTasks = 0,
+                    CompletedTasks = 0,
+                    InProgressTasks = 0,
+                    InReviewTasks = 0,
+                    TodoTasks = 0,
+                    TotalEstimatedHours = 0,
+                    TotalActualHours = 0,
+                    RemainingEstimatedHours = 0,
+                    OnTimeTasks = 0,
+                    DelayedTasks = 0,
+                    AverageDelayDays = 0,
+                    AsOfDate = asOfDate
+                };
+            }
+
+            // Tasksテーブルのデータを使って統計を計算
+            var totalTasks = tasks.Count;
+            var completedTasks = tasks.Count(t => t.Status == TaskStatus.Done);
+            var inProgressTasks = tasks.Count(t => t.Status == TaskStatus.InProgress);
+            var inReviewTasks = tasks.Count(t => t.Status == TaskStatus.InReview);
+            var todoTasks = tasks.Count(t => t.Status == TaskStatus.Todo);
+
+            var totalEstimatedHours = tasks
+                .Where(t => t.EstimatedHours.HasValue)
+                .Sum(t => t.EstimatedHours!.Value);
+
+            var totalActualHours = tasks
+                .Where(t => t.ActualHours.HasValue)
+                .Sum(t => t.ActualHours!.Value);
+
+            var remainingEstimatedHours = tasks
+                .Where(t => t.Status != TaskStatus.Done && t.EstimatedHours.HasValue)
+                .Sum(t => t.EstimatedHours!.Value);
+
+            var completedTasksList = tasks.Where(t => t.Status == TaskStatus.Done).ToList();
+            var onTimeTasks = completedTasksList
+                .Count(t => t.ScheduledEndDate.HasValue
+                         && t.ActualEndDate.HasValue
+                         && t.ActualEndDate.Value <= t.ScheduledEndDate.Value);
+
+            var delayedTasks = completedTasksList
+                .Count(t => t.ScheduledEndDate.HasValue
+                         && t.ActualEndDate.HasValue
+                         && t.ActualEndDate.Value > t.ScheduledEndDate.Value);
+
+            var delayedTasksWithDates = completedTasksList
+                .Where(t => t.ScheduledEndDate.HasValue
+                         && t.ActualEndDate.HasValue
+                         && t.ActualEndDate.Value > t.ScheduledEndDate.Value)
+                .ToList();
+
+            var averageDelayDays = delayedTasksWithDates.Count > 0
+                ? Math.Round(delayedTasksWithDates
+                    .Average(t => (t.ActualEndDate!.Value - t.ScheduledEndDate!.Value).TotalDays), 1)
+                : 0;
+
+            return new ProjectStatisticsDetailDto
+            {
+                TotalTasks = totalTasks,
+                CompletedTasks = completedTasks,
+                InProgressTasks = inProgressTasks,
+                InReviewTasks = inReviewTasks,
+                TodoTasks = todoTasks,
+                TotalEstimatedHours = totalEstimatedHours,
+                TotalActualHours = totalActualHours,
+                RemainingEstimatedHours = remainingEstimatedHours,
+                OnTimeTasks = onTimeTasks,
+                DelayedTasks = delayedTasks,
+                AverageDelayDays = averageDelayDays,
+                AsOfDate = asOfDate
+            };
+        }
+
+        // TaskHistoriesのデータを使って統計を計算
+        var totalTasks2 = tasksFromHistory.Count;
+        var completedTasks2 = tasksFromHistory.Count(t => t.Status == TaskStatus.Done);
+        var inProgressTasks2 = tasksFromHistory.Count(t => t.Status == TaskStatus.InProgress);
+        var inReviewTasks2 = tasksFromHistory.Count(t => t.Status == TaskStatus.InReview);
+        var todoTasks2 = tasksFromHistory.Count(t => t.Status == TaskStatus.Todo);
 
         // 工数統計の計算
-        var totalEstimatedHours = tasks
+        var totalEstimatedHours2 = tasksFromHistory
             .Where(t => t.EstimatedHours.HasValue)
             .Sum(t => t.EstimatedHours!.Value);
 
-        var totalActualHours = tasks
+        var totalActualHours2 = tasksFromHistory
             .Where(t => t.ActualHours.HasValue)
             .Sum(t => t.ActualHours!.Value);
 
-        var remainingEstimatedHours = tasks
+        var remainingEstimatedHours2 = tasksFromHistory
             .Where(t => t.Status != TaskStatus.Done && t.EstimatedHours.HasValue)
             .Sum(t => t.EstimatedHours!.Value);
 
         // スケジュール統計の計算
-        var completedTasksList = tasks.Where(t => t.Status == TaskStatus.Done).ToList();
-        var onTimeTasks = completedTasksList
-            .Count(t => t.ScheduledEndDate.HasValue 
-                     && t.ActualEndDate.HasValue 
+        var completedTasksList2 = tasksFromHistory.Where(t => t.Status == TaskStatus.Done).ToList();
+        var onTimeTasks2 = completedTasksList2
+            .Count(t => t.ScheduledEndDate.HasValue
+                     && t.ActualEndDate.HasValue
                      && t.ActualEndDate.Value <= t.ScheduledEndDate.Value);
 
-        var delayedTasks = completedTasksList
-            .Count(t => t.ScheduledEndDate.HasValue 
-                     && t.ActualEndDate.HasValue 
+        var delayedTasks2 = completedTasksList2
+            .Count(t => t.ScheduledEndDate.HasValue
+                     && t.ActualEndDate.HasValue
                      && t.ActualEndDate.Value > t.ScheduledEndDate.Value);
 
         // 平均遅延日数の計算
-        var delayedTasksWithDates = completedTasksList
-            .Where(t => t.ScheduledEndDate.HasValue 
-                     && t.ActualEndDate.HasValue 
+        var delayedTasksWithDates2 = completedTasksList2
+            .Where(t => t.ScheduledEndDate.HasValue
+                     && t.ActualEndDate.HasValue
                      && t.ActualEndDate.Value > t.ScheduledEndDate.Value)
             .ToList();
 
-        var averageDelayDays = delayedTasksWithDates.Any()
-            ? Math.Round(delayedTasksWithDates
+        var averageDelayDays2 = delayedTasksWithDates2.Count > 0
+            ? Math.Round(delayedTasksWithDates2
                 .Average(t => (t.ActualEndDate!.Value - t.ScheduledEndDate!.Value).TotalDays), 1)
             : 0;
 
         return new ProjectStatisticsDetailDto
         {
-            TotalTasks = totalTasks,
-            CompletedTasks = completedTasks,
-            InProgressTasks = inProgressTasks,
-            InReviewTasks = inReviewTasks,
-            TodoTasks = todoTasks,
-            TotalEstimatedHours = totalEstimatedHours,
-            TotalActualHours = totalActualHours,
-            RemainingEstimatedHours = remainingEstimatedHours,
-            OnTimeTasks = onTimeTasks,
-            DelayedTasks = delayedTasks,
-            AverageDelayDays = averageDelayDays,
+            TotalTasks = totalTasks2,
+            CompletedTasks = completedTasks2,
+            InProgressTasks = inProgressTasks2,
+            InReviewTasks = inReviewTasks2,
+            TodoTasks = todoTasks2,
+            TotalEstimatedHours = totalEstimatedHours2,
+            TotalActualHours = totalActualHours2,
+            RemainingEstimatedHours = remainingEstimatedHours2,
+            OnTimeTasks = onTimeTasks2,
+            DelayedTasks = delayedTasks2,
+            AverageDelayDays = averageDelayDays2,
             AsOfDate = asOfDate
         };
     }
@@ -154,15 +247,15 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
         }
 
         // プロジェクトに属するタスク履歴を取得
-        // 終了日以前に作成されたものに限定してパフォーマンスを改善
+        // 終了日以前のスナップショットに限定してパフォーマンスを改善
         // SQLiteはDateTimeOffsetのOrderByをサポートしないため、クライアント側でソート
         var allTaskHistories = await _context.TaskHistories
             .Where(th => th.ProjectId == projectId)
             .ToListAsync(cancellationToken);
 
         var taskHistories = allTaskHistories
-            .Where(th => th.CreatedAt <= endDate)
-            .OrderBy(th => th.CreatedAt)
+            .Where(th => th.SnapshotDate <= endDate)
+            .OrderBy(th => th.SnapshotDate)
             .ToList();
 
         // 日次スナップショットを生成
@@ -176,9 +269,9 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
 
             // この日付時点でのタスク状態を計算
             var tasksAtDate = taskHistories
-                .Where(th => th.CreatedAt <= currentDateOffset)
+                .Where(th => th.SnapshotDate <= currentDateOffset)
                 .GroupBy(th => th.TaskId)
-                .Select(g => g.OrderByDescending(th => th.CreatedAt).First())
+                .Select(g => g.OrderByDescending(th => th.SnapshotDate).First())
                 .ToList();
 
             var totalTasks = tasksAtDate.Count;
