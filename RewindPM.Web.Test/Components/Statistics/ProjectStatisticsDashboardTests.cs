@@ -40,6 +40,10 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2.5,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 
@@ -85,6 +89,10 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             OnTimeTasks = 2,
             DelayedTasks = 0,
             AverageDelayDays = 0,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = asOfDate
         };
 
@@ -150,6 +158,10 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             OnTimeTasks = 8,
             DelayedTasks = 2,
             AverageDelayDays = 1.5,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 
@@ -198,6 +210,10 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2.0,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 
@@ -244,6 +260,10 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2.5,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 
@@ -289,6 +309,10 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2.5,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
         var statisticsDto2 = new ProjectStatisticsDetailDto
@@ -304,6 +328,10 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             OnTimeTasks = 8,
             DelayedTasks = 2,
             AverageDelayDays = 3.0,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 
