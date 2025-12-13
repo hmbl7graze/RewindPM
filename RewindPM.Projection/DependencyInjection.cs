@@ -19,11 +19,13 @@ public static class DependencyInjection
         // プロジェクションハンドラーをスコープドで登録
         services.AddScoped<ProjectCreatedEventHandler>();
         services.AddScoped<ProjectUpdatedEventHandler>();
+        services.AddScoped<ProjectDeletedEventHandler>();
         services.AddScoped<TaskCreatedEventHandler>();
         services.AddScoped<TaskUpdatedEventHandler>();
         services.AddScoped<TaskStatusChangedEventHandler>();
         services.AddScoped<TaskScheduledPeriodChangedEventHandler>();
         services.AddScoped<TaskActualPeriodChangedEventHandler>();
+        services.AddScoped<TaskDeletedEventHandler>();
 
         // ProjectionInitializerをHostedServiceとして登録
         // アプリケーション起動時にEventPublisherにハンドラーを登録する

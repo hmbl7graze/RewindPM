@@ -20,44 +20,45 @@ public class ReadModelRepository : IReadModelRepository
     }
 
     /// <summary>
-    /// 全プロジェクトを取得
+    /// 全プロジェクトを取得（削除されたものを除く）
     /// </summary>
     public async Task<List<ProjectDto>> GetAllProjectsAsync()
     {
         return await _context.Projects
+            .Where(p => !p.IsDeleted)
             .Select(p => MapToProjectDto(p))
             .ToListAsync();
     }
 
     /// <summary>
-    /// 指定されたIDのプロジェクトを取得
+    /// 指定されたIDのプロジェクトを取得（削除されたものを除く）
     /// </summary>
     public async Task<ProjectDto?> GetProjectByIdAsync(Guid projectId)
     {
         var project = await _context.Projects
-            .FirstOrDefaultAsync(p => p.Id == projectId);
+            .FirstOrDefaultAsync(p => p.Id == projectId && !p.IsDeleted);
 
         return project == null ? null : MapToProjectDto(project);
     }
 
     /// <summary>
-    /// 指定されたプロジェクトに属する全タスクを取得
+    /// 指定されたプロジェクトに属する全タスクを取得（削除されたものを除く）
     /// </summary>
     public async Task<List<TaskDto>> GetTasksByProjectIdAsync(Guid projectId)
     {
         return await _context.Tasks
-            .Where(t => t.ProjectId == projectId)
+            .Where(t => t.ProjectId == projectId && !t.IsDeleted)
             .Select(t => MapToTaskDto(t))
             .ToListAsync();
     }
 
     /// <summary>
-    /// 指定されたIDのタスクを取得
+    /// 指定されたIDのタスクを取得（削除されたものを除く）
     /// </summary>
     public async Task<TaskDto?> GetTaskByIdAsync(Guid taskId)
     {
         var task = await _context.Tasks
-            .FirstOrDefaultAsync(t => t.Id == taskId);
+            .FirstOrDefaultAsync(t => t.Id == taskId && !t.IsDeleted);
 
         return task == null ? null : MapToTaskDto(task);
     }
