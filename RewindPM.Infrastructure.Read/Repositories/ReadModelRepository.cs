@@ -47,6 +47,7 @@ public class ReadModelRepository : IReadModelRepository
     public async Task<List<TaskDto>> GetTasksByProjectIdAsync(Guid projectId)
     {
         return await _context.Tasks
+            .AsNoTracking()
             .Where(t => t.ProjectId == projectId && !t.IsDeleted)
             .Select(t => MapToTaskDto(t))
             .ToListAsync();
