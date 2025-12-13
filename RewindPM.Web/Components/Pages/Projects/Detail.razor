@@ -10,6 +10,7 @@
 @using RewindPM.Web.Components.Shared
 @using RewindPM.Web.Components.Statistics
 @using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus
+@using Microsoft.AspNetCore.WebUtilities
 @inject IMediator Mediator
 @inject NavigationManager Navigation
 @inject ILogger<Detail> Logger
@@ -146,13 +147,23 @@ else
     
     // ビュー切り替え用の状態
     private string _viewType = "Gantt";
+    private Guid? _previousId = null; // 前回のIdパラメータ値
+    private string? _previousTabQuery = null; // 前回のtabクエリパラメータ値
 
     private void ToggleView(string viewType)
     {
         _viewType = viewType;
+
         // ビュー切り替え時にモーダルを閉じる
         showTaskModal = false;
         selectedTask = null;
+
+        // URLクエリパラメータを更新
+        var uri = Navigation.GetUriWithQueryParameter("tab", viewType.ToLower());
+        Navigation.NavigateTo(uri, false);
+        
+        // 前回のクエリパラメータを更新（OnParametersSetでの二重設定を防ぐ）
+        _previousTabQuery = viewType.ToLower();
     }
 
     private async Task HandleTaskStatusChanged((TaskDto task, TaskStatus newStatus) changeData)
@@ -179,6 +190,38 @@ else
         {
             Logger.LogError(ex, "Failed to update task status for task {TaskId}", changeData.task.Id);
             errorMessage = "ステータスの更新に失敗しました。もう一度お試しください。";
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        // URLクエリパラメータからタブの状態を読み取る
+        var uri = new Uri(Navigation.Uri);
+        var queryParams = QueryHelpers.ParseQuery(uri.Query);
+        
+        // StringValuesから最初の値を明示的に取得（複数値の場合の予期しない動作を防ぐ）
+        var currentTabQuery = queryParams.TryGetValue("tab", out var tabValue) 
+            ? tabValue.FirstOrDefault()?.ToLower() 
+            : null;
+
+        // Idパラメータが変更された場合、または tabクエリパラメータが変更された場合のみタブ状態を更新
+        var isIdChanged = _previousId != Id;
+        var isTabQueryChanged = _previousTabQuery != currentTabQuery;
+
+        if (isIdChanged || isTabQueryChanged)
+        {
+            _previousId = Id;
+            _previousTabQuery = currentTabQuery;
+
+            // クエリパラメータに基づいてタブ状態を設定（nullまたは空の場合はデフォルト）
+            _viewType = currentTabQuery switch
+            {
+                "gantt" => "Gantt",
+                "kanban" => "Kanban",
+                "statistics" => "Statistics",
+                null or "" => "Gantt", // デフォルト
+                _ => "Gantt" // 無効な値の場合もデフォルト
+            };
         }
     }
 
