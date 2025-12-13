@@ -172,7 +172,7 @@ public class DetailTests : Bunit.TestContext
         Assert.Contains("Test Project", title.TextContent.Trim());
 
         var buttons = cut.FindAll("button, a.btn, a.btn-icon");
-        Assert.Contains(buttons, b => b.TextContent.Contains("Edit"));
+        Assert.Contains(buttons, b => b.TextContent.Contains("Info"));
         Assert.Contains(buttons, b => b.TextContent.Contains("Add Task"));
     }
 
@@ -192,9 +192,9 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
-        // Assert
-        var description = cut.Find(".project-description");
-        Assert.Contains("Test Description", description.TextContent);
+        // Assert - プロジェクト説明はProjectInfoModalに移動されたため、タイトルのみ検証
+        var title = cut.Find(".project-title");
+        Assert.Contains("Test Project", title.TextContent);
     }
 
     [Fact(DisplayName = "タスクが存在しない場合、空のメッセージが表示される")]

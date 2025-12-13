@@ -134,13 +134,17 @@ public class ProjectCardTests : Bunit.TestContext
 
         var mockMediator = Substitute.For<IMediator>();
         Services.AddSingleton(mockMediator);
+        var navManager = Services.GetRequiredService<NavigationManager>();
 
         // Act
         var cut = RenderComponent<ProjectCard>(parameters => parameters
             .Add(p => p.Project, project));
 
-        // Assert - アンカータグのhref属性を検証
-        var link = cut.Find(".project-card-link");
-        Assert.Equal($"/projects/{projectId}", link.GetAttribute("href"));
+        // カードをクリック
+        var card = cut.Find(".project-card");
+        card.Click();
+
+        // Assert - NavigationManagerのURIを検証
+        Assert.Equal($"{navManager.BaseUri}projects/{projectId}", navManager.Uri);
     }
 }
