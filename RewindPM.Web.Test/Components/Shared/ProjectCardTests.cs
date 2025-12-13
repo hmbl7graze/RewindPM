@@ -1,6 +1,7 @@
 using Bunit;
 using MediatR;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using RewindPM.Application.Read.DTOs;
@@ -147,4 +148,130 @@ public class ProjectCardTests : Bunit.TestContext
         // Assert - NavigationManagerのURIを検証
         Assert.Equal($"{navManager.BaseUri}projects/{projectId}", navManager.Uri);
     }
+
+    [Fact(DisplayName = "削除ボタンをクリックするとOnDeleteRequestコールバックが呼ばれる")]
+    public async Task ProjectCard_InvokesOnDeleteRequest_WhenDeleteButtonClicked()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var project = new ProjectDto
+        {
+            Id = projectId,
+            Title = "Test Project",
+            Description = "Test Description",
+            CreatedAt = DateTime.Now,
+            UpdatedAt = null,
+            CreatedBy = "test-user"
+        };
+
+        var mockMediator = Substitute.For<IMediator>();
+        Services.AddSingleton(mockMediator);
+        
+        var deletedProjectId = Guid.Empty;
+        EventCallback<Guid> onDeleteRequest = EventCallback.Factory.Create<Guid>(
+            this, (Guid id) => { deletedProjectId = id; });
+
+        // Act
+        var cut = RenderComponent<ProjectCard>(parameters => parameters
+            .Add(p => p.Project, project)
+            .Add(p => p.OnDeleteRequest, onDeleteRequest));
+
+        var deleteButton = cut.Find(".delete-btn");
+        await cut.InvokeAsync(() => deleteButton.Click());
+
+        // Assert
+        Assert.Equal(projectId, deletedProjectId);
+    }
+
+    [Fact(DisplayName = "削除ボタンクリック時にカードのクリックイベントが発火しない")]
+    public async Task ProjectCard_DoesNotNavigate_WhenDeleteButtonClicked()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var project = new ProjectDto
+        {
+            Id = projectId,
+            Title = "Test Project",
+            Description = "Test Description",
+            CreatedAt = DateTime.Now,
+            UpdatedAt = null,
+            CreatedBy = "test-user"
+        };
+
+        var mockMediator = Substitute.For<IMediator>();
+        Services.AddSingleton(mockMediator);
+        var navManager = Services.GetRequiredService<NavigationManager>();
+        var initialUri = navManager.Uri;
+
+        // Act
+        var cut = RenderComponent<ProjectCard>(parameters => parameters
+            .Add(p => p.Project, project));
+
+        var deleteButton = cut.Find(".delete-btn");
+        await cut.InvokeAsync(() => deleteButton.Click());
+
+        // Assert - URIが変わっていないことを確認
+        Assert.Equal(initialUri, navManager.Uri);
+    }
+
+    [Fact(DisplayName = "Enterキーでカードが選択される")]
+    public void ProjectCard_NavigatesOnEnterKey()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var project = new ProjectDto
+        {
+            Id = projectId,
+            Title = "Test Project",
+            Description = "Test Description",
+            CreatedAt = DateTime.Now,
+            UpdatedAt = null,
+            CreatedBy = "test-user"
+        };
+
+        var mockMediator = Substitute.For<IMediator>();
+        Services.AddSingleton(mockMediator);
+        var navManager = Services.GetRequiredService<NavigationManager>();
+
+        // Act
+        var cut = RenderComponent<ProjectCard>(parameters => parameters
+            .Add(p => p.Project, project));
+
+        var card = cut.Find(".project-card");
+        card.KeyDown(new KeyboardEventArgs { Key = "Enter" });
+
+        // Assert
+        Assert.Equal($"{navManager.BaseUri}projects/{projectId}", navManager.Uri);
+    }
+
+    [Fact(DisplayName = "Spaceキーでカードが選択される")]
+    public void ProjectCard_NavigatesOnSpaceKey()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var project = new ProjectDto
+        {
+            Id = projectId,
+            Title = "Test Project",
+            Description = "Test Description",
+            CreatedAt = DateTime.Now,
+            UpdatedAt = null,
+            CreatedBy = "test-user"
+        };
+
+        var mockMediator = Substitute.For<IMediator>();
+        Services.AddSingleton(mockMediator);
+        var navManager = Services.GetRequiredService<NavigationManager>();
+
+        // Act
+        var cut = RenderComponent<ProjectCard>(parameters => parameters
+            .Add(p => p.Project, project));
+
+        var card = cut.Find(".project-card");
+        card.KeyDown(new KeyboardEventArgs { Key = " " });
+
+        // Assert
+        Assert.Equal($"{navManager.BaseUri}projects/{projectId}", navManager.Uri);
+    }
 }
+

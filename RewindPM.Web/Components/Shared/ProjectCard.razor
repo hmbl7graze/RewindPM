@@ -6,10 +6,10 @@
 @inject ILogger<ProjectCard> Logger
 @inject NavigationManager Navigation
 
-<div class="project-card" @onclick="NavigateToProject">
+<div class="project-card" @onclick="NavigateToProject" @onkeydown="HandleKeyDown" tabindex="0" role="button" aria-label="プロジェクト @Project.Title を開く">
     <div class="project-card-header">
         <h3 class="project-card-title">@Project.Title</h3>
-        <button class="delete-btn" @onclick="HandleDelete" @onclick:stopPropagation="true" title="削除">
+        <button class="delete-btn" @onclick="HandleDelete" @onclick:stopPropagation="true" aria-label="プロジェクトを削除" title="削除">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 6h18"/>
                 <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
@@ -106,5 +106,13 @@
     private void NavigateToProject()
     {
         Navigation.NavigateTo($"/projects/{Project.Id}");
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            NavigateToProject();
+        }
     }
 }

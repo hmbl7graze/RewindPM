@@ -41,10 +41,10 @@ else
             </h1>
         </div>
         <div class="header-right">
-            <button class="btn @(_isRetrospectiveMode ? "" : "btn-outline-secondary")" @onclick="ShowInfoModal">
+            <button class="btn btn-outline-secondary" @onclick="ShowInfoModal">
                 Info
             </button>
-            <button class="btn @(_isRetrospectiveMode ? "btn-primary" : "btn-outline-secondary")" @onclick="ToggleRetrospectiveMode">
+            <button class="btn btn-primary" @onclick="ToggleRetrospectiveMode">
                 Retrospective
             </button>
         </div>
@@ -120,8 +120,8 @@ else
     <!-- プロジェクト情報モーダル -->
     <ProjectInfoModal @bind-IsVisible="showInfoModal"
                       ProjectId="@Id"
-                      ProjectTitle="@project?.Title"
-                      ProjectDescription="@project?.Description"
+                      ProjectTitle="@project.Title"
+                      ProjectDescription="@project.Description"
                       OnSuccess="HandleProjectInfoUpdate" />
 }
 

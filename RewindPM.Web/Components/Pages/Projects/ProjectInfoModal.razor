@@ -1,7 +1,10 @@
 @using RewindPM.Web.Components.Shared
 @using MediatR
 @using RewindPM.Application.Write.Commands.Projects
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.Extensions.Logging
 @inject IMediator Mediator
+@inject ILogger<ProjectInfoModal> Logger
 
 <Modal Title="@ModalTitle" @bind-IsVisible="IsVisible" Size="ModalSize.Large">
     <div class="project-info-modal-content">
@@ -104,25 +107,28 @@
     private bool isSaving = false;
     private string? errorMessage;
     private ProjectFormModel formModel = new();
+    private bool _wasVisible = false; // 前回の IsVisible の状態を記録
 
     private string ModalTitle => isEditMode ? "プロジェクト編集" : "プロジェクト情報";
 
     protected override void OnParametersSet()
     {
-        // モーダルが開かれたときに表示モードにリセット
-        if (IsVisible && isEditMode)
+        // モーダルが閉じている→開いた に変わったときのみ初期化
+        if (IsVisible && !_wasVisible)
         {
+            // 表示モードにリセット
             isEditMode = false;
+            errorMessage = null;
+
+            // フォームモデルを初期化
+            formModel = new ProjectFormModel
+            {
+                Title = ProjectTitle ?? string.Empty,
+                Description = ProjectDescription ?? string.Empty
+            };
         }
 
-        // フォームモデルを初期化
-        formModel = new ProjectFormModel
-        {
-            Title = ProjectTitle ?? string.Empty,
-            Description = ProjectDescription ?? string.Empty
-        };
-
-        errorMessage = null;
+        _wasVisible = IsVisible;
     }
 
     private void EnterEditMode()
@@ -171,7 +177,11 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"プロジェクトの更新に失敗しました: {ex.Message}";
+            Logger.LogError(ex, "プロジェクトの更新に失敗しました。ProjectId: {ProjectId}", ProjectId);
+            errorMessage = "プロジェクトの更新に失敗しました。もう一度お試しください。";
+        }
+        finally
+        {
             isSaving = false;
         }
     }
@@ -186,7 +196,11 @@
 
     public class ProjectFormModel
     {
+        [Required(ErrorMessage = "プロジェクト名は必須です。")]
+        [StringLength(200, ErrorMessage = "プロジェクト名は200文字以内で入力してください。")]
         public string Title { get; set; } = string.Empty;
+
+        [StringLength(2000, ErrorMessage = "説明は2000文字以内で入力してください。")]
         public string Description { get; set; } = string.Empty;
     }
 }

@@ -3,8 +3,10 @@
 @using MediatR
 @using RewindPM.Application.Read.Queries.Projects
 @using RewindPM.Web.Components.Shared
+@using Microsoft.Extensions.Logging
 @inject IMediator Mediator
 @inject NavigationManager Navigation
+@inject ILogger<Index> Logger
 
 <PageTitle>プロジェクト一覧 - RewindPM</PageTitle>
 
@@ -106,8 +108,9 @@ else
             var tasks = await Mediator.Send(tasksQuery);
             selectedProjectTaskCount = tasks.Count;
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.LogWarning(ex, "タスク数の取得に失敗しました。ProjectId: {ProjectId}", projectId);
             selectedProjectTaskCount = 0;
         }
         

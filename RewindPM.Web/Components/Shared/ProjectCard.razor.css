@@ -18,6 +18,12 @@
     transform: translateY(-2px);
 }
 
+.project-card:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
 .project-card-header {
     display: flex;
     justify-content: space-between;
@@ -97,7 +103,7 @@
     border-radius: 4px;
     transition: all 0.2s ease;
     opacity: 0.6;
-    color: #dc2626;
+    color: var(--danger);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -105,6 +111,6 @@
 
 .delete-btn:hover {
     opacity: 1;
-    background-color: #ffebe9;
+    background-color: var(--danger-bg);
     transform: scale(1.1);
 }
