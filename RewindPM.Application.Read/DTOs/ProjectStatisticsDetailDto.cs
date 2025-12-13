@@ -39,10 +39,12 @@ public record ProjectStatisticsDetailDto
     public int HoursOverrun => TotalActualHours - TotalEstimatedHours;
 
     /// <summary>
-    /// オーバーラン率（%）
+    /// 工数消費率（%）
+    /// 実績工数 / 予定工数 * 100
+    /// 100%を超える場合は予定より多くの工数を消費していることを示す
     /// </summary>
-    public double OverrunRate => TotalEstimatedHours > 0
-        ? Math.Round((double)HoursOverrun / TotalEstimatedHours * 100, 1)
+    public double HoursConsumptionRate => TotalEstimatedHours > 0
+        ? Math.Round((double)TotalActualHours / TotalEstimatedHours * 100, 1)
         : 0;
 
     /// <summary>

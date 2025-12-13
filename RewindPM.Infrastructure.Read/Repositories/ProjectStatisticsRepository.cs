@@ -27,6 +27,7 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
     {
         // プロジェクトに属するすべてのタスクを取得
         var tasks = await _context.Tasks
+            .AsNoTracking()
             .Where(t => t.ProjectId == projectId)
             .ToListAsync(cancellationToken);
 
@@ -68,6 +69,7 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
         // まずTaskHistoriesから過去の状態を復元する
         // SQLiteはDateTimeOffsetの比較をサポートしないため、クライアント側でフィルタ
         var allTaskHistories = await _context.TaskHistories
+            .AsNoTracking()
             .Where(th => th.ProjectId == projectId)
             .ToListAsync(cancellationToken);
 
@@ -84,6 +86,7 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
         if (tasksFromHistory.Count == 0)
         {
             var allTasks = await _context.Tasks
+                .AsNoTracking()
                 .Where(t => t.ProjectId == projectId)
                 .ToListAsync(cancellationToken);
 
@@ -125,9 +128,15 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
                 .Where(t => t.ActualHours.HasValue)
                 .Sum(t => t.ActualHours!.Value);
 
+            // 残予定工数 = 未完了タスクの(予定工数 - 実績工数)の合計
             var remainingEstimatedHours = tasks
-                .Where(t => t.Status != TaskStatus.Done && t.EstimatedHours.HasValue)
-                .Sum(t => t.EstimatedHours!.Value);
+                .Where(t => t.Status != TaskStatus.Done)
+                .Sum(t =>
+                {
+                    var estimated = t.EstimatedHours ?? 0;
+                    var actual = t.ActualHours ?? 0;
+                    return Math.Max(0, estimated - actual); // 負の値にならないようにする
+                });
 
             var completedTasksList = tasks.Where(t => t.Status == TaskStatus.Done).ToList();
             var onTimeTasks = completedTasksList
@@ -184,9 +193,15 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
             .Where(t => t.ActualHours.HasValue)
             .Sum(t => t.ActualHours!.Value);
 
+        // 残予定工数 = 未完了タスクの(予定工数 - 実績工数)の合計
         var remainingEstimatedHours2 = tasksFromHistory
-            .Where(t => t.Status != TaskStatus.Done && t.EstimatedHours.HasValue)
-            .Sum(t => t.EstimatedHours!.Value);
+            .Where(t => t.Status != TaskStatus.Done)
+            .Sum(t =>
+            {
+                var estimated = t.EstimatedHours ?? 0;
+                var actual = t.ActualHours ?? 0;
+                return Math.Max(0, estimated - actual); // 負の値にならないようにする
+            });
 
         // スケジュール統計の計算
         var completedTasksList2 = tasksFromHistory.Where(t => t.Status == TaskStatus.Done).ToList();
@@ -250,6 +265,7 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
         // 終了日以前のスナップショットに限定してパフォーマンスを改善
         // SQLiteはDateTimeOffsetのOrderByをサポートしないため、クライアント側でソート
         var allTaskHistories = await _context.TaskHistories
+            .AsNoTracking()
             .Where(th => th.ProjectId == projectId)
             .ToListAsync(cancellationToken);
 

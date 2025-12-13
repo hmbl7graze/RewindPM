@@ -60,8 +60,8 @@ else if (_statistics != null)
                 </div>
                 <div class="stat-card-content">
                     <div class="stat-primary">
-                        <span class="stat-value @GetOverrunClass()">@_statistics.OverrunRate%</span>
-                        <span class="stat-label">オーバーラン率</span>
+                        <span class="stat-value @GetConsumptionRateClass()">@_statistics.HoursConsumptionRate%</span>
+                        <span class="stat-label">工数消費率</span>
                     </div>
                     <div class="stat-details">
                         <div class="stat-detail-item">
@@ -195,15 +195,29 @@ else
         }
     }
 
+    private string GetConsumptionRateClass()
+    {
+        if (_statistics == null) return "";
+
+        // 工数消費率が100%を超える場合は予定より多くの工数を消費（赤）
+        if (_statistics.HoursConsumptionRate > 100)
+            return "stat-over";
+        // 工数消費率が100%未満の場合は予定より少ない工数で完了（緑）
+        else if (_statistics.HoursConsumptionRate < 100)
+            return "stat-under";
+
+        return "";
+    }
+
     private string GetOverrunClass()
     {
         if (_statistics == null) return "";
-        
+
         if (_statistics.HoursOverrun > 0)
             return "stat-over";
         else if (_statistics.HoursOverrun < 0)
             return "stat-under";
-        
+
         return "";
     }
 

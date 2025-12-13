@@ -117,7 +117,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
         // 工数統計
         Assert.Equal(80, result.TotalEstimatedHours); // 10 + 20 + 15 + 5 + 30
         Assert.Equal(43, result.TotalActualHours); // 8 + 25 + 10
-        Assert.Equal(50, result.RemainingEstimatedHours); // 15 + 5 + 30 (未完了分)
+        Assert.Equal(40, result.RemainingEstimatedHours); // (15-10) + (5-0) + (30-0) = 5 + 5 + 30 = 40
 
         // スケジュール統計
         Assert.Equal(1, result.OnTimeTasks); // Task 1のみ期限内
@@ -127,7 +127,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
         // 計算プロパティ
         Assert.Equal(40.0, result.CompletionRate); // 2/5 * 100
         Assert.Equal(-37, result.HoursOverrun); // 43 - 80
-        Assert.Equal(-46.2, result.OverrunRate, precision: 1); // -37/80 * 100
+        Assert.Equal(53.8, result.HoursConsumptionRate, precision: 1); // 43/80 * 100 = 53.8%
         Assert.Equal(50.0, result.OnTimeRate); // 1/2 * 100
     }
 

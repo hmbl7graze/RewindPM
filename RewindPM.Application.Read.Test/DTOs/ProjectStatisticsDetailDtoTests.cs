@@ -121,11 +121,11 @@ public class ProjectStatisticsDetailDtoTests
         };
 
         // Act & Assert
-        Assert.Equal(25.0, dto.OverrunRate);
+        Assert.Equal(125.0, dto.HoursConsumptionRate); // 125 / 100 * 100 = 125%
     }
 
-    [Fact(DisplayName = "オーバーラン率: 予定工数がない場合、ゼロを返す")]
-    public void OverrunRate_WithNoEstimatedHours_ShouldReturnZero()
+    [Fact(DisplayName = "工数消費率: 予定工数がない場合、ゼロを返す")]
+    public void HoursConsumptionRate_WithNoEstimatedHours_ShouldReturnZero()
     {
         // Arrange
         var dto = new ProjectStatisticsDetailDto
@@ -145,7 +145,7 @@ public class ProjectStatisticsDetailDtoTests
         };
 
         // Act & Assert
-        Assert.Equal(0, dto.OverrunRate);
+        Assert.Equal(0, dto.HoursConsumptionRate);
     }
 
     [Fact(DisplayName = "期限内完了率: 完了タスクがある場合、正しく計算される")]
@@ -218,7 +218,7 @@ public class ProjectStatisticsDetailDtoTests
 
         // Act & Assert
         Assert.Equal(33.3, dto.CompletionRate);
-        Assert.Equal(33.3, dto.OverrunRate);
+        Assert.Equal(133.3, dto.HoursConsumptionRate); // 4 / 3 * 100 = 133.3%
         Assert.Equal(0.0, dto.OnTimeRate);
     }
 }
