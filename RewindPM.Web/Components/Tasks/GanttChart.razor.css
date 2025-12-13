@@ -210,7 +210,7 @@
 
 /* Task Bars */
 .gantt-bar {
-    height: 10px;
+    height: 12px;
     /* Thinner bars for better visual grouping */
     border-radius: var(--radius-pill);
     position: relative;
