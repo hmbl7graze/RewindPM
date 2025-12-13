@@ -11,5 +11,5 @@ public class SystemDateTimeProvider : IDateTimeProvider
     /// <summary>
     /// 現在のシステムUTC時刻を返す
     /// </summary>
-    public DateTime UtcNow => DateTime.UtcNow;
+    public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
 }

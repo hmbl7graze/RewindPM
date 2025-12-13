@@ -17,6 +17,9 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
     {
         _mediator = Substitute.For<IMediator>();
         Services.AddSingleton(_mediator);
+
+        // ApexChartsのJSInterop呼び出しをLooseモードで許可
+        JSInterop.Mode = JSRuntimeMode.Loose;
     }
 
     [Fact(DisplayName = "統計ダッシュボード: 初期化時に統計情報を読み込む")]
@@ -37,7 +40,7 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2.5,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         _mediator.Send(Arg.Any<GetProjectStatisticsDetailQuery>(), Arg.Any<CancellationToken>())
@@ -68,7 +71,7 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var asOfDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var asOfDate = new DateTimeOffset(new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc));
         var statisticsDto = new ProjectStatisticsDetailDto
         {
             TotalTasks = 5,
@@ -147,7 +150,7 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             OnTimeTasks = 8,
             DelayedTasks = 2,
             AverageDelayDays = 1.5,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         _mediator.Send(Arg.Any<GetProjectStatisticsDetailQuery>(), Arg.Any<CancellationToken>())
@@ -195,7 +198,7 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2.0,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         _mediator.Send(Arg.Any<GetProjectStatisticsDetailQuery>(), Arg.Any<CancellationToken>())
@@ -241,7 +244,7 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2.5,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         _mediator.Send(Arg.Any<GetProjectStatisticsDetailQuery>(), Arg.Any<CancellationToken>())
@@ -286,7 +289,7 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2.5,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
         var statisticsDto2 = new ProjectStatisticsDetailDto
         {
@@ -301,7 +304,7 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             OnTimeTasks = 8,
             DelayedTasks = 2,
             AverageDelayDays = 3.0,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         _mediator.Send(Arg.Is<GetProjectStatisticsDetailQuery>(q => q.ProjectId == projectId1), Arg.Any<CancellationToken>())

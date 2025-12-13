@@ -21,7 +21,7 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 3,
             DelayedTasks = 1,
             AverageDelayDays = 2.5,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         // Act & Assert
@@ -45,7 +45,7 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 0,
             DelayedTasks = 0,
             AverageDelayDays = 0,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         // Act & Assert
@@ -69,7 +69,7 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 1.0,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         // Act & Assert
@@ -93,7 +93,7 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 5,
             DelayedTasks = 0,
             AverageDelayDays = 0,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         // Act & Assert
@@ -117,7 +117,7 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 1.0,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         // Act & Assert
@@ -141,7 +141,7 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 1.0,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         // Act & Assert
@@ -165,7 +165,7 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2.0,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         // Act & Assert
@@ -189,7 +189,7 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 0,
             DelayedTasks = 0,
             AverageDelayDays = 0,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         // Act & Assert
@@ -213,7 +213,7 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 0,
             DelayedTasks = 1,
             AverageDelayDays = 1.5,
-            AsOfDate = DateTime.UtcNow
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         // Act & Assert

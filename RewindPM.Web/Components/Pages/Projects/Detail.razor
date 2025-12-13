@@ -139,8 +139,8 @@ else
     private TaskDto? selectedTask = null;
 
     // リワインド機能用の状態
-    private DateTime? _currentViewDate = null; // null = 最新
-    private List<DateTime> _editDates = new();
+    private DateTimeOffset? _currentViewDate = null; // null = 最新
+    private List<DateTimeOffset> _editDates = new();
     private bool _isViewingPast => _currentViewDate.HasValue;
     private bool _isRetrospectiveMode = false;
     
@@ -199,7 +199,7 @@ else
         catch (Exception ex)
         {
             errorMessage = $"編集日一覧の読み込みに失敗しました: {ex.Message}";
-            _editDates = new List<DateTime>();
+            _editDates = new List<DateTimeOffset>();
         }
     }
 
@@ -291,14 +291,14 @@ else
     /// <summary>
     /// タイムラインコントロールで日付が変更された際の処理
     /// </summary>
-    private async Task HandleDateChanged(DateTime? newDate)
+    private async Task HandleDateChanged(DateTimeOffset? newDate)
     {
         _currentViewDate = newDate;
         await LoadTasks();
         StateHasChanged();
     }
 
-    private async Task HandleBarResize((Guid taskId, string barType, DateTime newStartDate, DateTime newEndDate) resizeData)
+    private async Task HandleBarResize((Guid taskId, string barType, DateTimeOffset newStartDate, DateTimeOffset newEndDate) resizeData)
     {
         // 過去表示中は編集不可
         if (_isViewingPast)

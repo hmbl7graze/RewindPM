@@ -1,4 +1,4 @@
-﻿using Bunit;
+using Bunit;
 using Microsoft.AspNetCore.Components;
 using RewindPM.Web.Components.Shared;
 
@@ -12,7 +12,7 @@ public class TimelineControlTests : Bunit.TestContext
         // Arrange & Act
         var cut = RenderComponent<TimelineControl>(parameters => parameters
             .Add(p => p.CurrentDate, null)
-            .Add(p => p.EditDates, new List<DateTime>()));
+            .Add(p => p.EditDates, new List<DateTimeOffset>()));
 
         // Assert
         var dateDisplay = cut.Find(".timeline-date");
@@ -23,12 +23,12 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_DisplaysDate_WhenCurrentDateIsSet()
     {
         // Arrange
-        var date = new DateTime(2025, 1, 15);
+        var date = new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero);
 
         // Act
         var cut = RenderComponent<TimelineControl>(parameters => parameters
             .Add(p => p.CurrentDate, date)
-            .Add(p => p.EditDates, new List<DateTime> { date }));
+            .Add(p => p.EditDates, new List<DateTimeOffset> { date }));
 
         // Assert
         var dateDisplay = cut.Find(".timeline-date");
@@ -39,12 +39,12 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_HasViewingPastClass_WhenCurrentDateIsSet()
     {
         // Arrange
-        var date = new DateTime(2025, 1, 15);
+        var date = new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero);
 
         // Act
         var cut = RenderComponent<TimelineControl>(parameters => parameters
             .Add(p => p.CurrentDate, date)
-            .Add(p => p.EditDates, new List<DateTime> { date }));
+            .Add(p => p.EditDates, new List<DateTimeOffset> { date }));
 
         // Assert
         var control = cut.Find(".timeline-toolbar");
@@ -57,7 +57,7 @@ public class TimelineControlTests : Bunit.TestContext
         // Arrange & Act
         var cut = RenderComponent<TimelineControl>(parameters => parameters
             .Add(p => p.CurrentDate, null)
-            .Add(p => p.EditDates, new List<DateTime>()));
+            .Add(p => p.EditDates, new List<DateTimeOffset>()));
 
         // Assert
         var control = cut.Find(".timeline-toolbar");
@@ -70,7 +70,7 @@ public class TimelineControlTests : Bunit.TestContext
         // Arrange & Act
         var cut = RenderComponent<TimelineControl>(parameters => parameters
             .Add(p => p.CurrentDate, null)
-            .Add(p => p.EditDates, new List<DateTime>()));
+            .Add(p => p.EditDates, new List<DateTimeOffset>()));
 
         // Assert
         var prevButton = cut.Find(".timeline-btn-prev");
@@ -83,7 +83,7 @@ public class TimelineControlTests : Bunit.TestContext
         // Arrange & Act
         var cut = RenderComponent<TimelineControl>(parameters => parameters
             .Add(p => p.CurrentDate, null)
-            .Add(p => p.EditDates, new List<DateTime> { new DateTime(2025, 1, 15) }));
+            .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
 
         // Assert
         var prevButton = cut.Find(".timeline-btn-prev");
@@ -96,7 +96,7 @@ public class TimelineControlTests : Bunit.TestContext
         // Arrange & Act
         var cut = RenderComponent<TimelineControl>(parameters => parameters
             .Add(p => p.CurrentDate, null)
-            .Add(p => p.EditDates, new List<DateTime> { new DateTime(2025, 1, 15) }));
+            .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
 
         // Assert
         var nextButton = cut.Find(".timeline-btn-next");
@@ -107,17 +107,17 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_InvokesOnDateChanged_WhenPreviousButtonClicked()
     {
         // Arrange
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero)
         };
-        DateTime? capturedDate = null;
+        DateTimeOffset? capturedDate = null;
 
         var cut = RenderComponent<TimelineControl>(parameters => parameters
             .Add(p => p.CurrentDate, null)
             .Add(p => p.EditDates, editDates)
-            .Add(p => p.OnDateChanged, EventCallback.Factory.Create<DateTime?>(this, (date) =>
+            .Add(p => p.OnDateChanged, EventCallback.Factory.Create<DateTimeOffset?>(this, (date) =>
             {
                 capturedDate = date;
             })));
@@ -128,25 +128,25 @@ public class TimelineControlTests : Bunit.TestContext
 
         // Assert
         Assert.NotNull(capturedDate);
-        Assert.Equal(new DateTime(2025, 1, 15), capturedDate.Value);
+        Assert.Equal(new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero), capturedDate.Value);
     }
 
     [Fact(DisplayName = "次ボタンクリック時にOnDateChangedイベントが発火する")]
     public void TimelineControl_InvokesOnDateChanged_WhenNextButtonClicked()
     {
         // Arrange
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10),
-            new DateTime(2025, 1, 5)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
         };
-        DateTime? capturedDate = null;
+        DateTimeOffset? capturedDate = null;
 
         var cut = RenderComponent<TimelineControl>(parameters => parameters
-            .Add(p => p.CurrentDate, new DateTime(2025, 1, 5))
+            .Add(p => p.CurrentDate, new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero))
             .Add(p => p.EditDates, editDates)
-            .Add(p => p.OnDateChanged, EventCallback.Factory.Create<DateTime?>(this, (date) =>
+            .Add(p => p.OnDateChanged, EventCallback.Factory.Create<DateTimeOffset?>(this, (date) =>
             {
                 capturedDate = date;
             })));
@@ -157,7 +157,7 @@ public class TimelineControlTests : Bunit.TestContext
 
         // Assert
         Assert.NotNull(capturedDate);
-        Assert.Equal(new DateTime(2025, 1, 10), capturedDate.Value);
+        Assert.Equal(new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero), capturedDate.Value);
     }
 
     [Fact(DisplayName = "最新に戻るボタンは過去表示時のみ表示される")]
@@ -165,8 +165,8 @@ public class TimelineControlTests : Bunit.TestContext
     {
         // Arrange - 過去表示
         var cutPast = RenderComponent<TimelineControl>(parameters => parameters
-            .Add(p => p.CurrentDate, new DateTime(2025, 1, 15))
-            .Add(p => p.EditDates, new List<DateTime> { new DateTime(2025, 1, 15) }));
+            .Add(p => p.CurrentDate, new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero))
+            .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
 
         // Assert - 過去表示時はボタンが存在
         var todayButtons = cutPast.FindAll(".timeline-btn-reset");
@@ -175,7 +175,7 @@ public class TimelineControlTests : Bunit.TestContext
         // Arrange - 最新表示
         var cutLatest = RenderComponent<TimelineControl>(parameters => parameters
             .Add(p => p.CurrentDate, null)
-            .Add(p => p.EditDates, new List<DateTime> { new DateTime(2025, 1, 15) }));
+            .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
 
         // Assert - 最新表示時はボタンが存在しない
         var todayButtonsLatest = cutLatest.FindAll(".timeline-btn-reset");
@@ -186,13 +186,13 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_InvokesOnDateChangedWithNull_WhenTodayButtonClicked()
     {
         // Arrange
-        var editDates = new List<DateTime> { new DateTime(2025, 1, 15) };
-        DateTime? capturedDate = new DateTime(2025, 1, 15); // 初期値
+        var editDates = new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) };
+        DateTimeOffset? capturedDate = new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero); // 初期値
 
         var cut = RenderComponent<TimelineControl>(parameters => parameters
-            .Add(p => p.CurrentDate, new DateTime(2025, 1, 15))
+            .Add(p => p.CurrentDate, new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero))
             .Add(p => p.EditDates, editDates)
-            .Add(p => p.OnDateChanged, EventCallback.Factory.Create<DateTime?>(this, (date) =>
+            .Add(p => p.OnDateChanged, EventCallback.Factory.Create<DateTimeOffset?>(this, (date) =>
             {
                 capturedDate = date;
             })));
@@ -209,19 +209,19 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_MovesToOlderDate_WhenPreviousButtonClicked()
     {
         // Arrange
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10),
-            new DateTime(2025, 1, 5)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
         };
-        DateTime? capturedDate = null;
+        DateTimeOffset? capturedDate = null;
 
         // 現在1月10日を表示中
         var cut = RenderComponent<TimelineControl>(parameters => parameters
-            .Add(p => p.CurrentDate, new DateTime(2025, 1, 10))
+            .Add(p => p.CurrentDate, new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero))
             .Add(p => p.EditDates, editDates)
-            .Add(p => p.OnDateChanged, EventCallback.Factory.Create<DateTime?>(this, (date) =>
+            .Add(p => p.OnDateChanged, EventCallback.Factory.Create<DateTimeOffset?>(this, (date) =>
             {
                 capturedDate = date;
             })));
@@ -232,26 +232,26 @@ public class TimelineControlTests : Bunit.TestContext
 
         // Assert - 1月5日（より古い日付）に移動
         Assert.NotNull(capturedDate);
-        Assert.Equal(new DateTime(2025, 1, 5), capturedDate.Value);
+        Assert.Equal(new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero), capturedDate.Value);
     }
 
     [Fact(DisplayName = "次ボタンで新しい日付へ移動する")]
     public void TimelineControl_MovesToNewerDate_WhenNextButtonClicked()
     {
         // Arrange
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10),
-            new DateTime(2025, 1, 5)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
         };
-        DateTime? capturedDate = null;
+        DateTimeOffset? capturedDate = null;
 
         // 現在1月10日を表示中
         var cut = RenderComponent<TimelineControl>(parameters => parameters
-            .Add(p => p.CurrentDate, new DateTime(2025, 1, 10))
+            .Add(p => p.CurrentDate, new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero))
             .Add(p => p.EditDates, editDates)
-            .Add(p => p.OnDateChanged, EventCallback.Factory.Create<DateTime?>(this, (date) =>
+            .Add(p => p.OnDateChanged, EventCallback.Factory.Create<DateTimeOffset?>(this, (date) =>
             {
                 capturedDate = date;
             })));
@@ -262,23 +262,23 @@ public class TimelineControlTests : Bunit.TestContext
 
         // Assert - 1月15日（より新しい日付）に移動
         Assert.NotNull(capturedDate);
-        Assert.Equal(new DateTime(2025, 1, 15), capturedDate.Value);
+        Assert.Equal(new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero), capturedDate.Value);
     }
 
     [Fact(DisplayName = "最古の日付表示時、前ボタンが無効化される")]
     public void TimelineControl_PreviousButtonDisabled_WhenAtOldestDate()
     {
         // Arrange
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10),
-            new DateTime(2025, 1, 5)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
         };
 
         // 最古の日付（1月5日）を表示中
         var cut = RenderComponent<TimelineControl>(parameters => parameters
-            .Add(p => p.CurrentDate, new DateTime(2025, 1, 5))
+            .Add(p => p.CurrentDate, new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero))
             .Add(p => p.EditDates, editDates));
 
         // Assert
@@ -290,16 +290,16 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_NextButtonDisabled_WhenAtNewestDate()
     {
         // Arrange
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10),
-            new DateTime(2025, 1, 5)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
         };
 
         // 最新の日付（1月15日）を表示中
         var cut = RenderComponent<TimelineControl>(parameters => parameters
-            .Add(p => p.CurrentDate, new DateTime(2025, 1, 15))
+            .Add(p => p.CurrentDate, new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero))
             .Add(p => p.EditDates, editDates));
 
         // Assert - 最新の編集日でも最新状態に戻れるため有効

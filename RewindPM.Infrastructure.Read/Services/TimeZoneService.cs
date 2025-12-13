@@ -39,14 +39,14 @@ public class TimeZoneService : ITimeZoneService
     }
 
     /// <summary>
-    /// UTC時刻からスナップショット日付を計算（タイムゾーンを考慮）
+    /// UTC時刻からスナップショット日付を計算(タイムゾーンを考慮)
     /// </summary>
     /// <param name="utcDateTime">UTC時刻</param>
     /// <returns>ローカル時刻の日付部分</returns>
-    public DateTime GetSnapshotDate(DateTimeOffset utcDateTime)
+    public DateTimeOffset GetSnapshotDate(DateTimeOffset utcDateTime)
     {
         var localDateTime = TimeZoneInfo.ConvertTime(utcDateTime, TimeZone);
-        return localDateTime.Date; // ローカル時刻の日付部分のみ
+        return new DateTimeOffset(localDateTime.Date, localDateTime.Offset);
     }
 
     /// <summary>

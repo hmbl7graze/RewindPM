@@ -29,7 +29,7 @@ namespace RewindPM.Infrastructure.Write.Migrations
                     b.Property<Guid>("AggregateId")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("EventData")
@@ -41,7 +41,7 @@ namespace RewindPM.Infrastructure.Write.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("OccurredAt")
+                    b.Property<DateTimeOffset>("OccurredAt")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Version")

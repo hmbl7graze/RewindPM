@@ -28,7 +28,7 @@ public class GetAllProjectsQueryHandlerTests
                 Id = Guid.NewGuid(),
                 Title = "Project 1",
                 Description = "Description 1",
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = null,
                 CreatedBy = "user1"
             },
@@ -37,7 +37,7 @@ public class GetAllProjectsQueryHandlerTests
                 Id = Guid.NewGuid(),
                 Title = "Project 2",
                 Description = "Description 2",
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = null,
                 CreatedBy = "user2"
             }

@@ -22,6 +22,19 @@ public interface IProjectStatisticsRepository
     /// <param name="cancellationToken">キャンセルトークン</param>
     Task<ProjectStatisticsDetailDto?> GetProjectStatisticsDetailAsync(
         Guid projectId,
-        DateTime asOfDate,
+        DateTimeOffset asOfDate,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// プロジェクト統計の時系列データを取得
+    /// </summary>
+    /// <param name="projectId">プロジェクトID</param>
+    /// <param name="startDate">開始日</param>
+    /// <param name="endDate">終了日</param>
+    /// <param name="cancellationToken">キャンセルトークン</param>
+    Task<ProjectStatisticsTimeSeriesDto?> GetProjectStatisticsTimeSeriesAsync(
+        Guid projectId,
+        DateTimeOffset startDate,
+        DateTimeOffset endDate,
         CancellationToken cancellationToken = default);
 }

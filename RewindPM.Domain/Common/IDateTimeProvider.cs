@@ -9,5 +9,5 @@ public interface IDateTimeProvider
     /// <summary>
     /// 現在のUTC時刻を取得
     /// </summary>
-    DateTime UtcNow { get; }
+    DateTimeOffset UtcNow { get; }
 }

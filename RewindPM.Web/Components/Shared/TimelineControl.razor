@@ -47,19 +47,19 @@
     /// 現在表示中の日付（nullの場合は最新）
     /// </summary>
     [Parameter]
-    public DateTime? CurrentDate { get; set; }
+    public DateTimeOffset? CurrentDate { get; set; }
 
     /// <summary>
     /// 編集日一覧（降順：新しい順）
     /// </summary>
     [Parameter]
-    public List<DateTime> EditDates { get; set; } = new();
+    public List<DateTimeOffset> EditDates { get; set; } = new();
 
     /// <summary>
     /// 日付変更イベント
     /// </summary>
     [Parameter]
-    public EventCallback<DateTime?> OnDateChanged { get; set; }
+    public EventCallback<DateTimeOffset?> OnDateChanged { get; set; }
 
     /// <summary>
     /// 過去を表示中かどうか
@@ -113,7 +113,7 @@
         if (!CanMoveToPrevious)
             return;
 
-        DateTime? newDate;
+        DateTimeOffset? newDate;
 
         if (!CurrentDate.HasValue)
         {
@@ -129,7 +129,7 @@
                 .FirstOrDefault();
         }
 
-        if (newDate != default(DateTime))
+        if (newDate != default(DateTimeOffset))
         {
             await OnDateChanged.InvokeAsync(newDate);
         }
@@ -154,7 +154,7 @@
 
         // もし新しい日付がなければ（＝現在が最新の過去スナップショット）、
         // または見つからなければ、最新状態(null)に戻る
-        if (newDate == default(DateTime))
+        if (newDate == default(DateTimeOffset))
         {
             await MoveToLatest();
         }

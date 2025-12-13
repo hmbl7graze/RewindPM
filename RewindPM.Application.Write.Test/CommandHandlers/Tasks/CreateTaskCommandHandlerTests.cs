@@ -17,7 +17,7 @@ public class CreateTaskCommandHandlerTests
     {
         _repository = Substitute.For<IAggregateRepository>();
         _dateTimeProvider = Substitute.For<IDateTimeProvider>();
-        _dateTimeProvider.UtcNow.Returns(DateTime.UtcNow);
+        _dateTimeProvider.UtcNow.Returns(DateTimeOffset.UtcNow);
         _handler = new CreateTaskCommandHandler(_repository, _dateTimeProvider);
     }
 
@@ -32,8 +32,8 @@ public class CreateTaskCommandHandlerTests
             projectId,
             "Test Task",
             "Test Description",
-            DateTime.UtcNow,
-            DateTime.UtcNow.AddDays(7),
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddDays(7),
             40,
             null,
             null,
@@ -60,7 +60,7 @@ public class CreateTaskCommandHandlerTests
     public async Task Handle_ValidCommand_ShouldCreateTaskWithScheduledPeriod()
     {
         // Arrange
-        var startDate = DateTime.UtcNow;
+        var startDate = DateTimeOffset.UtcNow;
         var endDate = startDate.AddDays(7);
         var command = new CreateTaskCommand(
             Guid.NewGuid(),
@@ -94,15 +94,15 @@ public class CreateTaskCommandHandlerTests
     public async Task Handle_CommandWithActualPeriod_ShouldCreateTaskWithActualPeriod()
     {
         // Arrange
-        var actualStartDate = DateTime.UtcNow;
+        var actualStartDate = DateTimeOffset.UtcNow;
         var actualEndDate = actualStartDate.AddDays(5);
         var command = new CreateTaskCommand(
             Guid.NewGuid(),
             Guid.NewGuid(),
             "Test Task",
             "Test Description",
-            DateTime.UtcNow,
-            DateTime.UtcNow.AddDays(7),
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddDays(7),
             40,
             actualStartDate,
             actualEndDate,
@@ -133,8 +133,8 @@ public class CreateTaskCommandHandlerTests
             Guid.NewGuid(),
             "Test Task",
             "Test Description",
-            DateTime.UtcNow,
-            DateTime.UtcNow.AddDays(7),
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddDays(7),
             40,
             null,
             null,

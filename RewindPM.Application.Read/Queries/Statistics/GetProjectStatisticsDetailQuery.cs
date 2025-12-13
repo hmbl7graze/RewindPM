@@ -6,5 +6,5 @@ namespace RewindPM.Application.Read.Queries.Statistics;
 /// <summary>
 /// プロジェクト詳細統計情報取得クエリ
 /// </summary>
-public record GetProjectStatisticsDetailQuery(Guid ProjectId, DateTime? AsOfDate = null) 
+public record GetProjectStatisticsDetailQuery(Guid ProjectId, DateTimeOffset? AsOfDate = null)
     : IRequest<ProjectStatisticsDetailDto?>;

@@ -30,7 +30,7 @@ public class GetTaskByIdQueryHandlerTests
             Title = "Test Task",
             Description = "Test Description",
             Status = TaskStatus.Todo,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = null,
             CreatedBy = "user1"
         };
