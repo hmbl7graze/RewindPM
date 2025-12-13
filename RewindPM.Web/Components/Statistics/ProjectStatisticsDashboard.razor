@@ -119,19 +119,19 @@ else if (_statistics != null)
             </div>
         }
 
-        <!-- サンプルチャート（動作確認用） -->
-        <div class="chart-section">
-            <h4>サンプルチャート（動作確認）</h4>
-            <ApexChart TItem="SampleDataPoint"
-                       Title="Sample Line Chart">
-                <ApexPointSeries TItem="SampleDataPoint"
-                                 Items="@_sampleData"
-                                 Name="Sample Series"
-                                 SeriesType="SeriesType.Line"
-                                 XValue="@(e => e.X)"
-                                 YAggregate="@(e => e.Sum(y => y.Y))"
-                                 OrderBy="e => e.X" />
-            </ApexChart>
+        <!-- グラフセクション -->
+        <div class="charts-section">
+            <div class="chart-row">
+                <div class="chart-container">
+                    <CumulativeFlowDiagram ProjectId="@ProjectId" AsOfDate="@AsOfDate" />
+                </div>
+            </div>
+
+            <div class="chart-row">
+                <div class="chart-container">
+                    <BurndownChart ProjectId="@ProjectId" AsOfDate="@AsOfDate" />
+                </div>
+            </div>
         </div>
     </div>
 }
@@ -225,21 +225,5 @@ else
             return "stat-warning";
 
         return "stat-bad";
-    }
-
-    // サンプルデータ（動作確認用）
-    private List<SampleDataPoint> _sampleData = new()
-    {
-        new SampleDataPoint { X = "Day 1", Y = 10 },
-        new SampleDataPoint { X = "Day 2", Y = 20 },
-        new SampleDataPoint { X = "Day 3", Y = 15 },
-        new SampleDataPoint { X = "Day 4", Y = 25 },
-        new SampleDataPoint { X = "Day 5", Y = 30 }
-    };
-
-    private class SampleDataPoint
-    {
-        public string X { get; set; } = string.Empty;
-        public int Y { get; set; }
     }
 }

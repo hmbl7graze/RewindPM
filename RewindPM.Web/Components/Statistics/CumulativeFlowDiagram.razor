@@ -1,0 +1,151 @@
+@using MediatR
+@using RewindPM.Application.Read.Queries.Statistics
+@using RewindPM.Application.Read.DTOs
+
+@inject IMediator Mediator
+@inject ILogger<CumulativeFlowDiagram> Logger
+
+@if (_isLoading)
+{
+    <div class="chart-loading">
+        <p>チャートを読み込み中...</p>
+    </div>
+}
+else if (_chartData != null && _chartData.Any())
+{
+    <div class="cumulative-flow-diagram">
+        <h4>Cumulative Flow Diagram</h4>
+        <ApexChart TItem="ChartDataPoint"
+                   Title="タスクステータスの推移"
+                   Height="400">
+
+            <ApexPointSeries TItem="ChartDataPoint"
+                             Items="_completedData"
+                             Name="完了"
+                             SeriesType="SeriesType.Area"
+                             XValue="@(e => e.X)"
+                             YAggregate="@(e => e.Sum(y => y.Y))"
+                             OrderBy="e => e.X"
+                             Color="#28a745" />
+
+            <ApexPointSeries TItem="ChartDataPoint"
+                             Items="_inReviewData"
+                             Name="レビュー中"
+                             SeriesType="SeriesType.Area"
+                             XValue="@(e => e.X)"
+                             YAggregate="@(e => e.Sum(y => y.Y))"
+                             OrderBy="e => e.X"
+                             Color="#ffc107" />
+
+            <ApexPointSeries TItem="ChartDataPoint"
+                             Items="_inProgressData"
+                             Name="進行中"
+                             SeriesType="SeriesType.Area"
+                             XValue="@(e => e.X)"
+                             YAggregate="@(e => e.Sum(y => y.Y))"
+                             OrderBy="e => e.X"
+                             Color="#007bff" />
+
+            <ApexPointSeries TItem="ChartDataPoint"
+                             Items="_todoData"
+                             Name="未着手"
+                             SeriesType="SeriesType.Area"
+                             XValue="@(e => e.X)"
+                             YAggregate="@(e => e.Sum(y => y.Y))"
+                             OrderBy="e => e.X"
+                             Color="#6c757d" />
+        </ApexChart>
+    </div>
+}
+else
+{
+    <div class="chart-error">
+        <p>表示するデータがありません</p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public required Guid ProjectId { get; set; }
+
+    [Parameter]
+    public DateTimeOffset? AsOfDate { get; set; }
+
+    private List<DailyStatisticsSnapshot>? _chartData;
+    private List<ChartDataPoint> _completedData = new();
+    private List<ChartDataPoint> _inProgressData = new();
+    private List<ChartDataPoint> _inReviewData = new();
+    private List<ChartDataPoint> _todoData = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadChartDataAsync();
+    }
+
+    private async Task LoadChartDataAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            // 終了日を設定（AsOfDateがあればそれを使用、なければ現在日時）
+            var endDate = AsOfDate ?? DateTimeOffset.UtcNow;
+
+            // 開始日を計算（終了日の30日前）
+            var startDate = endDate.AddDays(-30);
+
+            var query = new GetProjectStatisticsTimeSeriesQuery(ProjectId, startDate, endDate);
+            var timeSeriesData = await Mediator.Send(query);
+
+            if (timeSeriesData != null && timeSeriesData.DailySnapshots.Any())
+            {
+                _chartData = timeSeriesData.DailySnapshots;
+
+                // 累積データを作成
+                var cumulativeCompleted = 0;
+                var cumulativeInReview = 0;
+                var cumulativeInProgress = 0;
+                var cumulativeTodo = 0;
+
+                _completedData = new List<ChartDataPoint>();
+                _inReviewData = new List<ChartDataPoint>();
+                _inProgressData = new List<ChartDataPoint>();
+                _todoData = new List<ChartDataPoint>();
+
+                foreach (var snapshot in _chartData)
+                {
+                    // 各ステータスのタスク数を累積
+                    cumulativeCompleted = snapshot.CompletedTasks;
+                    cumulativeInReview = cumulativeCompleted + snapshot.InReviewTasks;
+                    cumulativeInProgress = cumulativeInReview + snapshot.InProgressTasks;
+                    cumulativeTodo = cumulativeInProgress + snapshot.TodoTasks;
+
+                    _completedData.Add(new ChartDataPoint { X = snapshot.Date.ToString("M/d"), Y = snapshot.CompletedTasks });
+                    _inReviewData.Add(new ChartDataPoint { X = snapshot.Date.ToString("M/d"), Y = snapshot.InReviewTasks });
+                    _inProgressData.Add(new ChartDataPoint { X = snapshot.Date.ToString("M/d"), Y = snapshot.InProgressTasks });
+                    _todoData.Add(new ChartDataPoint { X = snapshot.Date.ToString("M/d"), Y = snapshot.TodoTasks });
+                }
+            }
+            else
+            {
+                _chartData = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Cumulative Flow Diagramの読み込みに失敗しました。ProjectId: {ProjectId}", ProjectId);
+            _chartData = null;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private class ChartDataPoint
+    {
+        public string X { get; set; } = string.Empty;
+        public int Y { get; set; }
+    }
+}
