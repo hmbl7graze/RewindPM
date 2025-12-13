@@ -1,9 +1,9 @@
 @page "/projects/{id:guid}/edit"
+@rendermode InteractiveServer
 @using MediatR
 @using RewindPM.Application.Read.Queries.Projects
 @using RewindPM.Application.Read.Queries.Tasks
 @using RewindPM.Application.Write.Commands.Projects
-@using RewindPM.Application.Write.Commands.Tasks
 @inject IMediator Mediator
 @inject NavigationManager Navigation
 
@@ -85,46 +85,13 @@ else
 }
 
 <!-- 削除確認モーダル -->
-<div class="modal fade @(showDeleteModal ? "show d-block" : "")" tabindex="-1" style="@(showDeleteModal ? "background-color: rgba(0,0,0,0.5);" : "")">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">プロジェクトの削除確認</h5>
-                <button type="button" class="btn-close" @onclick="CloseDeleteModal" disabled="@isSubmitting"></button>
-            </div>
-            <div class="modal-body">
-                @if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    <div class="alert alert-danger">@errorMessage</div>
-                }
-                @if (taskCount > 0)
-                {
-                    <p>本当にこのプロジェクトと @taskCount 個のタスクを削除しますか?</p>
-                    <p class="text-danger mb-0">この操作は取り消せません。</p>
-                }
-                else
-                {
-                    <p>本当にこのプロジェクトを削除しますか?</p>
-                    <p class="text-danger mb-0">この操作は取り消せません。</p>
-                }
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" @onclick="CloseDeleteModal" disabled="@isSubmitting">キャンセル</button>
-                @if (isSubmitting)
-                {
-                    <button class="btn btn-danger" type="button" disabled>
-                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                        削除中...
-                    </button>
-                }
-                else
-                {
-                    <button type="button" class="btn btn-danger" @onclick="ConfirmDelete">削除</button>
-                }
-            </div>
-        </div>
-    </div>
-</div>
+<ProjectDeleteModal
+    @bind-IsVisible="showDeleteModal"
+    ProjectId="@Id"
+    TaskCount="@taskCount"
+    DeletedBy="@formModel.UpdatedBy"
+    OnSuccess="@HandleDeleteSuccess"
+    OnCancel="@CloseDeleteModal" />
 
 @code {
     [Parameter]
@@ -206,57 +173,12 @@ else
     private void CloseDeleteModal()
     {
         showDeleteModal = false;
-        errorMessage = null;
     }
 
-    private async Task ConfirmDelete()
+    private void HandleDeleteSuccess()
     {
-        // formModelのnullチェック
-        if (formModel == null)
-        {
-            errorMessage = "フォームが初期化されていません。ページを再読み込みしてください。";
-            return;
-        }
-
-        try
-        {
-            isSubmitting = true;
-            errorMessage = null;
-
-            var deletedBy = !string.IsNullOrWhiteSpace(formModel.UpdatedBy) ? formModel.UpdatedBy : "test-user";
-
-            // カスケード削除: 先にすべてのタスクを削除
-            if (taskCount > 0)
-            {
-                var tasksQuery = new GetTasksByProjectIdQuery(Id);
-                var tasks = await Mediator.Send(tasksQuery);
-
-                foreach (var task in tasks)
-                {
-                    var deleteTaskCommand = new DeleteTaskCommand(
-                        TaskId: task.Id,
-                        DeletedBy: deletedBy
-                    );
-                    await Mediator.Send(deleteTaskCommand);
-                }
-            }
-
-            // プロジェクトを削除
-            var command = new DeleteProjectCommand(
-                ProjectId: Id,
-                DeletedBy: deletedBy
-            );
-
-            await Mediator.Send(command);
-
-            // 削除成功後、プロジェクト一覧にリダイレクト
-            Navigation.NavigateTo("/projects");
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"プロジェクトの削除に失敗しました: {ex.Message}";
-            isSubmitting = false;
-        }
+        // 削除成功後、プロジェクト一覧にリダイレクト
+        Navigation.NavigateTo("/projects");
     }
 
     public class ProjectFormModel

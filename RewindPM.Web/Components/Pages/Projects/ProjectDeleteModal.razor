@@ -1,0 +1,153 @@
+@using MediatR
+@using RewindPM.Application.Read.Queries.Tasks
+@using RewindPM.Application.Write.Commands.Projects
+@using RewindPM.Application.Write.Commands.Tasks
+@using RewindPM.Web.Components.Shared
+@inject IMediator Mediator
+
+<Modal Title="プロジェクトの削除" @bind-IsVisible="IsVisible">
+    <div class="delete-modal-content">
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mb-3">
+                <strong>エラー:</strong> @errorMessage
+            </div>
+        }
+
+        <div class="warning-section">
+            <div class="warning-icon">
+                <span>⚠</span>
+            </div>
+            <div class="warning-content">
+                <h4 class="warning-title">この操作は取り消せません</h4>
+                @if (taskCount > 0)
+                {
+                    <p class="warning-message">
+                        このプロジェクトと、関連する<span class="task-count-badge">@taskCount 個</span>のタスクがすべて完全に削除されます。
+                    </p>
+                }
+                else
+                {
+                    <p class="warning-message">
+                        このプロジェクトが完全に削除されます。
+                    </p>
+                }
+            </div>
+        </div>
+
+        <div class="danger-notice">
+            <span class="danger-notice-icon">🗑️</span>
+            <p class="danger-notice-text">
+                削除したデータは復元できません。本当に削除してよろしいですか？
+            </p>
+        </div>
+
+        <div class="modal-footer-actions">
+            <button type="button" class="btn btn-secondary" @onclick="HandleCancel" disabled="@isDeleting">
+                キャンセル
+            </button>
+            @if (isDeleting)
+            {
+                <button class="btn btn-danger" type="button" disabled>
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    削除中...
+                </button>
+            }
+            else
+            {
+                <button type="button" class="btn btn-danger" @onclick="ConfirmDelete">
+                    <strong>削除を実行</strong>
+                </button>
+            }
+        </div>
+    </div>
+</Modal>
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    [Parameter]
+    public Guid ProjectId { get; set; }
+
+    [Parameter]
+    public int TaskCount { get; set; }
+
+    [Parameter]
+    public string DeletedBy { get; set; } = "test-user";
+
+    [Parameter]
+    public EventCallback OnSuccess { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private bool isDeleting = false;
+    private int taskCount = 0;
+    private string? errorMessage;
+
+    protected override void OnParametersSet()
+    {
+        taskCount = TaskCount;
+        errorMessage = null;
+    }
+
+    private async Task ConfirmDelete()
+    {
+        try
+        {
+            isDeleting = true;
+            errorMessage = null;
+
+            var deletedBy = !string.IsNullOrWhiteSpace(DeletedBy) ? DeletedBy : "test-user";
+
+            // カスケード削除: 先にすべてのタスクを削除
+            if (taskCount > 0)
+            {
+                var tasksQuery = new GetTasksByProjectIdQuery(ProjectId);
+                var tasks = await Mediator.Send(tasksQuery);
+
+                foreach (var task in tasks)
+                {
+                    var deleteTaskCommand = new DeleteTaskCommand(
+                        TaskId: task.Id,
+                        DeletedBy: deletedBy
+                    );
+                    await Mediator.Send(deleteTaskCommand);
+                }
+            }
+
+            // プロジェクトを削除
+            var command = new DeleteProjectCommand(
+                ProjectId: ProjectId,
+                DeletedBy: deletedBy
+            );
+
+            await Mediator.Send(command);
+
+            await OnSuccess.InvokeAsync();
+            await CloseModal();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"プロジェクトの削除に失敗しました: {ex.Message}";
+            isDeleting = false;
+        }
+    }
+
+    private async Task HandleCancel()
+    {
+        await CloseModal();
+        await OnCancel.InvokeAsync();
+    }
+
+    private async Task CloseModal()
+    {
+        errorMessage = null;
+        isDeleting = false;
+        await IsVisibleChanged.InvokeAsync(false);
+    }
+}
