@@ -35,7 +35,9 @@ public class DeleteProjectCommandHandler : IRequestHandler<DeleteProjectCommand>
 
         // カスケード削除: 関連タスクを先に削除
         var taskIds = await _repository.GetTaskIdsByProjectIdAsync(request.ProjectId);
-        foreach (var taskId in taskIds)
+        
+        // 各タスクを削除（並列処理はせず順次処理でトランザクションの整合性を保つ）
+        var deleteTasks = taskIds.Select(async taskId =>
         {
             var task = await _repository.GetByIdAsync<TaskAggregate>(taskId);
             if (task != null)
@@ -43,7 +45,10 @@ public class DeleteProjectCommandHandler : IRequestHandler<DeleteProjectCommand>
                 task.Delete(request.DeletedBy, _dateTimeProvider);
                 await _repository.SaveAsync(task);
             }
-        }
+        });
+
+        // すべてのタスク削除を実行
+        await Task.WhenAll(deleteTasks);
 
         // プロジェクトを削除
         project.Delete(request.DeletedBy, _dateTimeProvider);

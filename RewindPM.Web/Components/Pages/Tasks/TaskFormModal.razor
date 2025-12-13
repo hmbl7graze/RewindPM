@@ -3,7 +3,9 @@
 @using RewindPM.Application.Read.DTOs
 @using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus
 @using RewindPM.Web.Components.Shared
+@using Microsoft.Extensions.Logging
 @inject IMediator Mediator
+@inject ILogger<TaskFormModal> Logger
 
 <Modal Title="@ModalTitle" @bind-IsVisible="IsVisible" Size="ModalSize.ExtraLarge">
     <div class="task-form-layout">
@@ -324,7 +326,8 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"保存に失敗しました: {ex.Message}";
+            Logger.LogError(ex, "タスク保存中にエラーが発生しました。TaskId: {TaskId}, ProjectId: {ProjectId}", ExistingTask?.Id, ProjectId);
+            errorMessage = "タスクの保存に失敗しました。しばらく時間をおいてから再度お試しください。";
         }
         finally
         {
@@ -451,7 +454,8 @@
             }
             catch (Exception ex)
             {
-                errorMessage = $"削除に失敗しました: {ex.Message}";
+                Logger.LogError(ex, "タスク削除中にエラーが発生しました。TaskId: {TaskId}", ExistingTask.Id);
+                errorMessage = "タスクの削除に失敗しました。しばらく時間をおいてから再度お試しください。";
                 deleteConfirmation = false;
                 isSaving = false;
             }

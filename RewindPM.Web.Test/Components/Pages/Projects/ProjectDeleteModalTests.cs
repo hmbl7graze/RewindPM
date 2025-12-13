@@ -242,7 +242,7 @@ public class ProjectDeleteModalTests : Bunit.TestContext
 
         // Assert
         var errorMessage = cut.Find(".alert-danger");
-        Assert.Contains("Test error", errorMessage.TextContent);
+        Assert.Contains("削除に失敗しました", errorMessage.TextContent);
     }
 
     [Fact(DisplayName = "削除成功後にモーダルが閉じられる")]

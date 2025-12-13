@@ -1,7 +1,9 @@
 @using MediatR
 @using RewindPM.Application.Write.Commands.Projects
 @using RewindPM.Web.Components.Shared
+@using Microsoft.Extensions.Logging
 @inject IMediator Mediator
+@inject ILogger<ProjectDeleteModal> Logger
 
 <Modal Title="プロジェクトの削除" @bind-IsVisible="IsVisible">
     <div class="delete-modal-content">
@@ -113,7 +115,8 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"プロジェクトの削除に失敗しました: {ex.Message}";
+            Logger.LogError(ex, "プロジェクト削除中にエラーが発生しました。ProjectId: {ProjectId}", ProjectId);
+            errorMessage = "プロジェクトの削除に失敗しました。しばらく時間をおいてから再度お試しください。";
             isDeleting = false;
         }
     }
