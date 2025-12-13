@@ -183,6 +183,7 @@
     private int? actualHours;
 
     private bool isSaving = false;
+    private bool deleteConfirmation = false;
     private string? errorMessage;
     private string? titleError;
     private string? scheduledDateError;
@@ -228,6 +229,7 @@
         actualStartDate = null;
         actualEndDate = null;
         actualHours = null;
+        deleteConfirmation = false;
         ClearErrors();
     }
 
@@ -239,6 +241,7 @@
         estimatedHoursError = null;
         actualDateError = null;
         actualHoursError = null;
+        deleteConfirmation = false;
     }
 
     private bool ValidateForm()
@@ -422,9 +425,43 @@
 
     private async Task HandleDelete()
     {
-        // TODO: 削除機能は将来実装
-        errorMessage = "削除機能は未実装です。";
-        await Task.CompletedTask;
+        if (ExistingTask == null) return;
+
+        // 確認メッセージを表示
+        // TODO: より洗練された確認ダイアログを実装する場合はJSInteropを使用
+        errorMessage = "本当にこのタスクを削除しますか？もう一度削除ボタンをクリックすると削除されます。";
+
+        // 簡易的な実装: 2回クリックで削除
+        if (deleteConfirmation)
+        {
+            isSaving = true;
+            errorMessage = null;
+
+            try
+            {
+                var command = new DeleteTaskCommand(
+                    TaskId: ExistingTask.Id,
+                    DeletedBy: "admin"
+                );
+
+                await Mediator.Send(command);
+                await OnSuccess.InvokeAsync();
+                await CloseModal();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"削除に失敗しました: {ex.Message}";
+                deleteConfirmation = false;
+            }
+            finally
+            {
+                isSaving = false;
+            }
+        }
+        else
+        {
+            deleteConfirmation = true;
+        }
     }
 
     private async Task HandleCancel()
