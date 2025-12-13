@@ -23,9 +23,21 @@ public record ProjectStatisticsDetailDto
     public required double AverageDelayDays { get; init; }
 
     // 見積もり精度統計（作業期間ベース）
+    /// <summary>
+    /// 作業期間の見積もりが正確だったタスク数（誤差±10%以内または±1日以内）
+    /// </summary>
     public required int AccurateEstimateTasks { get; init; }
+    /// <summary>
+    /// 作業期間の見積もりが実績より多かった（過大見積もり）タスク数
+    /// </summary>
     public required int OverEstimateTasks { get; init; }
+    /// <summary>
+    /// 作業期間の見積もりが実績より少なかった（過小見積もり）タスク数
+    /// </summary>
     public required int UnderEstimateTasks { get; init; }
+    /// <summary>
+    /// 作業期間見積もり誤差の平均（日数）
+    /// </summary>
     public required double AverageEstimateErrorDays { get; init; }
 
     // 統計の基準日（リワインド対応）

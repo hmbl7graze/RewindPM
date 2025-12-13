@@ -13,6 +13,17 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
 {
     private readonly ReadModelDbContext _context;
 
+    // 見積もり精度判定の閾値定数
+    /// <summary>
+    /// 見積もり精度の許容誤差率（±10%）
+    /// </summary>
+    private const double _accuracyErrorRateThreshold = 0.1;
+
+    /// <summary>
+    /// 見積もり精度の許容誤差日数（±1日）
+    /// </summary>
+    private const double _accuracyErrorDaysThreshold = 1.0;
+
     public ProjectStatisticsRepository(ReadModelDbContext context)
     {
         _context = context;
@@ -28,7 +39,7 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
         // プロジェクトに属するすべてのタスクを取得
         var tasks = await _context.Tasks
             .AsNoTracking()
-            .Where(t => t.ProjectId == projectId)
+            .Where(t => t.ProjectId == projectId && !t.IsDeleted)
             .ToListAsync(cancellationToken);
 
         // ステータスごとにカウント
@@ -87,7 +98,7 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
         {
             var allTasks = await _context.Tasks
                 .AsNoTracking()
-                .Where(t => t.ProjectId == projectId)
+                .Where(t => t.ProjectId == projectId && !t.IsDeleted)
                 .ToListAsync(cancellationToken);
 
             // Tasksテーブルから取得した場合も、CreatedAtでフィルタ
@@ -133,83 +144,14 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
                 .Sum(t => t.ActualHours!.Value);
 
             // 残予定工数 = 未完了タスクの(予定工数 - 実績工数)の合計
-            var remainingEstimatedHours = tasks
-                .Where(t => t.Status != TaskStatus.Done)
-                .Sum(t =>
-                {
-                    var estimated = t.EstimatedHours ?? 0;
-                    var actual = t.ActualHours ?? 0;
-                    return Math.Max(0, estimated - actual); // 負の値にならないようにする
-                });
+            var remainingEstimatedHours = CalculateRemainingEstimatedHours(tasks);
 
             var completedTasksList = tasks.Where(t => t.Status == TaskStatus.Done).ToList();
-            var onTimeTasks = completedTasksList
-                .Count(t => t.ScheduledEndDate.HasValue
-                         && t.ActualEndDate.HasValue
-                         && t.ActualEndDate.Value <= t.ScheduledEndDate.Value);
-
-            var delayedTasks = completedTasksList
-                .Count(t => t.ScheduledEndDate.HasValue
-                         && t.ActualEndDate.HasValue
-                         && t.ActualEndDate.Value > t.ScheduledEndDate.Value);
-
-            var delayedTasksWithDates = completedTasksList
-                .Where(t => t.ScheduledEndDate.HasValue
-                         && t.ActualEndDate.HasValue
-                         && t.ActualEndDate.Value > t.ScheduledEndDate.Value)
-                .ToList();
-
-            var averageDelayDays = delayedTasksWithDates.Count > 0
-                ? Math.Round(delayedTasksWithDates
-                    .Average(t => (t.ActualEndDate!.Value - t.ScheduledEndDate!.Value).TotalDays), 1)
-                : 0;
+            var (onTimeTasks, delayedTasks, averageDelayDays) = CalculateDelayStatistics(completedTasksList);
 
             // 見積もり精度の計算（作業期間ベース）
-            var tasksWithDuration = completedTasksList
-                .Where(t => t.ScheduledStartDate.HasValue
-                         && t.ScheduledEndDate.HasValue
-                         && t.ActualStartDate.HasValue
-                         && t.ActualEndDate.HasValue)
-                .ToList();
-
-            var accurateEstimateTasks = tasksWithDuration
-                .Count(t =>
-                {
-                    var plannedDuration = (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays;
-                    var actualDuration = (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays;
-                    var errorDays = Math.Abs(actualDuration - plannedDuration);
-                    var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
-                    // 誤差が±10%以内または±1日以内なら正確とみなす
-                    return errorRate <= 0.1 || errorDays <= 1;
-                });
-
-            var overEstimateTasks = tasksWithDuration
-                .Count(t =>
-                {
-                    var plannedDuration = (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays;
-                    var actualDuration = (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays;
-                    var errorDays = Math.Abs(actualDuration - plannedDuration);
-                    var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
-                    // 見積もりが正確でなく、実際が予定より短い
-                    return errorRate > 0.1 && errorDays > 1 && actualDuration < plannedDuration;
-                });
-
-            var underEstimateTasks = tasksWithDuration
-                .Count(t =>
-                {
-                    var plannedDuration = (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays;
-                    var actualDuration = (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays;
-                    var errorDays = Math.Abs(actualDuration - plannedDuration);
-                    var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
-                    // 見積もりが正確でなく、実際が予定より長い
-                    return errorRate > 0.1 && errorDays > 1 && actualDuration > plannedDuration;
-                });
-
-            var averageEstimateErrorDays = tasksWithDuration.Count > 0
-                ? Math.Round(tasksWithDuration
-                    .Average(t => (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays
-                               - (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays), 1)
-                : 0;
+            var (accurateEstimateTasks, overEstimateTasks, underEstimateTasks, averageEstimateErrorDays) = 
+                CalculateEstimateAccuracy(completedTasksList);
 
             return new ProjectStatisticsDetailDto
             {
@@ -233,119 +175,50 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
         }
 
         // TaskHistoriesのデータを使って統計を計算
-        var totalTasks2 = tasksFromHistory.Count;
-        var completedTasks2 = tasksFromHistory.Count(t => t.Status == TaskStatus.Done);
-        var inProgressTasks2 = tasksFromHistory.Count(t => t.Status == TaskStatus.InProgress);
-        var inReviewTasks2 = tasksFromHistory.Count(t => t.Status == TaskStatus.InReview);
-        var todoTasks2 = tasksFromHistory.Count(t => t.Status == TaskStatus.Todo);
+        var totalTasksFromHistory = tasksFromHistory.Count;
+        var completedTasksFromHistory = tasksFromHistory.Count(t => t.Status == TaskStatus.Done);
+        var inProgressTasksFromHistory = tasksFromHistory.Count(t => t.Status == TaskStatus.InProgress);
+        var inReviewTasksFromHistory = tasksFromHistory.Count(t => t.Status == TaskStatus.InReview);
+        var todoTasksFromHistory = tasksFromHistory.Count(t => t.Status == TaskStatus.Todo);
 
         // 工数統計の計算
-        var totalEstimatedHours2 = tasksFromHistory
+        var totalEstimatedHoursFromHistory = tasksFromHistory
             .Where(t => t.EstimatedHours.HasValue)
             .Sum(t => t.EstimatedHours!.Value);
 
-        var totalActualHours2 = tasksFromHistory
+        var totalActualHoursFromHistory = tasksFromHistory
             .Where(t => t.ActualHours.HasValue)
             .Sum(t => t.ActualHours!.Value);
 
         // 残予定工数 = 未完了タスクの(予定工数 - 実績工数)の合計
-        var remainingEstimatedHours2 = tasksFromHistory
-            .Where(t => t.Status != TaskStatus.Done)
-            .Sum(t =>
-            {
-                var estimated = t.EstimatedHours ?? 0;
-                var actual = t.ActualHours ?? 0;
-                return Math.Max(0, estimated - actual); // 負の値にならないようにする
-            });
+        var remainingEstimatedHoursFromHistory = CalculateRemainingEstimatedHours(tasksFromHistory);
 
         // スケジュール統計の計算
-        var completedTasksList2 = tasksFromHistory.Where(t => t.Status == TaskStatus.Done).ToList();
-        var onTimeTasks2 = completedTasksList2
-            .Count(t => t.ScheduledEndDate.HasValue
-                     && t.ActualEndDate.HasValue
-                     && t.ActualEndDate.Value <= t.ScheduledEndDate.Value);
-
-        var delayedTasks2 = completedTasksList2
-            .Count(t => t.ScheduledEndDate.HasValue
-                     && t.ActualEndDate.HasValue
-                     && t.ActualEndDate.Value > t.ScheduledEndDate.Value);
-
-        // 平均遅延日数の計算
-        var delayedTasksWithDates2 = completedTasksList2
-            .Where(t => t.ScheduledEndDate.HasValue
-                     && t.ActualEndDate.HasValue
-                     && t.ActualEndDate.Value > t.ScheduledEndDate.Value)
-            .ToList();
-
-        var averageDelayDays2 = delayedTasksWithDates2.Count > 0
-            ? Math.Round(delayedTasksWithDates2
-                .Average(t => (t.ActualEndDate!.Value - t.ScheduledEndDate!.Value).TotalDays), 1)
-            : 0;
+        var completedTasksListFromHistory = tasksFromHistory.Where(t => t.Status == TaskStatus.Done).ToList();
+        var (onTimeTasksFromHistory, delayedTasksFromHistory, averageDelayDaysFromHistory) = 
+            CalculateDelayStatistics(completedTasksListFromHistory);
 
         // 見積もり精度の計算（作業期間ベース）
-        var tasksWithDuration2 = completedTasksList2
-            .Where(t => t.ScheduledStartDate.HasValue
-                     && t.ScheduledEndDate.HasValue
-                     && t.ActualStartDate.HasValue
-                     && t.ActualEndDate.HasValue)
-            .ToList();
-
-        var accurateEstimateTasks2 = tasksWithDuration2
-            .Count(t =>
-            {
-                var plannedDuration = (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays;
-                var actualDuration = (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays;
-                var errorDays = Math.Abs(actualDuration - plannedDuration);
-                var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
-                // 誤差が±10%以内または±1日以内なら正確とみなす
-                return errorRate <= 0.1 || errorDays <= 1;
-            });
-
-        var overEstimateTasks2 = tasksWithDuration2
-            .Count(t =>
-            {
-                var plannedDuration = (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays;
-                var actualDuration = (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays;
-                var errorDays = Math.Abs(actualDuration - plannedDuration);
-                var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
-                // 見積もりが正確でなく、実際が予定より短い
-                return errorRate > 0.1 && errorDays > 1 && actualDuration < plannedDuration;
-            });
-
-        var underEstimateTasks2 = tasksWithDuration2
-            .Count(t =>
-            {
-                var plannedDuration = (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays;
-                var actualDuration = (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays;
-                var errorDays = Math.Abs(actualDuration - plannedDuration);
-                var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
-                // 見積もりが正確でなく、実際が予定より長い
-                return errorRate > 0.1 && errorDays > 1 && actualDuration > plannedDuration;
-            });
-
-        var averageEstimateErrorDays2 = tasksWithDuration2.Count > 0
-            ? Math.Round(tasksWithDuration2
-                .Average(t => (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays
-                           - (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays), 1)
-            : 0;
+        var (accurateEstimateTasksFromHistory, overEstimateTasksFromHistory, underEstimateTasksFromHistory, averageEstimateErrorDaysFromHistory) = 
+            CalculateEstimateAccuracy(completedTasksListFromHistory);
 
         return new ProjectStatisticsDetailDto
         {
-            TotalTasks = totalTasks2,
-            CompletedTasks = completedTasks2,
-            InProgressTasks = inProgressTasks2,
-            InReviewTasks = inReviewTasks2,
-            TodoTasks = todoTasks2,
-            TotalEstimatedHours = totalEstimatedHours2,
-            TotalActualHours = totalActualHours2,
-            RemainingEstimatedHours = remainingEstimatedHours2,
-            OnTimeTasks = onTimeTasks2,
-            DelayedTasks = delayedTasks2,
-            AverageDelayDays = averageDelayDays2,
-            AccurateEstimateTasks = accurateEstimateTasks2,
-            OverEstimateTasks = overEstimateTasks2,
-            UnderEstimateTasks = underEstimateTasks2,
-            AverageEstimateErrorDays = averageEstimateErrorDays2,
+            TotalTasks = totalTasksFromHistory,
+            CompletedTasks = completedTasksFromHistory,
+            InProgressTasks = inProgressTasksFromHistory,
+            InReviewTasks = inReviewTasksFromHistory,
+            TodoTasks = todoTasksFromHistory,
+            TotalEstimatedHours = totalEstimatedHoursFromHistory,
+            TotalActualHours = totalActualHoursFromHistory,
+            RemainingEstimatedHours = remainingEstimatedHoursFromHistory,
+            OnTimeTasks = onTimeTasksFromHistory,
+            DelayedTasks = delayedTasksFromHistory,
+            AverageDelayDays = averageDelayDaysFromHistory,
+            AccurateEstimateTasks = accurateEstimateTasksFromHistory,
+            OverEstimateTasks = overEstimateTasksFromHistory,
+            UnderEstimateTasks = underEstimateTasksFromHistory,
+            AverageEstimateErrorDays = averageEstimateErrorDaysFromHistory,
             AsOfDate = asOfDate
         };
     }
@@ -420,5 +293,150 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
             ProjectId = projectId,
             DailySnapshots = dailySnapshots
         };
+    }
+
+    /// <summary>
+    /// 残予定工数を計算
+    /// 未完了タスクの(予定工数 - 実績工数)の合計を返す
+    /// </summary>
+    private static int CalculateRemainingEstimatedHours<T>(IEnumerable<T> tasks) where T : class
+    {
+        return tasks
+            .Where(t => GetTaskStatus(t) != TaskStatus.Done)
+            .Sum(t =>
+            {
+                var estimated = GetEstimatedHours(t) ?? 0;
+                var actual = GetActualHours(t) ?? 0;
+                return Math.Max(0, estimated - actual); // 負の値にならないようにする
+            });
+    }
+
+    /// <summary>
+    /// 遅延統計を計算
+    /// </summary>
+    private static (int onTimeTasks, int delayedTasks, double averageDelayDays) CalculateDelayStatistics<T>(IEnumerable<T> completedTasks) where T : class
+    {
+        var completedTasksList = completedTasks.ToList();
+        
+        var onTimeTasks = completedTasksList
+            .Count(t => GetScheduledEndDate(t).HasValue
+                     && GetActualEndDate(t).HasValue
+                     && GetActualEndDate(t)!.Value <= GetScheduledEndDate(t)!.Value);
+
+        var delayedTasks = completedTasksList
+            .Count(t => GetScheduledEndDate(t).HasValue
+                     && GetActualEndDate(t).HasValue
+                     && GetActualEndDate(t)!.Value > GetScheduledEndDate(t)!.Value);
+
+        var delayedTasksWithDates = completedTasksList
+            .Where(t => GetScheduledEndDate(t).HasValue
+                     && GetActualEndDate(t).HasValue
+                     && GetActualEndDate(t)!.Value > GetScheduledEndDate(t)!.Value)
+            .ToList();
+
+        var averageDelayDays = delayedTasksWithDates.Count > 0
+            ? Math.Round(delayedTasksWithDates
+                .Average(t => (GetActualEndDate(t)!.Value - GetScheduledEndDate(t)!.Value).TotalDays), 1)
+            : 0;
+
+        return (onTimeTasks, delayedTasks, averageDelayDays);
+    }
+
+    /// <summary>
+    /// 見積もり精度を計算（作業期間ベース）
+    /// </summary>
+    private static (int accurateTasks, int overEstimateTasks, int underEstimateTasks, double averageErrorDays) 
+        CalculateEstimateAccuracy<T>(IEnumerable<T> completedTasks) where T : class
+    {
+        var tasksWithDuration = completedTasks
+            .Where(t => GetScheduledStartDate(t).HasValue
+                     && GetScheduledEndDate(t).HasValue
+                     && GetActualStartDate(t).HasValue
+                     && GetActualEndDate(t).HasValue)
+            .ToList();
+
+        var accurateEstimateTasks = tasksWithDuration
+            .Count(t =>
+            {
+                var plannedDuration = (GetScheduledEndDate(t)!.Value - GetScheduledStartDate(t)!.Value).TotalDays;
+                var actualDuration = (GetActualEndDate(t)!.Value - GetActualStartDate(t)!.Value).TotalDays;
+                var errorDays = Math.Abs(actualDuration - plannedDuration);
+                var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
+                // 誤差が±10%以内または±1日以内なら正確とみなす
+                return errorRate <= _accuracyErrorRateThreshold || errorDays <= _accuracyErrorDaysThreshold;
+            });
+
+        var overEstimateTasks = tasksWithDuration
+            .Count(t =>
+            {
+                var plannedDuration = (GetScheduledEndDate(t)!.Value - GetScheduledStartDate(t)!.Value).TotalDays;
+                var actualDuration = (GetActualEndDate(t)!.Value - GetActualStartDate(t)!.Value).TotalDays;
+                var errorDays = Math.Abs(actualDuration - plannedDuration);
+                var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
+                // 見積もりが正確でなく、実際が予定より短い
+                return errorRate > _accuracyErrorRateThreshold && errorDays > _accuracyErrorDaysThreshold && actualDuration < plannedDuration;
+            });
+
+        var underEstimateTasks = tasksWithDuration
+            .Count(t =>
+            {
+                var plannedDuration = (GetScheduledEndDate(t)!.Value - GetScheduledStartDate(t)!.Value).TotalDays;
+                var actualDuration = (GetActualEndDate(t)!.Value - GetActualStartDate(t)!.Value).TotalDays;
+                var errorDays = Math.Abs(actualDuration - plannedDuration);
+                var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
+                // 見積もりが正確でなく、実際が予定より長い
+                return errorRate > _accuracyErrorRateThreshold && errorDays > _accuracyErrorDaysThreshold && actualDuration > plannedDuration;
+            });
+
+        var averageEstimateErrorDays = tasksWithDuration.Count > 0
+            ? Math.Round(tasksWithDuration
+                .Average(t => (GetActualEndDate(t)!.Value - GetActualStartDate(t)!.Value).TotalDays
+                           - (GetScheduledEndDate(t)!.Value - GetScheduledStartDate(t)!.Value).TotalDays), 1)
+            : 0;
+
+        return (accurateEstimateTasks, overEstimateTasks, underEstimateTasks, averageEstimateErrorDays);
+    }
+
+    // ヘルパーメソッド（リフレクションを使用してプロパティにアクセス）
+    private static TaskStatus GetTaskStatus<T>(T task) where T : class
+    {
+        var prop = typeof(T).GetProperty("Status");
+        return (TaskStatus)(prop?.GetValue(task) ?? TaskStatus.Todo);
+    }
+
+    private static int? GetEstimatedHours<T>(T task) where T : class
+    {
+        var prop = typeof(T).GetProperty("EstimatedHours");
+        return (int?)prop?.GetValue(task);
+    }
+
+    private static int? GetActualHours<T>(T task) where T : class
+    {
+        var prop = typeof(T).GetProperty("ActualHours");
+        return (int?)prop?.GetValue(task);
+    }
+
+    private static DateTimeOffset? GetScheduledStartDate<T>(T task) where T : class
+    {
+        var prop = typeof(T).GetProperty("ScheduledStartDate");
+        return (DateTimeOffset?)prop?.GetValue(task);
+    }
+
+    private static DateTimeOffset? GetScheduledEndDate<T>(T task) where T : class
+    {
+        var prop = typeof(T).GetProperty("ScheduledEndDate");
+        return (DateTimeOffset?)prop?.GetValue(task);
+    }
+
+    private static DateTimeOffset? GetActualStartDate<T>(T task) where T : class
+    {
+        var prop = typeof(T).GetProperty("ActualStartDate");
+        return (DateTimeOffset?)prop?.GetValue(task);
+    }
+
+    private static DateTimeOffset? GetActualEndDate<T>(T task) where T : class
+    {
+        var prop = typeof(T).GetProperty("ActualEndDate");
+        return (DateTimeOffset?)prop?.GetValue(task);
     }
 }

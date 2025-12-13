@@ -187,6 +187,17 @@ else
     private Guid _prevProjectId;
     private DateTimeOffset? _prevAsOfDate;
 
+    // 見積もり精度の閾値定数
+    /// <summary>
+    /// 見積もり精度が良好と判定される閾値（80%以上）
+    /// </summary>
+    private const double GoodEstimateAccuracyThreshold = 80.0;
+
+    /// <summary>
+    /// 見積もり精度が警告レベルと判定される閾値（60%以上80%未満）
+    /// </summary>
+    private const double WarningEstimateAccuracyThreshold = 60.0;
+
     protected override async Task OnInitializedAsync()
     {
         // 初期化時は必ず読み込む
@@ -264,9 +275,9 @@ else
     {
         if (_statistics == null) return "";
 
-        if (_statistics.OnTimeRate >= 80)
+        if (_statistics.OnTimeRate >= GoodEstimateAccuracyThreshold)
             return "stat-good";
-        else if (_statistics.OnTimeRate >= 60)
+        else if (_statistics.OnTimeRate >= WarningEstimateAccuracyThreshold)
             return "stat-warning";
 
         return "stat-bad";
@@ -276,9 +287,9 @@ else
     {
         if (_statistics == null) return "";
 
-        if (_statistics.EstimateAccuracyRate >= 80)
+        if (_statistics.EstimateAccuracyRate >= GoodEstimateAccuracyThreshold)
             return "stat-good";
-        else if (_statistics.EstimateAccuracyRate >= 60)
+        else if (_statistics.EstimateAccuracyRate >= WarningEstimateAccuracyThreshold)
             return "stat-warning";
 
         return "stat-bad";
