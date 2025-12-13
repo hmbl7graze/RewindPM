@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace RewindPM.Infrastructure.Write.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialEventStore : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -19,9 +19,9 @@ namespace RewindPM.Infrastructure.Write.Migrations
                     AggregateId = table.Column<Guid>(type: "TEXT", nullable: false),
                     EventType = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     EventData = table.Column<string>(type: "TEXT", nullable: false),
-                    OccurredAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    OccurredAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
                     Version = table.Column<int>(type: "INTEGER", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false)
+                    CreatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {

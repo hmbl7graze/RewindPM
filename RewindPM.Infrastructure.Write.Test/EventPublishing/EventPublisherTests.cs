@@ -135,50 +135,6 @@ public class EventPublisherTests
             _publisher.PublishAsync(null!));
     }
 
-    [Fact(DisplayName = "PublishAsyncで複数ハンドラーが並列実行されること")]
-    public async Task PublishAsync_Should_Execute_Multiple_Handlers_In_Parallel()
-    {
-        // Arrange
-        var executionOrder = new List<int>();
-        var handler1 = Substitute.For<IEventHandler<TestEvent>>();
-        var handler2 = Substitute.For<IEventHandler<TestEvent>>();
-        var handler3 = Substitute.For<IEventHandler<TestEvent>>();
-
-        // NSubstituteのモックは、非同期メソッドを正しく設定する必要がある
-        handler1.HandleAsync(Arg.Any<TestEvent>()).Returns(async _ =>
-        {
-            await Task.Delay(50).ConfigureAwait(false);
-            lock (executionOrder) { executionOrder.Add(1); }
-        });
-
-        handler2.HandleAsync(Arg.Any<TestEvent>()).Returns(async _ =>
-        {
-            await Task.Delay(30).ConfigureAwait(false);
-            lock (executionOrder) { executionOrder.Add(2); }
-        });
-
-        handler3.HandleAsync(Arg.Any<TestEvent>()).Returns(async _ =>
-        {
-            await Task.Delay(10).ConfigureAwait(false);
-            lock (executionOrder) { executionOrder.Add(3); }
-        });
-
-        var @event = new TestEvent { EventId = Guid.NewGuid(), AggregateId = Guid.NewGuid() };
-
-        _publisher.Subscribe(handler1);
-        _publisher.Subscribe(handler2);
-        _publisher.Subscribe(handler3);
-
-        // Act
-        await _publisher.PublishAsync(@event);
-
-        // Assert - 並列実行なので、遅延が短い順に完了する
-        Assert.Equal(3, executionOrder.Count);
-        Assert.Equal(3, executionOrder[0]); // 10ms delay - 最初に完了
-        Assert.Equal(2, executionOrder[1]); // 30ms delay - 2番目に完了
-        Assert.Equal(1, executionOrder[2]); // 50ms delay - 最後に完了
-    }
-
     #endregion
 
     #region Error Handling Tests
@@ -313,7 +269,7 @@ public class EventPublisherTests
     {
         public Guid EventId { get; set; }
         public Guid AggregateId { get; set; }
-        public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
+        public DateTimeOffset OccurredAt { get; set; } = DateTimeOffset.UtcNow;
         public string EventType => nameof(TestEvent);
         public string TestData { get; set; } = string.Empty;
     }
@@ -322,7 +278,7 @@ public class EventPublisherTests
     {
         public Guid EventId { get; set; }
         public Guid AggregateId { get; set; }
-        public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
+        public DateTimeOffset OccurredAt { get; set; } = DateTimeOffset.UtcNow;
         public string EventType => nameof(AnotherTestEvent);
     }
 

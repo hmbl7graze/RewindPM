@@ -112,12 +112,27 @@ else if (_statistics != null)
             </div>
         </div>
         
-        @if (_statistics.AsOfDate.Date < DateTime.UtcNow.Date)
+        @if (_statistics.AsOfDate.Date < DateTimeOffset.UtcNow.Date)
         {
             <div class="rewind-notice">
                 <p>⏰ リワインド表示中: @_statistics.AsOfDate.ToString("yyyy年MM月dd日") 時点の統計</p>
             </div>
         }
+
+        <!-- グラフセクション -->
+        <div class="charts-section">
+            <div class="chart-row">
+                <div class="chart-container">
+                    <CumulativeFlowDiagram ProjectId="@ProjectId" AsOfDate="@AsOfDate" />
+                </div>
+            </div>
+
+            <div class="chart-row">
+                <div class="chart-container">
+                    <BurndownChart ProjectId="@ProjectId" AsOfDate="@AsOfDate" />
+                </div>
+            </div>
+        </div>
     </div>
 }
 else
@@ -132,14 +147,14 @@ else
     public required Guid ProjectId { get; set; }
     
     [Parameter]
-    public DateTime? AsOfDate { get; set; }
+    public DateTimeOffset? AsOfDate { get; set; }
 
     private ProjectStatisticsDetailDto? _statistics;
     private bool _isLoading = true;
     
     // パラメータ変更検知用
     private Guid _prevProjectId;
-    private DateTime? _prevAsOfDate;
+    private DateTimeOffset? _prevAsOfDate;
 
     protected override async Task OnInitializedAsync()
     {
@@ -203,12 +218,12 @@ else
     private string GetOnTimeRateClass()
     {
         if (_statistics == null) return "";
-        
+
         if (_statistics.OnTimeRate >= 80)
             return "stat-good";
         else if (_statistics.OnTimeRate >= 60)
             return "stat-warning";
-        
+
         return "stat-bad";
     }
 }

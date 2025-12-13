@@ -66,16 +66,21 @@ public class ReadModelRepository : IReadModelRepository
     /// <summary>
     /// 指定された時点のプロジェクト状態を取得（タイムトラベル用）
     /// </summary>
-    public async Task<ProjectDto?> GetProjectAtTimeAsync(Guid projectId, DateTime pointInTime)
+    public async Task<ProjectDto?> GetProjectAtTimeAsync(Guid projectId, DateTimeOffset pointInTime)
     {
         // 指定された時点の日付（日単位）
         var targetDate = pointInTime.Date;
 
         // 指定された時点以前の最新のスナップショットを取得
-        var history = await _context.ProjectHistories
-            .Where(h => h.ProjectId == projectId && h.SnapshotDate <= targetDate)
+        // SQLiteはDateTimeOffsetの比較とORDER BYをサポートしないため、クライアント側で処理
+        var histories = await _context.ProjectHistories
+            .Where(h => h.ProjectId == projectId)
+            .ToListAsync();
+
+        var history = histories
+            .Where(h => h.SnapshotDate.Date <= targetDate)
             .OrderByDescending(h => h.SnapshotDate)
-            .FirstOrDefaultAsync();
+            .FirstOrDefault();
 
         return history == null ? null : MapToProjectDto(history);
     }
@@ -83,16 +88,21 @@ public class ReadModelRepository : IReadModelRepository
     /// <summary>
     /// 指定された時点のタスク状態を取得（タイムトラベル用）
     /// </summary>
-    public async Task<TaskDto?> GetTaskAtTimeAsync(Guid taskId, DateTime pointInTime)
+    public async Task<TaskDto?> GetTaskAtTimeAsync(Guid taskId, DateTimeOffset pointInTime)
     {
         // 指定された時点の日付（日単位）
         var targetDate = pointInTime.Date;
 
         // 指定された時点以前の最新のスナップショットを取得
-        var history = await _context.TaskHistories
-            .Where(h => h.TaskId == taskId && h.SnapshotDate <= targetDate)
+        // SQLiteはDateTimeOffsetの比較とORDER BYをサポートしないため、クライアント側で処理
+        var histories = await _context.TaskHistories
+            .Where(h => h.TaskId == taskId)
+            .ToListAsync();
+
+        var history = histories
+            .Where(h => h.SnapshotDate.Date <= targetDate)
             .OrderByDescending(h => h.SnapshotDate)
-            .FirstOrDefaultAsync();
+            .FirstOrDefault();
 
         return history == null ? null : MapToTaskDto(history);
     }
@@ -100,25 +110,33 @@ public class ReadModelRepository : IReadModelRepository
     /// <summary>
     /// 指定された時点のプロジェクトに属する全タスクを取得（タイムトラベル用）
     /// </summary>
-    public async Task<List<TaskDto>> GetTasksByProjectIdAtTimeAsync(Guid projectId, DateTime pointInTime)
+    public async Task<List<TaskDto>> GetTasksByProjectIdAtTimeAsync(Guid projectId, DateTimeOffset pointInTime)
     {
         // 指定された時点の日付（日単位）
         var targetDate = pointInTime.Date;
 
         // 指定された時点以前の各タスクの最新スナップショットを取得
-        var taskIds = await _context.TaskHistories
-            .Where(h => h.ProjectId == projectId && h.SnapshotDate <= targetDate)
+        // SQLiteはDateTimeOffsetの比較とORDER BYをサポートしないため、クライアント側で処理
+        var allHistories = await _context.TaskHistories
+            .Where(h => h.ProjectId == projectId)
+            .ToListAsync();
+
+        var filteredHistories = allHistories
+            .Where(h => h.SnapshotDate.Date <= targetDate)
+            .ToList();
+
+        var taskIds = filteredHistories
             .Select(h => h.TaskId)
             .Distinct()
-            .ToListAsync();
+            .ToList();
 
         var tasks = new List<TaskDto>();
         foreach (var taskId in taskIds)
         {
-            var history = await _context.TaskHistories
-                .Where(h => h.TaskId == taskId && h.SnapshotDate <= targetDate)
+            var history = filteredHistories
+                .Where(h => h.TaskId == taskId)
                 .OrderByDescending(h => h.SnapshotDate)
-                .FirstOrDefaultAsync();
+                .FirstOrDefault();
 
             if (history != null)
             {
@@ -132,20 +150,20 @@ public class ReadModelRepository : IReadModelRepository
     /// <summary>
     /// 指定されたプロジェクトの編集日一覧を取得（リワインド機能用）
     /// </summary>
-    public async Task<List<DateTime>> GetProjectEditDatesAsync(Guid projectId, bool ascending = false, CancellationToken cancellationToken = default)
+    public async Task<List<DateTimeOffset>> GetProjectEditDatesAsync(Guid projectId, bool ascending = false, CancellationToken cancellationToken = default)
     {
         // プロジェクトに属するタスクの履歴から、編集日（SnapshotDate）を取得
-        var query = _context.TaskHistories
+        // SQLiteはDateTimeOffsetのORDER BYをサポートしないため、クライアント側でソート
+        var dates = await _context.TaskHistories
             .Where(h => h.ProjectId == projectId)
             .Select(h => h.SnapshotDate)
-            .Distinct();
+            .Distinct()
+            .ToListAsync(cancellationToken);
 
-        // 並び順を指定
-        var orderedQuery = ascending
-            ? query.OrderBy(d => d)
-            : query.OrderByDescending(d => d);
-
-        return await orderedQuery.ToListAsync(cancellationToken);
+        // クライアント側で並び順を指定
+        return ascending
+            ? dates.OrderBy(d => d).ToList()
+            : dates.OrderByDescending(d => d).ToList();
     }
 
     /// <summary>

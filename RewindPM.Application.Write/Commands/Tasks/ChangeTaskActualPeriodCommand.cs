@@ -12,8 +12,8 @@ namespace RewindPM.Application.Write.Commands.Tasks;
 /// <param name="ChangedBy">変更者のユーザーID</param>
 public record ChangeTaskActualPeriodCommand(
     Guid TaskId,
-    DateTime? ActualStartDate,
-    DateTime? ActualEndDate,
+    DateTimeOffset? ActualStartDate,
+    DateTimeOffset? ActualEndDate,
     int? ActualHours,
     string ChangedBy
 ) : IRequest;

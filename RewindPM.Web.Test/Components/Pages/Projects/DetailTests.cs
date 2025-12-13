@@ -364,11 +364,11 @@ public class DetailTests : Bunit.TestContext
     {
         // Arrange
         var project = CreateTestProject();
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10),
-            new DateTime(2025, 1, 5)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
         };
 
         _mediatorMock
@@ -401,7 +401,7 @@ public class DetailTests : Bunit.TestContext
             .Returns(project);
         _mediatorMock
             .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new List<DateTime> { DateTime.Today.AddDays(-1) });
+            .Returns(new List<DateTimeOffset> { new DateTimeOffset(DateTime.UtcNow.Date.AddDays(-1), TimeSpan.Zero) });
         _mediatorMock
             .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(new List<TaskDto>());
@@ -429,7 +429,7 @@ public class DetailTests : Bunit.TestContext
             .Returns(project);
         _mediatorMock
             .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new List<DateTime>());
+            .Returns(new List<DateTimeOffset>());
         _mediatorMock
             .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(new List<TaskDto>());
@@ -453,7 +453,7 @@ public class DetailTests : Bunit.TestContext
             .Returns(project);
         _mediatorMock
             .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new List<DateTime>());
+            .Returns(new List<DateTimeOffset>());
         _mediatorMock
             .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(new List<TaskDto>());
@@ -472,10 +472,10 @@ public class DetailTests : Bunit.TestContext
     {
         // Arrange
         var project = CreateTestProject();
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero)
         };
         var currentTasks = CreateTestTasks();
         var pastTasks = new List<TaskDto>
@@ -487,10 +487,10 @@ public class DetailTests : Bunit.TestContext
                 Title = "Past Task",
                 Description = "Past Task Description",
                 Status = TaskStatus.Todo,
-                ScheduledStartDate = new DateTime(2025, 1, 10),
-                ScheduledEndDate = new DateTime(2025, 1, 15),
+                ScheduledStartDate = new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
                 EstimatedHours = 5,
-                CreatedAt = new DateTime(2025, 1, 10),
+                CreatedAt = new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
                 CreatedBy = "admin",
                 UpdatedAt = null
             }
@@ -518,7 +518,7 @@ public class DetailTests : Bunit.TestContext
             var instance = cut.Instance;
             var method = instance.GetType()
                 .GetMethod("HandleDateChanged", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            await (method!.Invoke(instance, new object?[] { new DateTime(2025, 1, 10) }) as Task ?? Task.CompletedTask);
+            await (method!.Invoke(instance, new object?[] { new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero) }) as Task ?? Task.CompletedTask);
         });
 
         // Assert - GetTasksByProjectIdAtTimeQueryが呼ばれたことを確認
@@ -532,11 +532,11 @@ public class DetailTests : Bunit.TestContext
     {
         // Arrange
         var project = CreateTestProject();
-        var initialEditDates = new List<DateTime> { new DateTime(2025, 1, 10) };
-        var updatedEditDates = new List<DateTime>
+        var initialEditDates = new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero) };
+        var updatedEditDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero)
         };
 
         _mediatorMock

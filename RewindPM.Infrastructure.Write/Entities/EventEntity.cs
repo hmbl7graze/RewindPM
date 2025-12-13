@@ -30,7 +30,7 @@ public class EventEntity
     /// イベント発生日時（UTC、インデックス）
     /// タイムトラベル機能で使用
     /// </summary>
-    public DateTime OccurredAt { get; set; }
+    public DateTimeOffset OccurredAt { get; set; }
 
     /// <summary>
     /// Aggregateのバージョン
@@ -42,5 +42,5 @@ public class EventEntity
     /// レコード作成日時（UTC）
     /// 監査用
     /// </summary>
-    public DateTime CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 }

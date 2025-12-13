@@ -19,7 +19,7 @@ public abstract record DomainEvent : IDomainEvent
     /// <summary>
     /// イベントが発生した日時（UTC、自動設定）
     /// </summary>
-    public DateTime OccurredAt { get; init; } = DateTime.UtcNow;
+    public DateTimeOffset OccurredAt { get; init; } = DateTimeOffset.UtcNow;
 
     /// <summary>
     /// イベントの型名（リフレクションで取得）

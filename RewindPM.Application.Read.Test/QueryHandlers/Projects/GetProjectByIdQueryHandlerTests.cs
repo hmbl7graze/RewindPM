@@ -27,7 +27,7 @@ public class GetProjectByIdQueryHandlerTests
             Id = projectId,
             Title = "Test Project",
             Description = "Test Description",
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = null,
             CreatedBy = "user1"
         };

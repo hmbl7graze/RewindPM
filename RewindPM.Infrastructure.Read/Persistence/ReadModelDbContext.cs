@@ -29,6 +29,11 @@ public class ReadModelDbContext : DbContext
     /// </summary>
     public DbSet<TaskHistoryEntity> TaskHistories => Set<TaskHistoryEntity>();
 
+    /// <summary>
+    /// システムメタデータ（設定情報の保存）
+    /// </summary>
+    public DbSet<SystemMetadataEntity> SystemMetadata => Set<SystemMetadataEntity>();
+
     public ReadModelDbContext(DbContextOptions<ReadModelDbContext> options)
         : base(options)
     {
@@ -166,6 +171,16 @@ public class ReadModelDbContext : DbContext
             // 複合インデックス: プロジェクトの特定日付の全タスク取得を高速化
             entity.HasIndex(e => new { e.ProjectId, e.SnapshotDate })
                 .HasDatabaseName("IX_TaskHistories_ProjectId_SnapshotDate");
+        });
+
+        // SystemMetadataEntity の設定
+        modelBuilder.Entity<SystemMetadataEntity>(entity =>
+        {
+            entity.ToTable("SystemMetadata");
+            entity.HasKey(e => e.Key);
+
+            entity.Property(e => e.Key).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Value).IsRequired().HasMaxLength(500);
         });
     }
 }

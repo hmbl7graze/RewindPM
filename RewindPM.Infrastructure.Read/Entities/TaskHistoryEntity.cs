@@ -27,7 +27,7 @@ public class TaskHistoryEntity
     /// スナップショット日付（日単位、UTC）
     /// この日の最後の状態を保存
     /// </summary>
-    public DateTime SnapshotDate { get; set; }
+    public DateTimeOffset SnapshotDate { get; set; }
 
     /// <summary>
     /// タスク名
@@ -48,12 +48,12 @@ public class TaskHistoryEntity
     /// <summary>
     /// 予定開始日
     /// </summary>
-    public DateTime? ScheduledStartDate { get; set; }
+    public DateTimeOffset? ScheduledStartDate { get; set; }
 
     /// <summary>
     /// 予定終了日
     /// </summary>
-    public DateTime? ScheduledEndDate { get; set; }
+    public DateTimeOffset? ScheduledEndDate { get; set; }
 
     /// <summary>
     /// 予定工数（時間）
@@ -64,12 +64,12 @@ public class TaskHistoryEntity
     /// <summary>
     /// 実績開始日
     /// </summary>
-    public DateTime? ActualStartDate { get; set; }
+    public DateTimeOffset? ActualStartDate { get; set; }
 
     /// <summary>
     /// 実績終了日
     /// </summary>
-    public DateTime? ActualEndDate { get; set; }
+    public DateTimeOffset? ActualEndDate { get; set; }
 
     /// <summary>
     /// 実績工数（時間）
@@ -79,13 +79,13 @@ public class TaskHistoryEntity
     /// <summary>
     /// 作成日時（UTC）
     /// </summary>
-    public DateTime CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
     /// 更新日時（UTC）
     /// この時点での最終更新日時
     /// </summary>
-    public DateTime? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
 
     /// <summary>
     /// 作成者
@@ -102,5 +102,5 @@ public class TaskHistoryEntity
     /// スナップショット作成日時（UTC）
     /// このレコードがいつ作成されたか
     /// </summary>
-    public DateTime SnapshotCreatedAt { get; set; }
+    public DateTimeOffset SnapshotCreatedAt { get; set; }
 }

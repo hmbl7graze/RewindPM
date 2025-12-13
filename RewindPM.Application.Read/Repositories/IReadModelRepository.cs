@@ -39,7 +39,7 @@ public interface IReadModelRepository
     /// <param name="projectId">プロジェクトID</param>
     /// <param name="pointInTime">取得する時点</param>
     /// <returns>その時点のプロジェクト、存在しない場合はnull</returns>
-    Task<ProjectDto?> GetProjectAtTimeAsync(Guid projectId, DateTime pointInTime);
+    Task<ProjectDto?> GetProjectAtTimeAsync(Guid projectId, DateTimeOffset pointInTime);
 
     /// <summary>
     /// 指定された時点のタスク状態を取得（タイムトラベル用）
@@ -47,14 +47,14 @@ public interface IReadModelRepository
     /// <param name="taskId">タスクID</param>
     /// <param name="pointInTime">取得する時点</param>
     /// <returns>その時点のタスク、存在しない場合はnull</returns>
-    Task<TaskDto?> GetTaskAtTimeAsync(Guid taskId, DateTime pointInTime);
+    Task<TaskDto?> GetTaskAtTimeAsync(Guid taskId, DateTimeOffset pointInTime);
 
     /// <summary>
     /// 指定された時点のプロジェクトに属する全タスクを取得（タイムトラベル用）
     /// </summary>
     /// <param name="projectId">プロジェクトID</param>
     /// <param name="pointInTime">取得する時点</param>
-    Task<List<TaskDto>> GetTasksByProjectIdAtTimeAsync(Guid projectId, DateTime pointInTime);
+    Task<List<TaskDto>> GetTasksByProjectIdAtTimeAsync(Guid projectId, DateTimeOffset pointInTime);
 
     /// <summary>
     /// 指定されたプロジェクトの編集日一覧を取得（リワインド機能用）
@@ -64,5 +64,5 @@ public interface IReadModelRepository
     /// <param name="ascending">昇順（古い順）かどうか。デフォルトはfalse（新しい順）</param>
     /// <param name="cancellationToken">キャンセルトークン</param>
     /// <returns>編集日のリスト</returns>
-    Task<List<DateTime>> GetProjectEditDatesAsync(Guid projectId, bool ascending = false, CancellationToken cancellationToken = default);
+    Task<List<DateTimeOffset>> GetProjectEditDatesAsync(Guid projectId, bool ascending = false, CancellationToken cancellationToken = default);
 }

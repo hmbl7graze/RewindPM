@@ -20,8 +20,8 @@ public class ActualPeriodTests
     public void Constructor_WithValidValues_ShouldCreateInstance()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
-        var endDate = new DateTime(2025, 1, 10);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero);
         var actualHours = 35;
 
         // Act
@@ -37,7 +37,7 @@ public class ActualPeriodTests
     public void Constructor_WithOnlyStartDate_ShouldCreateInstance()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         // Act
         var actualPeriod = new ActualPeriod(startDate: startDate);
@@ -52,8 +52,8 @@ public class ActualPeriodTests
     public void Constructor_WhenEndDateIsBeforeStartDate_ShouldThrowArgumentException()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 10);
-        var endDate = new DateTime(2025, 1, 1);
+        var startDate = new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var actualHours = 35;
 
         // Act & Assert
@@ -66,7 +66,7 @@ public class ActualPeriodTests
     public void Constructor_WhenEndDateEqualsStartDate_ShouldThrowArgumentException()
     {
         // Arrange
-        var date = new DateTime(2025, 1, 1);
+        var date = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var actualHours = 35;
 
         // Act & Assert
@@ -79,8 +79,8 @@ public class ActualPeriodTests
     public void Constructor_WhenActualHoursIsZero_ShouldThrowArgumentException()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
-        var endDate = new DateTime(2025, 1, 10);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero);
         var actualHours = 0;
 
         // Act & Assert
@@ -93,8 +93,8 @@ public class ActualPeriodTests
     public void Constructor_WhenActualHoursIsNegative_ShouldThrowArgumentException()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
-        var endDate = new DateTime(2025, 1, 10);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero);
         var actualHours = -10;
 
         // Act & Assert
@@ -107,8 +107,8 @@ public class ActualPeriodTests
     public void DurationInDays_WithBothDates_ShouldCalculateCorrectly()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
-        var endDate = new DateTime(2025, 1, 10);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero);
         var actualPeriod = new ActualPeriod(startDate, endDate, 35);
 
         // Act
@@ -122,7 +122,7 @@ public class ActualPeriodTests
     public void DurationInDays_WithOnlyStartDate_ShouldReturnNull()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var actualPeriod = new ActualPeriod(startDate: startDate);
 
         // Act
@@ -149,7 +149,7 @@ public class ActualPeriodTests
     public void IsStarted_WhenStartDateIsSet_ShouldReturnTrue()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var actualPeriod = new ActualPeriod(startDate: startDate);
 
         // Act & Assert
@@ -170,8 +170,8 @@ public class ActualPeriodTests
     public void IsCompleted_WhenEndDateIsSet_ShouldReturnTrue()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
-        var endDate = new DateTime(2025, 1, 10);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero);
         var actualPeriod = new ActualPeriod(startDate, endDate);
 
         // Act & Assert
@@ -192,8 +192,8 @@ public class ActualPeriodTests
     public void RecordEquality_WithSameValues_ShouldBeEqual()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
-        var endDate = new DateTime(2025, 1, 10);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero);
         var period1 = new ActualPeriod(startDate, endDate, 35);
         var period2 = new ActualPeriod(startDate, endDate, 35);
 
@@ -206,8 +206,8 @@ public class ActualPeriodTests
     public void RecordEquality_WithDifferentValues_ShouldNotBeEqual()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
-        var endDate = new DateTime(2025, 1, 10);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero);
         var period1 = new ActualPeriod(startDate, endDate, 35);
         var period2 = new ActualPeriod(startDate, endDate, 40);
 

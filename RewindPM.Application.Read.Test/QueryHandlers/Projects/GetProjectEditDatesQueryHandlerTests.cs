@@ -21,11 +21,11 @@ public class GetProjectEditDatesQueryHandlerTests
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 5),
-            new DateTime(2025, 1, 3),
-            new DateTime(2025, 1, 2)
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 3), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 2), TimeSpan.Zero)
         };
 
         _repository.GetProjectEditDatesAsync(projectId, false, Arg.Any<CancellationToken>())
@@ -37,9 +37,9 @@ public class GetProjectEditDatesQueryHandlerTests
 
         // Assert
         Assert.Equal(3, result.Count);
-        Assert.Equal(new DateTime(2025, 1, 5), result[0]);
-        Assert.Equal(new DateTime(2025, 1, 3), result[1]);
-        Assert.Equal(new DateTime(2025, 1, 2), result[2]);
+        Assert.Equal(new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero), result[0]);
+        Assert.Equal(new DateTimeOffset(new DateTime(2025, 1, 3), TimeSpan.Zero), result[1]);
+        Assert.Equal(new DateTimeOffset(new DateTime(2025, 1, 2), TimeSpan.Zero), result[2]);
         await _repository.Received(1).GetProjectEditDatesAsync(
             projectId,
             false,
@@ -51,11 +51,11 @@ public class GetProjectEditDatesQueryHandlerTests
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 2),
-            new DateTime(2025, 1, 3),
-            new DateTime(2025, 1, 5)
+            new DateTimeOffset(new DateTime(2025, 1, 2), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 3), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
         };
 
         _repository.GetProjectEditDatesAsync(projectId, true, Arg.Any<CancellationToken>())
@@ -67,9 +67,9 @@ public class GetProjectEditDatesQueryHandlerTests
 
         // Assert
         Assert.Equal(3, result.Count);
-        Assert.Equal(new DateTime(2025, 1, 2), result[0]);
-        Assert.Equal(new DateTime(2025, 1, 3), result[1]);
-        Assert.Equal(new DateTime(2025, 1, 5), result[2]);
+        Assert.Equal(new DateTimeOffset(new DateTime(2025, 1, 2), TimeSpan.Zero), result[0]);
+        Assert.Equal(new DateTimeOffset(new DateTime(2025, 1, 3), TimeSpan.Zero), result[1]);
+        Assert.Equal(new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero), result[2]);
         await _repository.Received(1).GetProjectEditDatesAsync(
             projectId,
             true,
@@ -82,7 +82,7 @@ public class GetProjectEditDatesQueryHandlerTests
         // Arrange
         var projectId = Guid.NewGuid();
         _repository.GetProjectEditDatesAsync(projectId, false, Arg.Any<CancellationToken>())
-            .Returns(new List<DateTime>());
+            .Returns(new List<DateTimeOffset>());
         var query = new GetProjectEditDatesQuery(projectId, Ascending: false);
 
         // Act

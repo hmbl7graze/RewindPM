@@ -10,12 +10,12 @@ public record ActualPeriod
     /// <summary>
     /// 実績開始日（未開始の場合はnull）
     /// </summary>
-    public DateTime? StartDate { get; init; }
+    public DateTimeOffset? StartDate { get; init; }
 
     /// <summary>
     /// 実績終了日（未完了の場合はnull）
     /// </summary>
-    public DateTime? EndDate { get; init; }
+    public DateTimeOffset? EndDate { get; init; }
 
     /// <summary>
     /// 実績工数（時間）（未設定の場合はnull）
@@ -30,7 +30,7 @@ public record ActualPeriod
     /// <param name="endDate">実績終了日（nullの場合は未完了）</param>
     /// <param name="actualHours">実績工数（時間、nullの場合は未設定）</param>
     /// <exception cref="ArgumentException">バリデーションエラー</exception>
-    public ActualPeriod(DateTime? startDate = null, DateTime? endDate = null, int? actualHours = null)
+    public ActualPeriod(DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int? actualHours = null)
     {
         // 両方の日付が設定されている場合、終了日は開始日より後でなければならない
         if (startDate.HasValue && endDate.HasValue && endDate.Value <= startDate.Value)

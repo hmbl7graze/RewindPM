@@ -39,7 +39,7 @@ public class ScheduledPeriodTests
     public void Constructor_WhenEndDateEqualsStartDate_ShouldThrowArgumentException()
     {
         // Arrange
-        var date = new DateTime(2025, 1, 1);
+        var date = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var estimatedHours = 40;
 
         // Act & Assert
@@ -52,8 +52,8 @@ public class ScheduledPeriodTests
     public void Constructor_WhenEstimatedHoursIsZero_ShouldThrowArgumentException()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
-        var endDate = new DateTime(2025, 1, 10);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero);
         var estimatedHours = 0;
 
         // Act & Assert
@@ -66,8 +66,8 @@ public class ScheduledPeriodTests
     public void Constructor_WhenEstimatedHoursIsNegative_ShouldThrowArgumentException()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
-        var endDate = new DateTime(2025, 1, 10);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero);
         var estimatedHours = -10;
 
         // Act & Assert
@@ -80,8 +80,8 @@ public class ScheduledPeriodTests
     public void DurationInDays_ShouldCalculateCorrectly()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
-        var endDate = new DateTime(2025, 1, 10);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero);
         var scheduledPeriod = new ScheduledPeriod(startDate, endDate, 40);
 
         // Act
@@ -95,8 +95,8 @@ public class ScheduledPeriodTests
     public void RecordEquality_WithSameValues_ShouldBeEqual()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
-        var endDate = new DateTime(2025, 1, 10);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero);
         var period1 = new ScheduledPeriod(startDate, endDate, 40);
         var period2 = new ScheduledPeriod(startDate, endDate, 40);
 
@@ -109,8 +109,8 @@ public class ScheduledPeriodTests
     public void RecordEquality_WithDifferentValues_ShouldNotBeEqual()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
-        var endDate = new DateTime(2025, 1, 10);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero);
         var period1 = new ScheduledPeriod(startDate, endDate, 40);
         var period2 = new ScheduledPeriod(startDate, endDate, 50);
 
@@ -135,7 +135,7 @@ public class ScheduledPeriodTests
     public void Constructor_WithOnlyStartDate_ShouldCreateInstance()
     {
         // Arrange
-        var startDate = new DateTime(2025, 1, 1);
+        var startDate = new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
         // Act
         var scheduledPeriod = new ScheduledPeriod(startDate: startDate);
@@ -150,7 +150,7 @@ public class ScheduledPeriodTests
     public void Constructor_WithOnlyEndDate_ShouldCreateInstance()
     {
         // Arrange
-        var endDate = new DateTime(2025, 1, 10);
+        var endDate = new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero);
 
         // Act
         var scheduledPeriod = new ScheduledPeriod(endDate: endDate);
@@ -180,8 +180,8 @@ public class ScheduledPeriodTests
     public void DurationInDays_WhenDatesArePartiallySet_ShouldReturnNull()
     {
         // Arrange & Act
-        var periodWithStartOnly = new ScheduledPeriod(startDate: new DateTime(2025, 1, 1));
-        var periodWithEndOnly = new ScheduledPeriod(endDate: new DateTime(2025, 1, 10));
+        var periodWithStartOnly = new ScheduledPeriod(startDate: new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var periodWithEndOnly = new ScheduledPeriod(endDate: new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero));
 
         // Assert
         Assert.Null(periodWithStartOnly.DurationInDays);
@@ -205,11 +205,11 @@ public class ScheduledPeriodTests
     public void Constructor_ValidatesOnlyWhenBothDatesAreProvided()
     {
         // Arrange & Act - 開始日のみ設定（バリデーションはスキップ）
-        var periodWithStartOnly = new ScheduledPeriod(startDate: new DateTime(2025, 1, 10));
+        var periodWithStartOnly = new ScheduledPeriod(startDate: new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero));
 
         // Assert - 例外がスローされない
         Assert.NotNull(periodWithStartOnly);
-        Assert.Equal(new DateTime(2025, 1, 10), periodWithStartOnly.StartDate);
+        Assert.Equal(new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero), periodWithStartOnly.StartDate);
         Assert.Null(periodWithStartOnly.EndDate);
     }
 
@@ -218,8 +218,8 @@ public class ScheduledPeriodTests
     {
         // Arrange & Act - 工数未設定（バリデーションはスキップ）
         var periodWithoutHours = new ScheduledPeriod(
-            startDate: new DateTime(2025, 1, 1),
-            endDate: new DateTime(2025, 1, 10)
+            startDate: new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            endDate: new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero)
         );
 
         // Assert - 例外がスローされない

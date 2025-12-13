@@ -34,8 +34,8 @@ var readModelConnectionString = builder.Configuration.GetConnectionString("ReadM
 // Infrastructure層の登録（EventStore, EventPublisher, AggregateRepository）
 builder.Services.AddInfrastructure(eventStoreConnectionString);
 
-// Infrastructure.Read層の登録（ReadModelRepository, ReadModelDbContext）
-builder.Services.AddInfrastructureRead(readModelConnectionString);
+// Infrastructure.Read層の登録（ReadModelRepository, ReadModelDbContext, TimeZoneService）
+builder.Services.AddInfrastructureRead(readModelConnectionString, builder.Configuration);
 
 // Application.Write層の登録（MediatR for Commands）
 builder.Services.AddApplicationWrite();
@@ -73,6 +73,62 @@ using (var scope = app.Services.CreateScope())
         if (autoMigrate)
         {
             await readModelContext.Database.MigrateAsync();
+        }
+    }
+
+    // タイムゾーン変更の検出とReadModel再構築
+    var timeZoneService = services.GetRequiredService<RewindPM.Infrastructure.Read.Services.ITimeZoneService>();
+
+    // 現在保存されているタイムゾーンIDを取得
+    var storedTimeZone = await readModelContext.SystemMetadata
+        .Where(m => m.Key == RewindPM.Infrastructure.Read.Entities.SystemMetadataEntity.TimeZoneMetadataKey)
+        .Select(m => m.Value)
+        .FirstOrDefaultAsync();
+
+    var configuredTimeZone = timeZoneService.TimeZone.Id;
+
+    if (storedTimeZone != configuredTimeZone)
+    {
+        Console.WriteLine($"[Startup] TimeZone changed: {storedTimeZone ?? "none"} -> {configuredTimeZone}");
+        Console.WriteLine($"[Startup] Rebuilding ReadModel database...");
+
+        // トランザクション内でReadModelのクリアとメタデータ更新を実行
+        using var transaction = await readModelContext.Database.BeginTransactionAsync();
+        try
+        {
+            // ReadModelのデータをクリア(テーブル構造は維持)
+            await readModelContext.Database.ExecuteSqlRawAsync("DELETE FROM TaskHistories");
+            await readModelContext.Database.ExecuteSqlRawAsync("DELETE FROM ProjectHistories");
+            await readModelContext.Database.ExecuteSqlRawAsync("DELETE FROM Tasks");
+            await readModelContext.Database.ExecuteSqlRawAsync("DELETE FROM Projects");
+
+            // タイムゾーンIDを更新
+            var metadata = await readModelContext.SystemMetadata
+                .FirstOrDefaultAsync(m => m.Key == RewindPM.Infrastructure.Read.Entities.SystemMetadataEntity.TimeZoneMetadataKey);
+
+            if (metadata == null)
+            {
+                readModelContext.SystemMetadata.Add(new RewindPM.Infrastructure.Read.Entities.SystemMetadataEntity
+                {
+                    Key = RewindPM.Infrastructure.Read.Entities.SystemMetadataEntity.TimeZoneMetadataKey,
+                    Value = configuredTimeZone
+                });
+            }
+            else
+            {
+                metadata.Value = configuredTimeZone;
+            }
+
+            await readModelContext.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            Console.WriteLine($"[Startup] ReadModel cleared. Please re-create your data or import from EventStore.");
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            Console.WriteLine($"[Startup ERROR] Failed to rebuild ReadModel: {ex.Message}");
+            throw;
         }
     }
 

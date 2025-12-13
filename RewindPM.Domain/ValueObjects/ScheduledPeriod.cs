@@ -10,12 +10,12 @@ public record ScheduledPeriod
     /// <summary>
     /// 予定開始日（未設定の場合はnull）
     /// </summary>
-    public DateTime? StartDate { get; init; }
+    public DateTimeOffset? StartDate { get; init; }
 
     /// <summary>
     /// 予定終了日（未設定の場合はnull）
     /// </summary>
-    public DateTime? EndDate { get; init; }
+    public DateTimeOffset? EndDate { get; init; }
 
     /// <summary>
     /// 見積工数（時間）（未設定の場合はnull）
@@ -30,7 +30,7 @@ public record ScheduledPeriod
     /// <param name="endDate">予定終了日（nullの場合は未設定）</param>
     /// <param name="estimatedHours">見積工数（時間、nullの場合は未設定）</param>
     /// <exception cref="ArgumentException">バリデーションエラー</exception>
-    public ScheduledPeriod(DateTime? startDate = null, DateTime? endDate = null, int? estimatedHours = null)
+    public ScheduledPeriod(DateTimeOffset? startDate = null, DateTimeOffset? endDate = null, int? estimatedHours = null)
     {
         // 両方の日付が設定されている場合、終了日は開始日より後でなければならない
         if (startDate.HasValue && endDate.HasValue && endDate.Value <= startDate.Value)

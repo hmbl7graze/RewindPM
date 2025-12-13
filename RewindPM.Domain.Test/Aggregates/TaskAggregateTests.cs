@@ -12,8 +12,8 @@ public class TaskAggregateTests
     private readonly IDateTimeProvider _dateTimeProvider = new TestDateTimeProvider();
     private readonly Guid _projectId = Guid.NewGuid();
     private readonly ScheduledPeriod _scheduledPeriod = new(
-        new DateTime(2025, 1, 1),
-        new DateTime(2025, 1, 10),
+        new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero),
         40);
 
     [Fact(DisplayName = "有効な値でタスクを作成できる")]
@@ -239,8 +239,8 @@ public class TaskAggregateTests
         task.ClearUncommittedEvents();
 
         var newSchedule = new ScheduledPeriod(
-            new DateTime(2025, 2, 1),
-            new DateTime(2025, 2, 15),
+            new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2025, 2, 15, 0, 0, 0, TimeSpan.Zero),
             60);
         var changedBy = "user456";
 
@@ -260,8 +260,8 @@ public class TaskAggregateTests
         task.ClearUncommittedEvents();
 
         var newSchedule = new ScheduledPeriod(
-            new DateTime(2025, 2, 1),
-            new DateTime(2025, 2, 15),
+            new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2025, 2, 15, 0, 0, 0, TimeSpan.Zero),
             60);
         var changedBy = "user456";
 
@@ -286,8 +286,8 @@ public class TaskAggregateTests
         task.ClearUncommittedEvents();
 
         var actualPeriod = new ActualPeriod(
-            new DateTime(2025, 1, 2),
-            new DateTime(2025, 1, 8),
+            new DateTimeOffset(2025, 1, 2, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2025, 1, 8, 0, 0, 0, TimeSpan.Zero),
             35);
         var changedBy = "user456";
 
@@ -307,8 +307,8 @@ public class TaskAggregateTests
         task.ClearUncommittedEvents();
 
         var actualPeriod = new ActualPeriod(
-            new DateTime(2025, 1, 2),
-            new DateTime(2025, 1, 8),
+            new DateTimeOffset(2025, 1, 2, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2025, 1, 8, 0, 0, 0, TimeSpan.Zero),
             35);
         var changedBy = "user456";
 

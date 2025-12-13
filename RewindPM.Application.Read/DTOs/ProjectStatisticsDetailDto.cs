@@ -23,7 +23,7 @@ public record ProjectStatisticsDetailDto
     public required double AverageDelayDays { get; init; }
 
     // 統計の基準日（リワインド対応）
-    public required DateTime AsOfDate { get; init; }
+    public required DateTimeOffset AsOfDate { get; init; }
 
     // 計算プロパティ
     /// <summary>
