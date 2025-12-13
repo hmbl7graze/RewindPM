@@ -11,7 +11,7 @@ namespace RewindPM.Infrastructure.Read.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<DateTime>(
+            migrationBuilder.AddColumn<DateTimeOffset>(
                 name: "DeletedAt",
                 table: "Tasks",
                 type: "TEXT",
@@ -30,7 +30,7 @@ namespace RewindPM.Infrastructure.Read.Migrations
                 nullable: false,
                 defaultValue: false);
 
-            migrationBuilder.AddColumn<DateTime>(
+            migrationBuilder.AddColumn<DateTimeOffset>(
                 name: "DeletedAt",
                 table: "Projects",
                 type: "TEXT",

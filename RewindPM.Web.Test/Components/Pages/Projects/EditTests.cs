@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using RewindPM.Application.Read.DTOs;
 using RewindPM.Application.Read.Queries.Projects;
+using RewindPM.Application.Read.Queries.Tasks;
 using RewindPM.Application.Write.Commands.Projects;
 using RewindPM.Web.Components.Pages.Projects;
 
@@ -83,6 +84,9 @@ public class EditTests : Bunit.TestContext
         _mediatorMock
             .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
 
         // Act
         var cut = RenderComponent<Edit>(parameters => parameters
@@ -106,6 +110,9 @@ public class EditTests : Bunit.TestContext
         _mediatorMock
             .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
         _mediatorMock
             .Send(Arg.Any<UpdateProjectCommand>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
@@ -138,6 +145,9 @@ public class EditTests : Bunit.TestContext
             .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(project);
         _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+        _mediatorMock
             .Send(Arg.Any<UpdateProjectCommand>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
@@ -160,6 +170,9 @@ public class EditTests : Bunit.TestContext
         _mediatorMock
             .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
         _mediatorMock
             .Send(Arg.Any<UpdateProjectCommand>(), Arg.Any<CancellationToken>())
             .Returns<Task>(_ => throw new Exception("Update failed"));
@@ -184,6 +197,9 @@ public class EditTests : Bunit.TestContext
         _mediatorMock
             .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
 
         var tcs = new TaskCompletionSource();
         _mediatorMock
@@ -213,6 +229,9 @@ public class EditTests : Bunit.TestContext
         _mediatorMock
             .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
 
         // Act
         var cut = RenderComponent<Edit>(parameters => parameters
@@ -231,6 +250,9 @@ public class EditTests : Bunit.TestContext
         _mediatorMock
             .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
 
         // Act
         var cut = RenderComponent<Edit>(parameters => parameters

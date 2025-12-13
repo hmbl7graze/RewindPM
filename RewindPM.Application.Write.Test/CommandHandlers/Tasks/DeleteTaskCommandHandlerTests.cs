@@ -18,7 +18,7 @@ public class DeleteTaskCommandHandlerTests
     {
         _repository = Substitute.For<IAggregateRepository>();
         _dateTimeProvider = Substitute.For<IDateTimeProvider>();
-        _dateTimeProvider.UtcNow.Returns(DateTime.UtcNow);
+        _dateTimeProvider.UtcNow.Returns(DateTimeOffset.UtcNow);
         _handler = new DeleteTaskCommandHandler(_repository, _dateTimeProvider);
     }
 
@@ -34,8 +34,8 @@ public class DeleteTaskCommandHandlerTests
         );
 
         var scheduledPeriod = new ScheduledPeriod(
-            new DateTime(2025, 1, 1),
-            new DateTime(2025, 1, 10),
+            new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero),
             40
         );
 

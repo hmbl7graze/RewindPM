@@ -31,7 +31,7 @@ namespace RewindPM.Infrastructure.Read.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("DeletedAt")
+                    b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("DeletedBy")
@@ -156,7 +156,7 @@ namespace RewindPM.Infrastructure.Read.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime?>("DeletedAt")
+                    b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("DeletedBy")

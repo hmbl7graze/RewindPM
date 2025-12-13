@@ -17,7 +17,7 @@ public class DeleteProjectCommandHandlerTests
     {
         _repository = Substitute.For<IAggregateRepository>();
         _dateTimeProvider = Substitute.For<IDateTimeProvider>();
-        _dateTimeProvider.UtcNow.Returns(DateTime.UtcNow);
+        _dateTimeProvider.UtcNow.Returns(DateTimeOffset.UtcNow);
         _handler = new DeleteProjectCommandHandler(_repository, _dateTimeProvider);
     }
 

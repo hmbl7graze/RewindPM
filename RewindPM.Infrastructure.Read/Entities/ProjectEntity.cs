@@ -49,7 +49,7 @@ public class ProjectEntity
     /// <summary>
     /// 削除日時（UTC）
     /// </summary>
-    public DateTime? DeletedAt { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
 
     /// <summary>
     /// 削除者
