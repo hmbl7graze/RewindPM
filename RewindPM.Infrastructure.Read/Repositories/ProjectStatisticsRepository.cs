@@ -153,11 +153,15 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
             return null;
         }
 
-        // プロジェクトに属するすべてのタスク履歴を取得
+        // プロジェクトに属するタスク履歴を取得
+        // 終了日以前に作成されたものに限定してパフォーマンスを改善
         // SQLiteはDateTimeOffsetのOrderByをサポートしないため、クライアント側でソート
-        var taskHistories = (await _context.TaskHistories
+        var allTaskHistories = await _context.TaskHistories
             .Where(th => th.ProjectId == projectId)
-            .ToListAsync(cancellationToken))
+            .ToListAsync(cancellationToken);
+
+        var taskHistories = allTaskHistories
+            .Where(th => th.CreatedAt <= endDate)
             .OrderBy(th => th.CreatedAt)
             .ToList();
 

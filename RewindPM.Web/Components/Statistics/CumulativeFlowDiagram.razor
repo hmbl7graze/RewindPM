@@ -102,12 +102,6 @@ else
             {
                 _chartData = timeSeriesData.DailySnapshots;
 
-                // 累積データを作成
-                var cumulativeCompleted = 0;
-                var cumulativeInReview = 0;
-                var cumulativeInProgress = 0;
-                var cumulativeTodo = 0;
-
                 _completedData = new List<ChartDataPoint>();
                 _inReviewData = new List<ChartDataPoint>();
                 _inProgressData = new List<ChartDataPoint>();
@@ -115,16 +109,14 @@ else
 
                 foreach (var snapshot in _chartData)
                 {
-                    // 各ステータスのタスク数を累積
-                    cumulativeCompleted = snapshot.CompletedTasks;
-                    cumulativeInReview = cumulativeCompleted + snapshot.InReviewTasks;
-                    cumulativeInProgress = cumulativeInReview + snapshot.InProgressTasks;
-                    cumulativeTodo = cumulativeInProgress + snapshot.TodoTasks;
-
-                    _completedData.Add(new ChartDataPoint { X = snapshot.Date.ToString("M/d"), Y = snapshot.CompletedTasks });
-                    _inReviewData.Add(new ChartDataPoint { X = snapshot.Date.ToString("M/d"), Y = snapshot.InReviewTasks });
-                    _inProgressData.Add(new ChartDataPoint { X = snapshot.Date.ToString("M/d"), Y = snapshot.InProgressTasks });
-                    _todoData.Add(new ChartDataPoint { X = snapshot.Date.ToString("M/d"), Y = snapshot.TodoTasks });
+                    // 累積フローダイアグラムでは、各ステータスの値を積み重ねて表示
+                    // 下から順に: 完了 → レビュー中 → 進行中 → 未着手
+                    var dateLabel = snapshot.Date.ToString("M/d");
+                    
+                    _completedData.Add(new ChartDataPoint { X = dateLabel, Y = snapshot.CompletedTasks });
+                    _inReviewData.Add(new ChartDataPoint { X = dateLabel, Y = snapshot.InReviewTasks });
+                    _inProgressData.Add(new ChartDataPoint { X = dateLabel, Y = snapshot.InProgressTasks });
+                    _todoData.Add(new ChartDataPoint { X = dateLabel, Y = snapshot.TodoTasks });
                 }
             }
             else

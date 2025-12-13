@@ -65,8 +65,8 @@ public class TimeZoneServiceTests
         // Act
         var snapshotDate = service.GetSnapshotDate(utcDateTime);
 
-        // Assert
-        Assert.Equal(new DateTime(2025, 12, 11), snapshotDate);
+        // Assert - UTCの場合、offsetはTimeSpan.Zero
+        Assert.Equal(new DateTimeOffset(2025, 12, 11, 0, 0, 0, TimeSpan.Zero), snapshotDate);
     }
 
     [Fact(DisplayName = "UTC時刻から正しくスナップショット日付を計算できること（JST）")]
@@ -84,8 +84,8 @@ public class TimeZoneServiceTests
         // Act
         var snapshotDate = service.GetSnapshotDate(utcDateTime);
 
-        // Assert
-        Assert.Equal(new DateTime(2025, 12, 12), snapshotDate);
+        // Assert - JSTの場合、offsetはTimeSpan.FromHours(9)
+        Assert.Equal(new DateTimeOffset(2025, 12, 12, 0, 0, 0, TimeSpan.FromHours(9)), snapshotDate);
     }
 
     [Fact(DisplayName = "タイムゾーン境界をまたぐ日付変換が正しく動作すること")]
@@ -106,9 +106,9 @@ public class TimeZoneServiceTests
         var dateBefore = service.GetSnapshotDate(beforeBoundary);
         var dateAfter = service.GetSnapshotDate(afterBoundary);
 
-        // Assert
-        Assert.Equal(new DateTime(2025, 12, 11), dateBefore);
-        Assert.Equal(new DateTime(2025, 12, 12), dateAfter);
+        // Assert - JSTの場合、offsetはTimeSpan.FromHours(9)
+        Assert.Equal(new DateTimeOffset(2025, 12, 11, 0, 0, 0, TimeSpan.FromHours(9)), dateBefore);
+        Assert.Equal(new DateTimeOffset(2025, 12, 12, 0, 0, 0, TimeSpan.FromHours(9)), dateAfter);
     }
 
     [Fact(DisplayName = "UTC時刻を正しくローカル時刻に変換できること")]

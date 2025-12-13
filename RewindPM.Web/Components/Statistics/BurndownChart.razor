@@ -97,14 +97,28 @@ else
                 var startingTasks = snapshots.First().TotalTasks;
                 var totalDays = snapshots.Count;
 
-                _idealData = snapshots
-                    .Select((s, index) => new ChartDataPoint
-                    {
-                        X = s.Date.ToString("M/d"),
-                        // 線形に減少する理想線
-                        Y = Math.Max(0, startingTasks - (int)Math.Round((double)startingTasks * index / (totalDays - 1)))
-                    })
-                    .ToList();
+                // totalDaysが1の場合はゼロ除算を避けるため、理想線は開始タスク数のまま
+                if (totalDays <= 1)
+                {
+                    _idealData = snapshots
+                        .Select(s => new ChartDataPoint
+                        {
+                            X = s.Date.ToString("M/d"),
+                            Y = startingTasks
+                        })
+                        .ToList();
+                }
+                else
+                {
+                    _idealData = snapshots
+                        .Select((s, index) => new ChartDataPoint
+                        {
+                            X = s.Date.ToString("M/d"),
+                            // 線形に減少する理想線
+                            Y = Math.Max(0, startingTasks - (int)Math.Round((double)startingTasks * index / (totalDays - 1)))
+                        })
+                        .ToList();
+                }
             }
             else
             {
