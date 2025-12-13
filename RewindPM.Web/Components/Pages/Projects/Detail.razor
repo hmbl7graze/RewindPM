@@ -195,8 +195,9 @@ else
         var uri = new Uri(Navigation.Uri);
         var queryParams = QueryHelpers.ParseQuery(uri.Query);
         
+        // StringValuesから最初の値を明示的に取得（複数値の場合の予期しない動作を防ぐ）
         var currentTabQuery = queryParams.TryGetValue("tab", out var tabValue) 
-            ? tabValue.ToString().ToLower() 
+            ? tabValue.FirstOrDefault()?.ToLower() 
             : null;
 
         // Idパラメータが変更された場合、または tabクエリパラメータが変更された場合のみタブ状態を更新
@@ -208,21 +209,15 @@ else
             _previousId = Id;
             _previousTabQuery = currentTabQuery;
 
-            if (!string.IsNullOrEmpty(currentTabQuery))
+            // クエリパラメータに基づいてタブ状態を設定（nullまたは空の場合はデフォルト）
+            _viewType = currentTabQuery switch
             {
-                _viewType = currentTabQuery switch
-                {
-                    "gantt" => "Gantt",
-                    "kanban" => "Kanban",
-                    "statistics" => "Statistics",
-                    _ => "Gantt" // デフォルト
-                };
-            }
-            else
-            {
-                // クエリパラメータがない場合はデフォルトのGanttを使用
-                _viewType = "Gantt";
-            }
+                "gantt" => "Gantt",
+                "kanban" => "Kanban",
+                "statistics" => "Statistics",
+                null or "" => "Gantt", // デフォルト
+                _ => "Gantt" // 無効な値の場合もデフォルト
+            };
         }
     }
 
