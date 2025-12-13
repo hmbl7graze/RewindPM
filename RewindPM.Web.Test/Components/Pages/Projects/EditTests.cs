@@ -281,8 +281,8 @@ public class EditTests : Bunit.TestContext
         // (errorMessageは設定されるが、project == nullなので表示されない)
         Assert.Contains("プロジェクトが見つかりません", cut.Markup);
     }
-    [Fact(DisplayName = "UpdatedByが空の場合も削除コマンドが正しく送信される")]
-    public async Task Edit_SendsDeleteCommand_EvenIfUpdatedByIsEmpty()
+    [Fact(DisplayName = "削除コマンドが正しく送信される")]
+    public async Task Edit_SendsDeleteCommand_Correctly()
     {
         // Arrange
         var project = CreateTestProject();
@@ -300,10 +300,6 @@ public class EditTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Act
-        // UpdatedByを空にする
-        var updatedByInput = cut.Find("input#updatedBy");
-        await cut.InvokeAsync(() => updatedByInput.Change(""));
-
         // 削除ボタンをクリックしてモーダルを表示
         var deleteButton = cut.Find("button.btn-outline-danger");
         await cut.InvokeAsync(() => deleteButton.Click());
@@ -313,12 +309,11 @@ public class EditTests : Bunit.TestContext
         await cut.InvokeAsync(() => confirmDeleteButton.Click());
 
         // Assert
-        // 現状のバグを再現するため、本来は失敗するはずだが、修正後は成功すべき。
-        // ここでは「成功すること」を期待するテストを書くことで、修正前の失敗を確認する（TDD的アプローチ）
+        // DeletedByはサーバー側で"system"が設定される
         await _mediatorMock.Received(1).Send(
             Arg.Is<DeleteProjectCommand>(cmd =>
                 cmd.ProjectId == _testProjectId &&
-                !string.IsNullOrEmpty(cmd.DeletedBy)), // DeletedByが空でないことを確認
+                cmd.DeletedBy == "system"),
             Arg.Any<CancellationToken>());
     }
 }

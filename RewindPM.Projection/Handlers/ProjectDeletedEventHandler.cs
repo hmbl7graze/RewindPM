@@ -35,7 +35,6 @@ public class ProjectDeletedEventHandler : IEventHandler<ProjectDeleted>
             project.IsDeleted = true;
             project.DeletedAt = @event.OccurredAt;
             project.DeletedBy = @event.DeletedBy;
-            project.UpdatedAt = @event.OccurredAt;
 
             await _context.SaveChangesAsync();
         }

@@ -288,7 +288,7 @@ public class TaskAggregate : AggregateRoot
                 UpdatedBy = e.ChangedBy;
                 break;
 
-            case TaskDeleted e:
+            case TaskDeleted:
                 // 論理削除のため、Aggregate自体の状態は変更しない
                 // イベントストアに記録するのみ
                 break;

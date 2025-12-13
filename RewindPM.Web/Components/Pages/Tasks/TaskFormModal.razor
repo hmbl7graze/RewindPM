@@ -439,9 +439,10 @@
 
             try
             {
+                // TODO: 認証システム実装後、実際のログインユーザーIDを使用すること
                 var command = new DeleteTaskCommand(
                     TaskId: ExistingTask.Id,
-                    DeletedBy: "admin"
+                    DeletedBy: "system"
                 );
 
                 await Mediator.Send(command);
@@ -452,9 +453,6 @@
             {
                 errorMessage = $"削除に失敗しました: {ex.Message}";
                 deleteConfirmation = false;
-            }
-            finally
-            {
                 isSaving = false;
             }
         }

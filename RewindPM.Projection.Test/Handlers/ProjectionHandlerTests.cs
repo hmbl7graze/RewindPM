@@ -887,7 +887,6 @@ public class ProjectionHandlerTests : IAsyncDisposable
         Assert.True(deletedProject.IsDeleted);
         Assert.Equal(deletedAt, deletedProject.DeletedAt);
         Assert.Equal("user2", deletedProject.DeletedBy);
-        Assert.Equal(deletedAt, deletedProject.UpdatedAt);
     }
 
     [Fact(DisplayName = "ProjectDeletedイベントで存在しないプロジェクトを適切に処理すること")]
@@ -955,7 +954,6 @@ public class ProjectionHandlerTests : IAsyncDisposable
         Assert.True(deletedTask.IsDeleted);
         Assert.Equal(deletedAt, deletedTask.DeletedAt);
         Assert.Equal("user2", deletedTask.DeletedBy);
-        Assert.Equal(deletedAt, deletedTask.UpdatedAt);
     }
 
     [Fact(DisplayName = "TaskDeletedイベントで存在しないタスクを適切に処理すること")]

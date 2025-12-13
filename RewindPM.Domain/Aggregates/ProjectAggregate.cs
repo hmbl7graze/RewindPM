@@ -143,7 +143,7 @@ public class ProjectAggregate : AggregateRoot
                 UpdatedBy = e.UpdatedBy;
                 break;
 
-            case ProjectDeleted e:
+            case ProjectDeleted:
                 // 論理削除のため、Aggregate自体の状態は変更しない
                 // イベントストアに記録するのみ
                 break;

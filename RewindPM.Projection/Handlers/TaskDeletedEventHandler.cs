@@ -35,7 +35,6 @@ public class TaskDeletedEventHandler : IEventHandler<TaskDeleted>
             task.IsDeleted = true;
             task.DeletedAt = @event.OccurredAt;
             task.DeletedBy = @event.DeletedBy;
-            task.UpdatedAt = @event.OccurredAt;
 
             await _context.SaveChangesAsync();
         }
