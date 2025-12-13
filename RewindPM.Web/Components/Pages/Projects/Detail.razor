@@ -154,6 +154,10 @@ else
     {
         _viewType = viewType;
 
+        // ビュー切り替え時にモーダルを閉じる
+        showTaskModal = false;
+        selectedTask = null;
+
         // URLクエリパラメータを更新
         var uri = Navigation.GetUriWithQueryParameter("tab", viewType.ToLower());
         Navigation.NavigateTo(uri, false);
