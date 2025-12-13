@@ -42,8 +42,8 @@ public class ChangeTaskScheduleCommandHandlerTests
         _repository.GetByIdAsync<TaskAggregate>(taskId)
             .Returns(task);
 
-        var newStartDate = DateTime.UtcNow.AddDays(5);
-        var newEndDate = DateTime.UtcNow.AddDays(15);
+        var newStartDate = DateTimeOffset.UtcNow.AddDays(5);
+        var newEndDate = DateTimeOffset.UtcNow.AddDays(15);
         var newEstimatedHours = 60;
 
         var command = new ChangeTaskScheduleCommand(
@@ -75,8 +75,8 @@ public class ChangeTaskScheduleCommandHandlerTests
 
         var command = new ChangeTaskScheduleCommand(
             taskId,
-            DateTime.UtcNow,
-            DateTime.UtcNow.AddDays(7),
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddDays(7),
             40,
             "user1"
         );
@@ -93,7 +93,7 @@ public class ChangeTaskScheduleCommandHandlerTests
     public async Task Handle_ShouldUseDateTimeProvider()
     {
         // Arrange
-        var fixedTime = new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc);
+        var fixedTime = new DateTimeOffset(new DateTime(2025, 1, 1, 10, 0, 0, DateTimeKind.Utc));
         _dateTimeProvider.UtcNow.Returns(fixedTime);
 
         var taskId = Guid.NewGuid();
@@ -102,7 +102,7 @@ public class ChangeTaskScheduleCommandHandlerTests
             Guid.NewGuid(),
             "Test Task",
             "Description",
-            new ScheduledPeriod(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), 40),
+            new ScheduledPeriod(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(7), 40),
             "user1",
             _dateTimeProvider
         );
@@ -112,8 +112,8 @@ public class ChangeTaskScheduleCommandHandlerTests
 
         var command = new ChangeTaskScheduleCommand(
             taskId,
-            DateTime.UtcNow.AddDays(5),
-            DateTime.UtcNow.AddDays(15),
+            DateTimeOffset.UtcNow.AddDays(5),
+            DateTimeOffset.UtcNow.AddDays(15),
             60,
             "user1"
         );
