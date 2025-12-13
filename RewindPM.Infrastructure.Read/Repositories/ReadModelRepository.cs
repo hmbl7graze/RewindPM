@@ -36,6 +36,7 @@ public class ReadModelRepository : IReadModelRepository
     public async Task<ProjectDto?> GetProjectByIdAsync(Guid projectId)
     {
         var project = await _context.Projects
+            .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == projectId && !p.IsDeleted);
 
         return project == null ? null : MapToProjectDto(project);

@@ -1,0 +1,192 @@
+@using RewindPM.Web.Components.Shared
+@using MediatR
+@using RewindPM.Application.Write.Commands.Projects
+@inject IMediator Mediator
+
+<Modal Title="@ModalTitle" @bind-IsVisible="IsVisible" Size="ModalSize.Large">
+    <div class="project-info-modal-content">
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger mb-3">
+                <strong>エラー:</strong> @errorMessage
+            </div>
+        }
+
+        @if (isEditMode)
+        {
+            <!-- 編集モード -->
+            <EditForm Model="@formModel" OnValidSubmit="@HandleSave">
+                <DataAnnotationsValidator />
+                
+                <div class="form-group mb-3">
+                    <label for="title" class="form-label">プロジェクト名</label>
+                    <InputText id="title" class="form-control" @bind-Value="formModel.Title" />
+                    <ValidationMessage For="@(() => formModel.Title)" />
+                </div>
+
+                <div class="form-group mb-3">
+                    <label for="description" class="form-label">説明</label>
+                    <InputTextArea id="description" class="form-control" rows="8" @bind-Value="formModel.Description" />
+                    <ValidationMessage For="@(() => formModel.Description)" />
+                </div>
+
+                <div class="modal-footer-actions">
+                    <button type="button" class="btn btn-secondary" @onclick="CancelEdit" disabled="@isSaving">
+                        キャンセル
+                    </button>
+                    @if (isSaving)
+                    {
+                        <button class="btn btn-primary" type="button" disabled>
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            保存中...
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="submit" class="btn btn-primary">
+                            保存
+                        </button>
+                    }
+                </div>
+            </EditForm>
+        }
+        else
+        {
+            <!-- 表示モード -->
+            <div class="project-info-display">
+                <div class="info-section">
+                    <h4 class="info-label">プロジェクト名</h4>
+                    <p class="info-value">@ProjectTitle</p>
+                </div>
+
+                <div class="info-section">
+                    <h4 class="info-label">説明</h4>
+                    @if (!string.IsNullOrWhiteSpace(ProjectDescription))
+                    {
+                        <p class="info-value description-text">@ProjectDescription</p>
+                    }
+                    else
+                    {
+                        <p class="info-value text-muted">説明がありません</p>
+                    }
+                </div>
+
+                <div class="modal-footer-actions">
+                    <button type="button" class="btn btn-primary" @onclick="EnterEditMode">
+                        編集
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</Modal>
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    [Parameter]
+    public Guid ProjectId { get; set; }
+
+    [Parameter]
+    public string? ProjectTitle { get; set; }
+
+    [Parameter]
+    public string? ProjectDescription { get; set; }
+
+    [Parameter]
+    public EventCallback OnSuccess { get; set; }
+
+    private bool isEditMode = false;
+    private bool isSaving = false;
+    private string? errorMessage;
+    private ProjectFormModel formModel = new();
+
+    private string ModalTitle => isEditMode ? "プロジェクト編集" : "プロジェクト情報";
+
+    protected override void OnParametersSet()
+    {
+        // モーダルが開かれたときに表示モードにリセット
+        if (IsVisible && isEditMode)
+        {
+            isEditMode = false;
+        }
+
+        // フォームモデルを初期化
+        formModel = new ProjectFormModel
+        {
+            Title = ProjectTitle ?? string.Empty,
+            Description = ProjectDescription ?? string.Empty
+        };
+
+        errorMessage = null;
+    }
+
+    private void EnterEditMode()
+    {
+        isEditMode = true;
+        // フォームモデルを現在の値で初期化
+        formModel = new ProjectFormModel
+        {
+            Title = ProjectTitle ?? string.Empty,
+            Description = ProjectDescription ?? string.Empty
+        };
+    }
+
+    private void CancelEdit()
+    {
+        isEditMode = false;
+        errorMessage = null;
+        // フォームモデルをリセット
+        formModel = new ProjectFormModel
+        {
+            Title = ProjectTitle ?? string.Empty,
+            Description = ProjectDescription ?? string.Empty
+        };
+    }
+
+    private async Task HandleSave()
+    {
+        try
+        {
+            isSaving = true;
+            errorMessage = null;
+
+            var command = new UpdateProjectCommand(
+                ProjectId,
+                formModel.Title,
+                formModel.Description,
+                "current-user" // TODO: 実際のユーザーIDを使用
+            );
+
+            await Mediator.Send(command);
+
+            // 成功時
+            isEditMode = false;
+            await OnSuccess.InvokeAsync();
+            await CloseModal();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"プロジェクトの更新に失敗しました: {ex.Message}";
+            isSaving = false;
+        }
+    }
+
+    private async Task CloseModal()
+    {
+        isEditMode = false;
+        errorMessage = null;
+        isSaving = false;
+        await IsVisibleChanged.InvokeAsync(false);
+    }
+
+    public class ProjectFormModel
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+    }
+}
