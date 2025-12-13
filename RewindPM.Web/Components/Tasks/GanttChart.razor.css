@@ -210,8 +210,8 @@
 
 /* Task Bars */
 .gantt-bar {
-    height: 18px;
-    /* Slightly smaller to fit two in 48px */
+    height: 10px;
+    /* Thinner bars for better visual grouping */
     border-radius: var(--radius-pill);
     position: relative;
     box-sizing: border-box;
@@ -224,20 +224,22 @@
 
 /* Scheduled Bar - Always on top */
 .gantt-bar-scheduled {
-    background: var(--border-color);
-    opacity: 0.8;
+    background: #9ca3af;
+    /* Medium gray for better contrast against white background */
+    opacity: 1;
     align-self: start;
-    margin-top: 4px;
-    /* Space from top border */
-    /* Remove negative margin */
+    margin-top: 13px;
+    margin-bottom: 1px;
+    /* Creates a small gap between scheduled and actual bars */
 }
 
 /* Actual Bar - Always on bottom */
 .gantt-bar-actual {
     background: var(--primary);
     align-self: end;
-    margin-bottom: 4px;
-    /* Space from bottom border */
+    margin-top: 1px;
+    margin-bottom: 13px;
+    /* Creates a small gap between scheduled and actual bars */
 }
 
 .gantt-bar:hover {
