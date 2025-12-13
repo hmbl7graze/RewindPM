@@ -224,11 +224,12 @@
 
 /* Scheduled Bar - Always on top */
 .gantt-bar-scheduled {
-    background: #9ca3af;
-    /* Medium gray for better contrast against white background */
+    background: var(--text-muted);
+    /* Use system color for consistency with design system */
     opacity: 1;
     align-self: start;
-    margin-top: 13px;
+    margin-top: 11px;
+    /* Vertical centering: (48px row height - 12px bar - 12px bar - 2px gap) / 2 = 11px */
     margin-bottom: 1px;
     /* Creates a small gap between scheduled and actual bars */
 }
@@ -238,8 +239,9 @@
     background: var(--primary);
     align-self: end;
     margin-top: 1px;
-    margin-bottom: 13px;
     /* Creates a small gap between scheduled and actual bars */
+    margin-bottom: 11px;
+    /* Vertical centering: (48px row height - 12px bar - 12px bar - 2px gap) / 2 = 11px */
 }
 
 .gantt-bar:hover {
