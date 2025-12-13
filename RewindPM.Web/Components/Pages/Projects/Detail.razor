@@ -147,6 +147,8 @@ else
     
     // ビュー切り替え用の状態
     private string _viewType = "Gantt";
+    private Guid? _previousId = null; // 前回のIdパラメータ値
+    private string? _previousTabQuery = null; // 前回のtabクエリパラメータ値
 
     private void ToggleView(string viewType)
     {
@@ -155,6 +157,9 @@ else
         // URLクエリパラメータを更新
         var uri = Navigation.GetUriWithQueryParameter("tab", viewType.ToLower());
         Navigation.NavigateTo(uri, false);
+        
+        // 前回のクエリパラメータを更新（OnParametersSetでの二重設定を防ぐ）
+        _previousTabQuery = viewType.ToLower();
     }
 
     private async Task HandleTaskStatusChanged((TaskDto task, TaskStatus newStatus) changeData)
@@ -184,27 +189,40 @@ else
         }
     }
 
-    protected override async Task OnParametersSetAsync()
+    protected override void OnParametersSet()
     {
         // URLクエリパラメータからタブの状態を読み取る
         var uri = new Uri(Navigation.Uri);
         var queryParams = QueryHelpers.ParseQuery(uri.Query);
+        
+        var currentTabQuery = queryParams.TryGetValue("tab", out var tabValue) 
+            ? tabValue.ToString().ToLower() 
+            : null;
 
-        if (queryParams.TryGetValue("tab", out var tabValue))
+        // Idパラメータが変更された場合、または tabクエリパラメータが変更された場合のみタブ状態を更新
+        var isIdChanged = _previousId != Id;
+        var isTabQueryChanged = _previousTabQuery != currentTabQuery;
+
+        if (isIdChanged || isTabQueryChanged)
         {
-            var tab = tabValue.ToString().ToLower();
-            _viewType = tab switch
+            _previousId = Id;
+            _previousTabQuery = currentTabQuery;
+
+            if (!string.IsNullOrEmpty(currentTabQuery))
             {
-                "gantt" => "Gantt",
-                "kanban" => "Kanban",
-                "statistics" => "Statistics",
-                _ => "Gantt" // デフォルト
-            };
-        }
-        else
-        {
-            // クエリパラメータがない場合はデフォルトのGanttを使用
-            _viewType = "Gantt";
+                _viewType = currentTabQuery switch
+                {
+                    "gantt" => "Gantt",
+                    "kanban" => "Kanban",
+                    "statistics" => "Statistics",
+                    _ => "Gantt" // デフォルト
+                };
+            }
+            else
+            {
+                // クエリパラメータがない場合はデフォルトのGanttを使用
+                _viewType = "Gantt";
+            }
         }
     }
 
