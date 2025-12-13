@@ -10,6 +10,7 @@
 @using RewindPM.Web.Components.Shared
 @using RewindPM.Web.Components.Statistics
 @using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus
+@using Microsoft.AspNetCore.WebUtilities
 @inject IMediator Mediator
 @inject NavigationManager Navigation
 @inject ILogger<Detail> Logger
@@ -150,6 +151,10 @@ else
     private void ToggleView(string viewType)
     {
         _viewType = viewType;
+
+        // URLクエリパラメータを更新
+        var uri = Navigation.GetUriWithQueryParameter("tab", viewType.ToLower());
+        Navigation.NavigateTo(uri, false);
     }
 
     private async Task HandleTaskStatusChanged((TaskDto task, TaskStatus newStatus) changeData)
@@ -176,6 +181,30 @@ else
         {
             Logger.LogError(ex, "Failed to update task status for task {TaskId}", changeData.task.Id);
             errorMessage = "ステータスの更新に失敗しました。もう一度お試しください。";
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // URLクエリパラメータからタブの状態を読み取る
+        var uri = new Uri(Navigation.Uri);
+        var queryParams = QueryHelpers.ParseQuery(uri.Query);
+
+        if (queryParams.TryGetValue("tab", out var tabValue))
+        {
+            var tab = tabValue.ToString().ToLower();
+            _viewType = tab switch
+            {
+                "gantt" => "Gantt",
+                "kanban" => "Kanban",
+                "statistics" => "Statistics",
+                _ => "Gantt" // デフォルト
+            };
+        }
+        else
+        {
+            // クエリパラメータがない場合はデフォルトのGanttを使用
+            _viewType = "Gantt";
         }
     }
 
