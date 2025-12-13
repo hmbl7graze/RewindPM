@@ -21,6 +21,10 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 3,
             DelayedTasks = 1,
             AverageDelayDays = 2.5,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 
@@ -45,6 +49,10 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 0,
             DelayedTasks = 0,
             AverageDelayDays = 0,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 
@@ -69,6 +77,10 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 1.0,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 
@@ -93,6 +105,10 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 5,
             DelayedTasks = 0,
             AverageDelayDays = 0,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 
@@ -117,6 +133,10 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 1.0,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 
@@ -141,6 +161,10 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 1.0,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 
@@ -165,6 +189,10 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2.0,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 
@@ -189,6 +217,10 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 0,
             DelayedTasks = 0,
             AverageDelayDays = 0,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 
@@ -213,6 +245,10 @@ public class ProjectStatisticsDetailDtoTests
             OnTimeTasks = 0,
             DelayedTasks = 1,
             AverageDelayDays = 1.5,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 

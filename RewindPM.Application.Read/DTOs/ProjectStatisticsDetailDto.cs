@@ -22,6 +22,12 @@ public record ProjectStatisticsDetailDto
     public required int DelayedTasks { get; init; }
     public required double AverageDelayDays { get; init; }
 
+    // 見積もり精度統計（作業期間ベース）
+    public required int AccurateEstimateTasks { get; init; }
+    public required int OverEstimateTasks { get; init; }
+    public required int UnderEstimateTasks { get; init; }
+    public required double AverageEstimateErrorDays { get; init; }
+
     // 統計の基準日（リワインド対応）
     public required DateTimeOffset AsOfDate { get; init; }
 
@@ -57,6 +63,21 @@ public record ProjectStatisticsDetailDto
             var completedCount = CompletedTasks;
             return completedCount > 0
                 ? Math.Round((double)OnTimeTasks / completedCount * 100, 1)
+                : 0;
+        }
+    }
+
+    /// <summary>
+    /// 見積もり精度率（%）
+    /// 作業期間の見積もりが正確だったタスクの割合
+    /// </summary>
+    public double EstimateAccuracyRate
+    {
+        get
+        {
+            var completedCount = CompletedTasks;
+            return completedCount > 0
+                ? Math.Round((double)AccurateEstimateTasks / completedCount * 100, 1)
                 : 0;
         }
     }

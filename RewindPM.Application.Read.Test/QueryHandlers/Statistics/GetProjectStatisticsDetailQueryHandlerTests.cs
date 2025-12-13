@@ -35,6 +35,10 @@ public class GetProjectStatisticsDetailQueryHandlerTests
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2.5,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate =  DateTimeOffset.UtcNow
         };
 
@@ -81,6 +85,10 @@ public class GetProjectStatisticsDetailQueryHandlerTests
             OnTimeTasks = 2,
             DelayedTasks = 0,
             AverageDelayDays = 0,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = asOfDate
         };
 
@@ -151,6 +159,10 @@ public class GetProjectStatisticsDetailQueryHandlerTests
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2.5,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
 

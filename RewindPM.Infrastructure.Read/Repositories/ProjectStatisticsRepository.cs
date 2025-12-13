@@ -109,6 +109,10 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
                     OnTimeTasks = 0,
                     DelayedTasks = 0,
                     AverageDelayDays = 0,
+                    AccurateEstimateTasks = 0,
+                    OverEstimateTasks = 0,
+                    UnderEstimateTasks = 0,
+                    AverageEstimateErrorDays = 0,
                     AsOfDate = asOfDate
                 };
             }
@@ -160,6 +164,53 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
                     .Average(t => (t.ActualEndDate!.Value - t.ScheduledEndDate!.Value).TotalDays), 1)
                 : 0;
 
+            // 見積もり精度の計算（作業期間ベース）
+            var tasksWithDuration = completedTasksList
+                .Where(t => t.ScheduledStartDate.HasValue
+                         && t.ScheduledEndDate.HasValue
+                         && t.ActualStartDate.HasValue
+                         && t.ActualEndDate.HasValue)
+                .ToList();
+
+            var accurateEstimateTasks = tasksWithDuration
+                .Count(t =>
+                {
+                    var plannedDuration = (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays;
+                    var actualDuration = (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays;
+                    var errorDays = Math.Abs(actualDuration - plannedDuration);
+                    var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
+                    // 誤差が±10%以内または±1日以内なら正確とみなす
+                    return errorRate <= 0.1 || errorDays <= 1;
+                });
+
+            var overEstimateTasks = tasksWithDuration
+                .Count(t =>
+                {
+                    var plannedDuration = (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays;
+                    var actualDuration = (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays;
+                    var errorDays = Math.Abs(actualDuration - plannedDuration);
+                    var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
+                    // 見積もりが正確でなく、実際が予定より短い
+                    return errorRate > 0.1 && errorDays > 1 && actualDuration < plannedDuration;
+                });
+
+            var underEstimateTasks = tasksWithDuration
+                .Count(t =>
+                {
+                    var plannedDuration = (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays;
+                    var actualDuration = (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays;
+                    var errorDays = Math.Abs(actualDuration - plannedDuration);
+                    var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
+                    // 見積もりが正確でなく、実際が予定より長い
+                    return errorRate > 0.1 && errorDays > 1 && actualDuration > plannedDuration;
+                });
+
+            var averageEstimateErrorDays = tasksWithDuration.Count > 0
+                ? Math.Round(tasksWithDuration
+                    .Average(t => (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays
+                               - (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays), 1)
+                : 0;
+
             return new ProjectStatisticsDetailDto
             {
                 TotalTasks = totalTasks,
@@ -173,6 +224,10 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
                 OnTimeTasks = onTimeTasks,
                 DelayedTasks = delayedTasks,
                 AverageDelayDays = averageDelayDays,
+                AccurateEstimateTasks = accurateEstimateTasks,
+                OverEstimateTasks = overEstimateTasks,
+                UnderEstimateTasks = underEstimateTasks,
+                AverageEstimateErrorDays = averageEstimateErrorDays,
                 AsOfDate = asOfDate
             };
         }
@@ -227,6 +282,53 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
                 .Average(t => (t.ActualEndDate!.Value - t.ScheduledEndDate!.Value).TotalDays), 1)
             : 0;
 
+        // 見積もり精度の計算（作業期間ベース）
+        var tasksWithDuration2 = completedTasksList2
+            .Where(t => t.ScheduledStartDate.HasValue
+                     && t.ScheduledEndDate.HasValue
+                     && t.ActualStartDate.HasValue
+                     && t.ActualEndDate.HasValue)
+            .ToList();
+
+        var accurateEstimateTasks2 = tasksWithDuration2
+            .Count(t =>
+            {
+                var plannedDuration = (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays;
+                var actualDuration = (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays;
+                var errorDays = Math.Abs(actualDuration - plannedDuration);
+                var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
+                // 誤差が±10%以内または±1日以内なら正確とみなす
+                return errorRate <= 0.1 || errorDays <= 1;
+            });
+
+        var overEstimateTasks2 = tasksWithDuration2
+            .Count(t =>
+            {
+                var plannedDuration = (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays;
+                var actualDuration = (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays;
+                var errorDays = Math.Abs(actualDuration - plannedDuration);
+                var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
+                // 見積もりが正確でなく、実際が予定より短い
+                return errorRate > 0.1 && errorDays > 1 && actualDuration < plannedDuration;
+            });
+
+        var underEstimateTasks2 = tasksWithDuration2
+            .Count(t =>
+            {
+                var plannedDuration = (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays;
+                var actualDuration = (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays;
+                var errorDays = Math.Abs(actualDuration - plannedDuration);
+                var errorRate = plannedDuration > 0 ? errorDays / plannedDuration : 0;
+                // 見積もりが正確でなく、実際が予定より長い
+                return errorRate > 0.1 && errorDays > 1 && actualDuration > plannedDuration;
+            });
+
+        var averageEstimateErrorDays2 = tasksWithDuration2.Count > 0
+            ? Math.Round(tasksWithDuration2
+                .Average(t => (t.ActualEndDate!.Value - t.ActualStartDate!.Value).TotalDays
+                           - (t.ScheduledEndDate!.Value - t.ScheduledStartDate!.Value).TotalDays), 1)
+            : 0;
+
         return new ProjectStatisticsDetailDto
         {
             TotalTasks = totalTasks2,
@@ -240,6 +342,10 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
             OnTimeTasks = onTimeTasks2,
             DelayedTasks = delayedTasks2,
             AverageDelayDays = averageDelayDays2,
+            AccurateEstimateTasks = accurateEstimateTasks2,
+            OverEstimateTasks = overEstimateTasks2,
+            UnderEstimateTasks = underEstimateTasks2,
+            AverageEstimateErrorDays = averageEstimateErrorDays2,
             AsOfDate = asOfDate
         };
     }

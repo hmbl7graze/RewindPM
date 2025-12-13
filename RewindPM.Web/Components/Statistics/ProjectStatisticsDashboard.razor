@@ -110,6 +110,37 @@ else if (_statistics != null)
                     </div>
                 </div>
             </div>
+
+            <!-- 見積もり精度カード -->
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <h4>見積もり精度</h4>
+                </div>
+                <div class="stat-card-content">
+                    <div class="stat-primary">
+                        <span class="stat-value @GetEstimateAccuracyClass()">@_statistics.EstimateAccuracyRate%</span>
+                        <span class="stat-label">見積もり精度率</span>
+                    </div>
+                    <div class="stat-details">
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">正確:</span>
+                            <span class="stat-detail-value stat-good">@_statistics.AccurateEstimateTasks</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">過大見積:</span>
+                            <span class="stat-detail-value stat-under">@_statistics.OverEstimateTasks</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">過小見積:</span>
+                            <span class="stat-detail-value stat-over">@_statistics.UnderEstimateTasks</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label">平均誤差:</span>
+                            <span class="stat-detail-value">@_statistics.AverageEstimateErrorDays 日</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         @if (_statistics.AsOfDate.Date < DateTimeOffset.UtcNow.Date)
@@ -236,6 +267,18 @@ else
         if (_statistics.OnTimeRate >= 80)
             return "stat-good";
         else if (_statistics.OnTimeRate >= 60)
+            return "stat-warning";
+
+        return "stat-bad";
+    }
+
+    private string GetEstimateAccuracyClass()
+    {
+        if (_statistics == null) return "";
+
+        if (_statistics.EstimateAccuracyRate >= 80)
+            return "stat-good";
+        else if (_statistics.EstimateAccuracyRate >= 60)
             return "stat-warning";
 
         return "stat-bad";

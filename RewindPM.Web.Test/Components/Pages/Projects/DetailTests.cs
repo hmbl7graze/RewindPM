@@ -97,6 +97,10 @@ public class DetailTests : Bunit.TestContext
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = DateTimeOffset.UtcNow
         };
     }
