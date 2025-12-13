@@ -84,4 +84,19 @@ public class TaskEntity
     /// 更新者
     /// </summary>
     public string? UpdatedBy { get; set; }
+
+    /// <summary>
+    /// 削除フラグ（論理削除）
+    /// </summary>
+    public bool IsDeleted { get; set; }
+
+    /// <summary>
+    /// 削除日時（UTC）
+    /// </summary>
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    /// <summary>
+    /// 削除者
+    /// </summary>
+    public string? DeletedBy { get; set; }
 }

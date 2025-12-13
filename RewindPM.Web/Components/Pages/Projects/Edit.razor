@@ -1,6 +1,8 @@
 @page "/projects/{id:guid}/edit"
+@rendermode InteractiveServer
 @using MediatR
 @using RewindPM.Application.Read.Queries.Projects
+@using RewindPM.Application.Read.Queries.Tasks
 @using RewindPM.Application.Write.Commands.Projects
 @inject IMediator Mediator
 @inject NavigationManager Navigation
@@ -22,7 +24,12 @@ else
 {
     <div class="row">
         <div class="col-md-6">
-            <EditForm Model="@formModel" OnValidSubmit="@HandleSubmit" FormName="EditProjectForm">
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger mb-3">@errorMessage</div>
+            }
+
+            <EditForm Model="@formModel" OnValidSubmit="@HandleSubmit">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
 
@@ -41,39 +48,61 @@ else
                     <InputText id="updatedBy" class="form-control" @bind-Value="formModel.UpdatedBy" />
                 </div>
 
-                @if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    <div class="alert alert-danger">@errorMessage</div>
-                }
+                <div class="d-flex justify-content-end gap-2">
+                    @if (isSubmitting)
+                    {
+                        <button class="btn btn-primary" type="button" disabled>
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            更新中...
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="submit" class="btn btn-primary">更新</button>
+                        <a href="/projects/@Id" class="btn btn-secondary">キャンセル</a>
+                    }
+                </div>
+            </EditForm>
 
-                @if (isSubmitting)
+            <hr class="my-4" />
+
+            <div class="d-flex justify-content-start">
+                @if (taskCount > 0)
                 {
-                    <button class="btn btn-primary" type="button" disabled>
-                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                        更新中...
+                    <button class="btn btn-outline-danger" type="button" @onclick="ShowDeleteModal" disabled="@isSubmitting">
+                        削除（@taskCount 個のタスクも削除されます）
                     </button>
                 }
                 else
                 {
-                    <button type="submit" class="btn btn-primary">更新</button>
-                    <a href="/projects/@Id" class="btn btn-secondary">キャンセル</a>
+                    <button class="btn btn-outline-danger" type="button" @onclick="ShowDeleteModal" disabled="@isSubmitting">
+                        削除
+                    </button>
                 }
-            </EditForm>
+            </div>
         </div>
     </div>
 }
+
+<!-- 削除確認モーダル -->
+<ProjectDeleteModal
+    @bind-IsVisible="showDeleteModal"
+    ProjectId="@Id"
+    TaskCount="@taskCount"
+    OnSuccess="@HandleDeleteSuccess"
+    OnCancel="@CloseDeleteModal" />
 
 @code {
     [Parameter]
     public Guid Id { get; set; }
 
     private ProjectDto? project;
-
-    [SupplyParameterFromForm]
-    private ProjectFormModel formModel { get; set; } = null!;
+    private ProjectFormModel formModel { get; set; } = new ProjectFormModel();
 
     private bool isLoading = true;
     private bool isSubmitting = false;
+    private bool showDeleteModal = false;
+    private int taskCount = 0;
     private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
@@ -83,9 +112,13 @@ else
             var query = new GetProjectByIdQuery(Id);
             project = await Mediator.Send(query);
 
-            // フォーム送信時（POST）は既にformModelに値が入っているので、初期化しない
-            // 初回表示時（GET）のみformModelを初期化する
-            if (project != null && formModel == null)
+            // タスク数を取得
+            var tasksQuery = new GetTasksByProjectIdQuery(Id);
+            var tasks = await Mediator.Send(tasksQuery);
+            taskCount = tasks.Count;
+
+            // プロジェクトデータでformModelを初期化
+            if (project != null)
             {
                 formModel = new ProjectFormModel
                 {
@@ -129,6 +162,22 @@ else
             errorMessage = $"プロジェクトの更新に失敗しました: {ex.Message}";
             isSubmitting = false;
         }
+    }
+
+    private void ShowDeleteModal()
+    {
+        showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+    }
+
+    private void HandleDeleteSuccess()
+    {
+        // 削除成功後、プロジェクト一覧にリダイレクト
+        Navigation.NavigateTo("/projects");
     }
 
     public class ProjectFormModel

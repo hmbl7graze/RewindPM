@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using RewindPM.Application.Read.DTOs;
 using RewindPM.Application.Read.Queries.Projects;
+using RewindPM.Application.Read.Queries.Tasks;
 using RewindPM.Application.Write.Commands.Projects;
 using RewindPM.Web.Components.Pages.Projects;
 
@@ -83,6 +84,9 @@ public class EditTests : Bunit.TestContext
         _mediatorMock
             .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
 
         // Act
         var cut = RenderComponent<Edit>(parameters => parameters
@@ -106,6 +110,9 @@ public class EditTests : Bunit.TestContext
         _mediatorMock
             .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
         _mediatorMock
             .Send(Arg.Any<UpdateProjectCommand>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
@@ -138,6 +145,9 @@ public class EditTests : Bunit.TestContext
             .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(project);
         _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+        _mediatorMock
             .Send(Arg.Any<UpdateProjectCommand>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
@@ -160,6 +170,9 @@ public class EditTests : Bunit.TestContext
         _mediatorMock
             .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
         _mediatorMock
             .Send(Arg.Any<UpdateProjectCommand>(), Arg.Any<CancellationToken>())
             .Returns<Task>(_ => throw new Exception("Update failed"));
@@ -184,6 +197,9 @@ public class EditTests : Bunit.TestContext
         _mediatorMock
             .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
 
         var tcs = new TaskCompletionSource();
         _mediatorMock
@@ -213,6 +229,9 @@ public class EditTests : Bunit.TestContext
         _mediatorMock
             .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
 
         // Act
         var cut = RenderComponent<Edit>(parameters => parameters
@@ -231,6 +250,9 @@ public class EditTests : Bunit.TestContext
         _mediatorMock
             .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
 
         // Act
         var cut = RenderComponent<Edit>(parameters => parameters
@@ -258,5 +280,40 @@ public class EditTests : Bunit.TestContext
         // "プロジェクトが見つかりません"が表示される
         // (errorMessageは設定されるが、project == nullなので表示されない)
         Assert.Contains("プロジェクトが見つかりません", cut.Markup);
+    }
+    [Fact(DisplayName = "削除コマンドが正しく送信される")]
+    public async Task Edit_SendsDeleteCommand_Correctly()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+        _mediatorMock
+            .Send(Arg.Any<DeleteProjectCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var cut = RenderComponent<Edit>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act
+        // 削除ボタンをクリックしてモーダルを表示
+        var deleteButton = cut.Find("button.btn-outline-danger");
+        await cut.InvokeAsync(() => deleteButton.Click());
+
+        // モーダルの削除ボタンをクリック
+        var confirmDeleteButton = cut.FindAll("button.btn-danger").Last(); // 最後のボタンが確認ボタン
+        await cut.InvokeAsync(() => confirmDeleteButton.Click());
+
+        // Assert
+        // DeletedByはサーバー側で"system"が設定される
+        await _mediatorMock.Received(1).Send(
+            Arg.Is<DeleteProjectCommand>(cmd =>
+                cmd.ProjectId == _testProjectId &&
+                cmd.DeletedBy == "system"),
+            Arg.Any<CancellationToken>());
     }
 }

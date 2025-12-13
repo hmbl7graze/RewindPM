@@ -226,4 +226,70 @@ public class ProjectAggregateTests
         Assert.Equal(1, project.Version); // 2つのイベント = Version 1 (0-indexed)
         Assert.Empty(project.UncommittedEvents); // リプレイ時は未コミットイベントなし
     }
+
+    [Fact(DisplayName = "プロジェクトを削除できる")]
+    public void Delete_WithValidValues_ShouldDeleteProject()
+    {
+        // Arrange
+        var project = ProjectAggregate.Create(Guid.NewGuid(), "プロジェクト", "説明", "user123", _dateTimeProvider);
+        project.ClearUncommittedEvents();
+
+        var deletedBy = "user456";
+
+        // Act
+        project.Delete(deletedBy, _dateTimeProvider);
+
+        // Assert
+        // Aggregateの状態は変わらない（論理削除はProjectionで処理）
+        Assert.Equal("プロジェクト", project.Title);
+        Assert.Single(project.UncommittedEvents);
+    }
+
+    [Fact(DisplayName = "プロジェクト削除時にProjectDeletedイベントが発生する")]
+    public void Delete_ShouldRaiseProjectDeletedEvent()
+    {
+        // Arrange
+        var project = ProjectAggregate.Create(Guid.NewGuid(), "プロジェクト", "説明", "user123", _dateTimeProvider);
+        project.ClearUncommittedEvents();
+
+        var deletedBy = "user456";
+
+        // Act
+        project.Delete(deletedBy, _dateTimeProvider);
+
+        // Assert
+        Assert.Single(project.UncommittedEvents);
+        var @event = project.UncommittedEvents.First();
+        Assert.IsType<ProjectDeleted>(@event);
+
+        var projectDeletedEvent = (ProjectDeleted)@event;
+        Assert.Equal(project.Id, projectDeletedEvent.AggregateId);
+        Assert.Equal(deletedBy, projectDeletedEvent.DeletedBy);
+    }
+
+    [Fact(DisplayName = "削除者がnullの場合、DomainExceptionをスローする")]
+    public void Delete_WhenDeletedByIsNull_ShouldThrowDomainException()
+    {
+        // Arrange
+        var project = ProjectAggregate.Create(Guid.NewGuid(), "プロジェクト", "説明", "user123", _dateTimeProvider);
+        string deletedBy = null!;
+
+        // Act & Assert
+        var exception = Assert.Throws<DomainException>(() =>
+            project.Delete(deletedBy, _dateTimeProvider));
+        Assert.Equal("削除者のユーザーIDは必須です", exception.Message);
+    }
+
+    [Fact(DisplayName = "削除者が空文字列の場合、DomainExceptionをスローする")]
+    public void Delete_WhenDeletedByIsEmpty_ShouldThrowDomainException()
+    {
+        // Arrange
+        var project = ProjectAggregate.Create(Guid.NewGuid(), "プロジェクト", "説明", "user123", _dateTimeProvider);
+        var deletedBy = "";
+
+        // Act & Assert
+        var exception = Assert.Throws<DomainException>(() =>
+            project.Delete(deletedBy, _dateTimeProvider));
+        Assert.Equal("削除者のユーザーIDは必須です", exception.Message);
+    }
 }

@@ -39,4 +39,12 @@ public interface IEventStore
     /// <param name="to">終了日時（nullの場合は最後まで）</param>
     /// <returns>条件に一致するイベントのリスト（時系列順）</returns>
     Task<List<IDomainEvent>> GetEventsByTypeAsync(string eventType, DateTimeOffset? from = null, DateTimeOffset? to = null);
+
+    /// <summary>
+    /// 指定されたプロジェクトに関連するタスクのIDリストを取得する
+    /// TaskCreatedイベントとTaskDeletedイベントから削除されていないタスクを特定
+    /// </summary>
+    /// <param name="projectId">プロジェクトID</param>
+    /// <returns>タスクIDのリスト</returns>
+    Task<List<Guid>> GetTaskIdsByProjectIdAsync(Guid projectId);
 }

@@ -1,0 +1,100 @@
+.delete-modal-content {
+    padding: 1rem 0;
+}
+
+.warning-section {
+    display: flex;
+    gap: 1rem;
+    padding: 1.25rem;
+    background-color: #fff5f5;
+    border: 1px solid #feb2b2;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+.warning-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #fed7d7;
+    border-radius: 50%;
+    color: #c53030;
+    font-size: 24px;
+}
+
+.warning-content {
+    flex: 1;
+}
+
+.warning-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #742a2a;
+    margin: 0 0 0.5rem 0;
+}
+
+.warning-message {
+    color: #742a2a;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.task-count-badge {
+    display: inline-block;
+    background-color: #c53030;
+    color: white;
+    padding: 0.125rem 0.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin: 0 0.25rem;
+}
+
+.danger-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background-color: #fffaf0;
+    border-left: 3px solid #dd6b20;
+    border-radius: 4px;
+    margin-top: 1rem;
+}
+
+.danger-notice-icon {
+    color: #dd6b20;
+    font-size: 1.25rem;
+}
+
+.danger-notice-text {
+    color: #744210;
+    font-weight: 500;
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.modal-footer-actions {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.btn-danger {
+    background-color: #c53030;
+    border-color: #c53030;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background-color: #9b2c2c;
+    border-color: #9b2c2c;
+}
+
+.btn-danger:focus {
+    box-shadow: 0 0 0 0.2rem rgba(197, 48, 48, 0.25);
+}

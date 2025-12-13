@@ -138,4 +138,31 @@ public class SqliteEventStore : IEventStore
             .Select(e => _serializer.Deserialize(e.EventType, e.EventData))
             .ToList();
     }
+
+    /// <summary>
+    /// 指定されたプロジェクトに関連するタスクのIDリストを取得する
+    /// </summary>
+    public async Task<List<Guid>> GetTaskIdsByProjectIdAsync(Guid projectId)
+    {
+        // TaskCreatedイベントを全て取得してデシリアライズし、該当プロジェクトのタスクIDを抽出
+        var taskCreatedEvents = await _context.Events
+            .Where(e => e.EventType == "TaskCreated")
+            .ToListAsync();
+
+        var createdTasks = taskCreatedEvents
+            .Select(e => _serializer.Deserialize(e.EventType, e.EventData))
+            .OfType<Domain.Events.TaskCreated>()
+            .Where(e => e.ProjectId == projectId)
+            .Select(e => e.AggregateId)
+            .ToList();
+
+        // TaskDeletedイベントで削除されたタスクIDを取得
+        var deletedTasks = await _context.Events
+            .Where(e => e.EventType == "TaskDeleted" && createdTasks.Contains(e.AggregateId))
+            .Select(e => e.AggregateId)
+            .ToListAsync();
+
+        // 削除されていないタスクIDを返す
+        return createdTasks.Except(deletedTasks).ToList();
+    }
 }

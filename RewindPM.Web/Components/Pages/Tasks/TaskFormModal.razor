@@ -3,7 +3,9 @@
 @using RewindPM.Application.Read.DTOs
 @using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus
 @using RewindPM.Web.Components.Shared
+@using Microsoft.Extensions.Logging
 @inject IMediator Mediator
+@inject ILogger<TaskFormModal> Logger
 
 <Modal Title="@ModalTitle" @bind-IsVisible="IsVisible" Size="ModalSize.ExtraLarge">
     <div class="task-form-layout">
@@ -183,6 +185,7 @@
     private int? actualHours;
 
     private bool isSaving = false;
+    private bool deleteConfirmation = false;
     private string? errorMessage;
     private string? titleError;
     private string? scheduledDateError;
@@ -228,6 +231,7 @@
         actualStartDate = null;
         actualEndDate = null;
         actualHours = null;
+        deleteConfirmation = false;
         ClearErrors();
     }
 
@@ -239,6 +243,7 @@
         estimatedHoursError = null;
         actualDateError = null;
         actualHoursError = null;
+        deleteConfirmation = false;
     }
 
     private bool ValidateForm()
@@ -321,7 +326,8 @@
         }
         catch (Exception ex)
         {
-            errorMessage = $"保存に失敗しました: {ex.Message}";
+            Logger.LogError(ex, "タスク保存中にエラーが発生しました。TaskId: {TaskId}, ProjectId: {ProjectId}", ExistingTask?.Id, ProjectId);
+            errorMessage = "タスクの保存に失敗しました。しばらく時間をおいてから再度お試しください。";
         }
         finally
         {
@@ -422,9 +428,42 @@
 
     private async Task HandleDelete()
     {
-        // TODO: 削除機能は将来実装
-        errorMessage = "削除機能は未実装です。";
-        await Task.CompletedTask;
+        if (ExistingTask == null) return;
+
+        // 確認メッセージを表示
+        // TODO: より洗練された確認ダイアログを実装する場合はJSInteropを使用
+        errorMessage = "本当にこのタスクを削除しますか？もう一度削除ボタンをクリックすると削除されます。";
+
+        // 簡易的な実装: 2回クリックで削除
+        if (deleteConfirmation)
+        {
+            isSaving = true;
+            errorMessage = null;
+
+            try
+            {
+                // TODO: 認証システム実装後、実際のログインユーザーIDを使用すること
+                var command = new DeleteTaskCommand(
+                    TaskId: ExistingTask.Id,
+                    DeletedBy: "system"
+                );
+
+                await Mediator.Send(command);
+                await OnSuccess.InvokeAsync();
+                await CloseModal();
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "タスク削除中にエラーが発生しました。TaskId: {TaskId}", ExistingTask.Id);
+                errorMessage = "タスクの削除に失敗しました。しばらく時間をおいてから再度お試しください。";
+                deleteConfirmation = false;
+                isSaving = false;
+            }
+        }
+        else
+        {
+            deleteConfirmation = true;
+        }
     }
 
     private async Task HandleCancel()

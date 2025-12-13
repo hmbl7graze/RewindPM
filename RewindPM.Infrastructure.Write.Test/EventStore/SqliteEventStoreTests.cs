@@ -312,4 +312,156 @@ public class SqliteEventStoreTests : IDisposable
         // Assert
         Assert.Empty(events);
     }
+
+    [Fact(DisplayName = "プロジェクトIDで関連タスクのIDリストを取得できる")]
+    public async Task GetTaskIdsByProjectIdAsync_ReturnsTaskIds()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId1 = Guid.NewGuid();
+        var taskId2 = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        var taskCreated1 = new TaskCreated
+        {
+            AggregateId = taskId1,
+            ProjectId = projectId,
+            Title = "Task 1",
+            Description = "Description 1",
+            ScheduledPeriod = new ScheduledPeriod(now, now.AddDays(7), 40),
+            CreatedBy = "user1",
+            OccurredAt = now
+        };
+
+        var taskCreated2 = new TaskCreated
+        {
+            AggregateId = taskId2,
+            ProjectId = projectId,
+            Title = "Task 2",
+            Description = "Description 2",
+            ScheduledPeriod = new ScheduledPeriod(now, now.AddDays(14), 80),
+            CreatedBy = "user1",
+            OccurredAt = now
+        };
+
+        await _eventStore.SaveEventsAsync(taskId1, new[] { taskCreated1 }, -1);
+        await _eventStore.SaveEventsAsync(taskId2, new[] { taskCreated2 }, -1);
+
+        // Act
+        var taskIds = await _eventStore.GetTaskIdsByProjectIdAsync(projectId);
+
+        // Assert
+        Assert.Equal(2, taskIds.Count);
+        Assert.Contains(taskId1, taskIds);
+        Assert.Contains(taskId2, taskIds);
+    }
+
+    [Fact(DisplayName = "削除されたタスクはタスクIDリストに含まれない")]
+    public async Task GetTaskIdsByProjectIdAsync_ExcludesDeletedTasks()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId1 = Guid.NewGuid();
+        var taskId2 = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        var taskCreated1 = new TaskCreated
+        {
+            AggregateId = taskId1,
+            ProjectId = projectId,
+            Title = "Task 1",
+            Description = "Description 1",
+            ScheduledPeriod = new ScheduledPeriod(now, now.AddDays(7), 40),
+            CreatedBy = "user1",
+            OccurredAt = now
+        };
+
+        var taskCreated2 = new TaskCreated
+        {
+            AggregateId = taskId2,
+            ProjectId = projectId,
+            Title = "Task 2",
+            Description = "Description 2",
+            ScheduledPeriod = new ScheduledPeriod(now, now.AddDays(14), 80),
+            CreatedBy = "user1",
+            OccurredAt = now
+        };
+
+        var taskDeleted1 = new TaskDeleted
+        {
+            AggregateId = taskId1,
+            ProjectId = projectId,
+            DeletedBy = "user1",
+            OccurredAt = now.AddHours(1)
+        };
+
+        await _eventStore.SaveEventsAsync(taskId1, new[] { taskCreated1 }, -1);
+        await _eventStore.SaveEventsAsync(taskId2, new[] { taskCreated2 }, -1);
+        await _eventStore.SaveEventsAsync(taskId1, new[] { taskDeleted1 }, 0);
+
+        // Act
+        var taskIds = await _eventStore.GetTaskIdsByProjectIdAsync(projectId);
+
+        // Assert
+        Assert.Single(taskIds);
+        Assert.Contains(taskId2, taskIds);
+        Assert.DoesNotContain(taskId1, taskIds);
+    }
+
+    [Fact(DisplayName = "異なるプロジェクトのタスクは含まれない")]
+    public async Task GetTaskIdsByProjectIdAsync_FiltersTasksByProjectId()
+    {
+        // Arrange
+        var projectId1 = Guid.NewGuid();
+        var projectId2 = Guid.NewGuid();
+        var taskId1 = Guid.NewGuid();
+        var taskId2 = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        var taskCreated1 = new TaskCreated
+        {
+            AggregateId = taskId1,
+            ProjectId = projectId1,
+            Title = "Task 1",
+            Description = "Description 1",
+            ScheduledPeriod = new ScheduledPeriod(now, now.AddDays(7), 40),
+            CreatedBy = "user1",
+            OccurredAt = now
+        };
+
+        var taskCreated2 = new TaskCreated
+        {
+            AggregateId = taskId2,
+            ProjectId = projectId2,
+            Title = "Task 2",
+            Description = "Description 2",
+            ScheduledPeriod = new ScheduledPeriod(now, now.AddDays(14), 80),
+            CreatedBy = "user1",
+            OccurredAt = now
+        };
+
+        await _eventStore.SaveEventsAsync(taskId1, new[] { taskCreated1 }, -1);
+        await _eventStore.SaveEventsAsync(taskId2, new[] { taskCreated2 }, -1);
+
+        // Act
+        var taskIdsForProject1 = await _eventStore.GetTaskIdsByProjectIdAsync(projectId1);
+
+        // Assert
+        Assert.Single(taskIdsForProject1);
+        Assert.Contains(taskId1, taskIdsForProject1);
+        Assert.DoesNotContain(taskId2, taskIdsForProject1);
+    }
+
+    [Fact(DisplayName = "タスクがないプロジェクトは空のリストを返す")]
+    public async Task GetTaskIdsByProjectIdAsync_ReturnsEmptyListWhenNoTasks()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+
+        // Act
+        var taskIds = await _eventStore.GetTaskIdsByProjectIdAsync(projectId);
+
+        // Assert
+        Assert.Empty(taskIds);
+    }
 }

@@ -226,6 +226,28 @@ public class TaskAggregate : AggregateRoot
     }
 
     /// <summary>
+    /// タスクを削除する（論理削除）
+    /// </summary>
+    /// <param name="deletedBy">削除者のユーザーID</param>
+    /// <param name="dateTimeProvider">時刻プロバイダー</param>
+    public void Delete(string deletedBy, IDateTimeProvider dateTimeProvider)
+    {
+        if (string.IsNullOrWhiteSpace(deletedBy))
+        {
+            throw new DomainException("削除者のユーザーIDは必須です");
+        }
+
+        ApplyEvent(new TaskDeleted
+        {
+            AggregateId = Id,
+            OccurredAt = dateTimeProvider.UtcNow,
+            ProjectId = ProjectId,
+            DeletedBy = deletedBy,
+            Reason = string.Empty
+        });
+    }
+
+    /// <summary>
     /// イベントに応じてAggregateの状態を変更する
     /// </summary>
     /// <param name="event">適用するドメインイベント</param>
@@ -264,6 +286,11 @@ public class TaskAggregate : AggregateRoot
             case TaskActualPeriodChanged e:
                 ActualPeriod = e.ActualPeriod;
                 UpdatedBy = e.ChangedBy;
+                break;
+
+            case TaskDeleted:
+                // 論理削除のため、Aggregate自体の状態は変更しない
+                // イベントストアに記録するのみ
                 break;
         }
     }
