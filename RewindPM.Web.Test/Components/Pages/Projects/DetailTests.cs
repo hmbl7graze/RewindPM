@@ -573,4 +573,115 @@ public class DetailTests : Bunit.TestContext
             Arg.Any<GetProjectEditDatesQuery>(),
             Arg.Any<CancellationToken>());
     }
+
+    // ========== ビュー切り替え時のモーダル状態管理テスト ==========
+
+    [Fact(DisplayName = "ビュー切り替え時にモーダルが閉じられること")]
+    public void Detail_ClosesModal_WhenViewIsToggled()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - モーダルを開く
+        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("Add Task"));
+        addTaskButton.Click();
+
+        // モーダルが表示されていることを確認
+        var modalBeforeToggle = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalBeforeToggle);
+
+        // ビューを切り替える（Gantt → Kanban）
+        var kanbanButton = cut.FindAll("button").First(b => b.TextContent.Contains("Kanban") && b.ClassList.Contains("view-tab"));
+        kanbanButton.Click();
+
+        // Assert - モーダルが閉じられていることを確認
+        var modalAfterToggle = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterToggle);
+    }
+
+    [Fact(DisplayName = "タスク選択後にビューを切り替えるとモーダルが閉じられること")]
+    public void Detail_ClosesTaskModal_WhenViewIsToggledAfterSelectingTask()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        var tasks = CreateTestTasks();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(tasks);
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - タスクをクリックしてモーダルを開く
+        var taskNameCell = cut.Find(".gantt-task-name-cell");
+        taskNameCell.Click();
+
+        // モーダルが表示されていることを確認
+        var modalBeforeToggle = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalBeforeToggle);
+
+        // ビューを切り替える（Gantt → Statistics）
+        var statisticsButton = cut.FindAll("button").First(b => b.TextContent.Contains("Statistics") && b.ClassList.Contains("view-tab"));
+        statisticsButton.Click();
+
+        // Assert - モーダルが閉じられていることを確認
+        var modalAfterToggle = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterToggle);
+    }
+
+    [Fact(DisplayName = "複数のビュー間を切り替えてもモーダル状態が正しく管理されること")]
+    public void Detail_MaintainsCorrectModalState_WhenTogglingBetweenMultipleViews()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - モーダルを開く
+        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("Add Task"));
+        addTaskButton.Click();
+
+        // Gantt → Kanban
+        var kanbanButton = cut.FindAll("button").First(b => b.TextContent.Contains("Kanban") && b.ClassList.Contains("view-tab"));
+        kanbanButton.Click();
+
+        var modalAfterKanban = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterKanban);
+
+        // Kanban → Statistics
+        var statisticsButton = cut.FindAll("button").First(b => b.TextContent.Contains("Statistics") && b.ClassList.Contains("view-tab"));
+        statisticsButton.Click();
+
+        var modalAfterStatistics = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterStatistics);
+
+        // Statistics → Gantt
+        var ganttButton = cut.FindAll("button").First(b => b.TextContent.Contains("Gantt") && b.ClassList.Contains("view-tab"));
+        ganttButton.Click();
+
+        var modalAfterGantt = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterGantt);
+
+        // Assert - 各ビュー切り替え後にモーダルが閉じていることを確認
+        // 上記のアサートで既に検証済み
+    }
 }

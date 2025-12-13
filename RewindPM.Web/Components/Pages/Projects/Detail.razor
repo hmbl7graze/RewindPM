@@ -150,6 +150,9 @@ else
     private void ToggleView(string viewType)
     {
         _viewType = viewType;
+        // ビュー切り替え時にモーダルを閉じる
+        showTaskModal = false;
+        selectedTask = null;
     }
 
     private async Task HandleTaskStatusChanged((TaskDto task, TaskStatus newStatus) changeData)
