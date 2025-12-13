@@ -93,4 +93,12 @@ public class AggregateRepository : IAggregateRepository
         // インスタンスを作成
         return (T)constructor.Invoke(null);
     }
+
+    /// <summary>
+    /// 指定されたプロジェクトに関連するタスクのIDリストを取得する
+    /// </summary>
+    public async Task<List<Guid>> GetTaskIdsByProjectIdAsync(Guid projectId)
+    {
+        return await _eventStore.GetTaskIdsByProjectIdAsync(projectId);
+    }
 }

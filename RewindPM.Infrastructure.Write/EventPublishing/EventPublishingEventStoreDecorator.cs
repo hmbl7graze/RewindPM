@@ -66,4 +66,12 @@ public class EventPublishingEventStoreDecorator : IEventStore
     {
         return _innerEventStore.GetEventsByTypeAsync(eventType, from, to);
     }
+
+    /// <summary>
+    /// 指定されたプロジェクトに関連するタスクのIDリストを取得する（委譲）
+    /// </summary>
+    public Task<List<Guid>> GetTaskIdsByProjectIdAsync(Guid projectId)
+    {
+        return _innerEventStore.GetTaskIdsByProjectIdAsync(projectId);
+    }
 }

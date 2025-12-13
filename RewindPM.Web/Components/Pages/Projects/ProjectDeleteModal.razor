@@ -1,7 +1,5 @@
 @using MediatR
-@using RewindPM.Application.Read.Queries.Tasks
 @using RewindPM.Application.Write.Commands.Projects
-@using RewindPM.Application.Write.Commands.Tasks
 @using RewindPM.Web.Components.Shared
 @inject IMediator Mediator
 
@@ -77,9 +75,6 @@
     public int TaskCount { get; set; }
 
     [Parameter]
-    public string DeletedBy { get; set; } = "test-user";
-
-    [Parameter]
     public EventCallback OnSuccess { get; set; }
 
     [Parameter]
@@ -102,25 +97,10 @@
             isDeleting = true;
             errorMessage = null;
 
-            var deletedBy = !string.IsNullOrWhiteSpace(DeletedBy) ? DeletedBy : "test-user";
+            // TODO: 認証システム実装後、実際のログインユーザーIDを使用すること
+            const string deletedBy = "system";
 
-            // カスケード削除: 先にすべてのタスクを削除
-            if (taskCount > 0)
-            {
-                var tasksQuery = new GetTasksByProjectIdQuery(ProjectId);
-                var tasks = await Mediator.Send(tasksQuery);
-
-                foreach (var task in tasks)
-                {
-                    var deleteTaskCommand = new DeleteTaskCommand(
-                        TaskId: task.Id,
-                        DeletedBy: deletedBy
-                    );
-                    await Mediator.Send(deleteTaskCommand);
-                }
-            }
-
-            // プロジェクトを削除
+            // プロジェクトを削除（カスケード削除はCommandHandlerで処理）
             var command = new DeleteProjectCommand(
                 ProjectId: ProjectId,
                 DeletedBy: deletedBy

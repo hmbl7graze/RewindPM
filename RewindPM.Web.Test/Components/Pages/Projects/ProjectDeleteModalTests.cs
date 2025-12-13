@@ -3,12 +3,8 @@ using MediatR;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
-using RewindPM.Application.Read.DTOs;
-using RewindPM.Application.Read.Queries.Tasks;
 using RewindPM.Application.Write.Commands.Projects;
-using RewindPM.Application.Write.Commands.Tasks;
 using RewindPM.Web.Components.Pages.Projects;
-using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 
 namespace RewindPM.Web.Test.Components.Pages.Projects;
 
@@ -132,7 +128,6 @@ public class ProjectDeleteModalTests : Bunit.TestContext
             .Add(p => p.IsVisible, true)
             .Add(p => p.ProjectId, _testProjectId)
             .Add(p => p.TaskCount, 0)
-            .Add(p => p.DeletedBy, "test-user")
             .Add(p => p.OnSuccess, EventCallback.Factory.Create(this, () => onSuccessInvoked = true)));
 
         // Act
@@ -144,48 +139,14 @@ public class ProjectDeleteModalTests : Bunit.TestContext
         await _mediatorMock.Received(1).Send(
             Arg.Is<DeleteProjectCommand>(cmd =>
                 cmd.ProjectId == _testProjectId &&
-                cmd.DeletedBy == "test-user"),
+                cmd.DeletedBy == "system"), // サーバー側で設定される
             Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "タスクがある場合、カスケード削除が実行される")]
-    public async Task ProjectDeleteModal_PerformsCascadeDelete_WhenTasksExist()
+    [Fact(DisplayName = "タスクがある場合もプロジェクト削除コマンドが送信される")]
+    public async Task ProjectDeleteModal_SendsDeleteCommand_WhenTasksExist()
     {
         // Arrange
-        var task1Id = Guid.NewGuid();
-        var task2Id = Guid.NewGuid();
-        var tasks = new List<TaskDto>
-        {
-            new TaskDto
-            {
-                Id = task1Id,
-                ProjectId = _testProjectId,
-                Title = "Task 1",
-                Description = "Description 1",
-                Status = TaskStatus.Todo,
-                CreatedAt = DateTimeOffset.Now,
-                UpdatedAt = null,
-                CreatedBy = "admin"
-            },
-            new TaskDto
-            {
-                Id = task2Id,
-                ProjectId = _testProjectId,
-                Title = "Task 2",
-                Description = "Description 2",
-                Status = TaskStatus.Done,
-                CreatedAt = DateTimeOffset.Now,
-                UpdatedAt = null,
-                CreatedBy = "admin"
-            }
-        };
-
-        _mediatorMock
-            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
-            .Returns(tasks);
-        _mediatorMock
-            .Send(Arg.Any<DeleteTaskCommand>(), Arg.Any<CancellationToken>())
-            .Returns(Task.CompletedTask);
         _mediatorMock
             .Send(Arg.Any<DeleteProjectCommand>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
@@ -195,7 +156,6 @@ public class ProjectDeleteModalTests : Bunit.TestContext
             .Add(p => p.IsVisible, true)
             .Add(p => p.ProjectId, _testProjectId)
             .Add(p => p.TaskCount, 2)
-            .Add(p => p.DeletedBy, "test-user")
             .Add(p => p.OnSuccess, EventCallback.Factory.Create(this, () => onSuccessInvoked = true)));
 
         // Act
@@ -205,17 +165,9 @@ public class ProjectDeleteModalTests : Bunit.TestContext
         // Assert
         Assert.True(onSuccessInvoked);
 
-        // タスク削除コマンドが2回送信されたことを確認
+        // プロジェクト削除コマンドが送信されたことを確認（カスケード削除はCommandHandlerで処理）
         await _mediatorMock.Received(1).Send(
-            Arg.Is<DeleteTaskCommand>(cmd => cmd.TaskId == task1Id),
-            Arg.Any<CancellationToken>());
-        await _mediatorMock.Received(1).Send(
-            Arg.Is<DeleteTaskCommand>(cmd => cmd.TaskId == task2Id),
-            Arg.Any<CancellationToken>());
-
-        // プロジェクト削除コマンドが送信されたことを確認
-        await _mediatorMock.Received(1).Send(
-            Arg.Is<DeleteProjectCommand>(cmd => cmd.ProjectId == _testProjectId),
+            Arg.Is<DeleteProjectCommand>(cmd => cmd.ProjectId == _testProjectId && cmd.DeletedBy == "system"),
             Arg.Any<CancellationToken>());
     }
 
@@ -231,8 +183,7 @@ public class ProjectDeleteModalTests : Bunit.TestContext
         var cut = RenderComponent<ProjectDeleteModal>(parameters => parameters
             .Add(p => p.IsVisible, true)
             .Add(p => p.ProjectId, _testProjectId)
-            .Add(p => p.TaskCount, 0)
-            .Add(p => p.DeletedBy, "test-user"));
+            .Add(p => p.TaskCount, 0));
 
         // Act
         var deleteButton = cut.FindAll("button").First(b => b.TextContent.Contains("削除を実行"));
@@ -258,8 +209,7 @@ public class ProjectDeleteModalTests : Bunit.TestContext
         var cut = RenderComponent<ProjectDeleteModal>(parameters => parameters
             .Add(p => p.IsVisible, true)
             .Add(p => p.ProjectId, _testProjectId)
-            .Add(p => p.TaskCount, 0)
-            .Add(p => p.DeletedBy, "test-user"));
+            .Add(p => p.TaskCount, 0));
 
         // Act
         var deleteButton = cut.FindAll("button").First(b => b.TextContent.Contains("削除を実行"));
@@ -284,8 +234,7 @@ public class ProjectDeleteModalTests : Bunit.TestContext
         var cut = RenderComponent<ProjectDeleteModal>(parameters => parameters
             .Add(p => p.IsVisible, true)
             .Add(p => p.ProjectId, _testProjectId)
-            .Add(p => p.TaskCount, 0)
-            .Add(p => p.DeletedBy, "test-user"));
+            .Add(p => p.TaskCount, 0));
 
         // Act
         var deleteButton = cut.FindAll("button").First(b => b.TextContent.Contains("削除を実行"));
@@ -294,53 +243,6 @@ public class ProjectDeleteModalTests : Bunit.TestContext
         // Assert
         var errorMessage = cut.Find(".alert-danger");
         Assert.Contains("Test error", errorMessage.TextContent);
-    }
-
-    [Fact(DisplayName = "タスク削除中のエラーが適切に処理される")]
-    public async Task ProjectDeleteModal_HandlesTaskDeleteError_Properly()
-    {
-        // Arrange
-        var task1Id = Guid.NewGuid();
-        var tasks = new List<TaskDto>
-        {
-            new TaskDto
-            {
-                Id = task1Id,
-                ProjectId = _testProjectId,
-                Title = "Task 1",
-                Description = "Description 1",
-                Status = TaskStatus.Todo,
-                CreatedAt = DateTimeOffset.Now,
-                UpdatedAt = null,
-                CreatedBy = "admin"
-            }
-        };
-
-        _mediatorMock
-            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
-            .Returns(tasks);
-        _mediatorMock
-            .Send(Arg.Any<DeleteTaskCommand>(), Arg.Any<CancellationToken>())
-            .Returns<Task>(_ => throw new Exception("Task delete error"));
-
-        var cut = RenderComponent<ProjectDeleteModal>(parameters => parameters
-            .Add(p => p.IsVisible, true)
-            .Add(p => p.ProjectId, _testProjectId)
-            .Add(p => p.TaskCount, 1)
-            .Add(p => p.DeletedBy, "test-user"));
-
-        // Act
-        var deleteButton = cut.FindAll("button").First(b => b.TextContent.Contains("削除を実行"));
-        await cut.InvokeAsync(() => deleteButton.Click());
-
-        // Assert
-        var errorMessage = cut.Find(".alert-danger");
-        Assert.Contains("Task delete error", errorMessage.TextContent);
-
-        // プロジェクト削除コマンドが送信されていないことを確認
-        await _mediatorMock.DidNotReceive().Send(
-            Arg.Any<DeleteProjectCommand>(),
-            Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "削除成功後にモーダルが閉じられる")]
@@ -356,7 +258,6 @@ public class ProjectDeleteModalTests : Bunit.TestContext
             .Add(p => p.IsVisible, true)
             .Add(p => p.ProjectId, _testProjectId)
             .Add(p => p.TaskCount, 0)
-            .Add(p => p.DeletedBy, "test-user")
             .Add(p => p.IsVisibleChanged, EventCallback.Factory.Create<bool>(this, (visible) => isVisibleChanged = !visible))
             .Add(p => p.OnSuccess, EventCallback.Factory.Create(this, () => { })));
 
@@ -366,31 +267,5 @@ public class ProjectDeleteModalTests : Bunit.TestContext
 
         // Assert
         Assert.True(isVisibleChanged);
-    }
-
-    [Fact(DisplayName = "DeletedByパラメータが正しく使用される")]
-    public async Task ProjectDeleteModal_UsesDeletedByParameter_Correctly()
-    {
-        // Arrange
-        var customDeletedBy = "custom-user";
-        _mediatorMock
-            .Send(Arg.Any<DeleteProjectCommand>(), Arg.Any<CancellationToken>())
-            .Returns(Task.CompletedTask);
-
-        var cut = RenderComponent<ProjectDeleteModal>(parameters => parameters
-            .Add(p => p.IsVisible, true)
-            .Add(p => p.ProjectId, _testProjectId)
-            .Add(p => p.TaskCount, 0)
-            .Add(p => p.DeletedBy, customDeletedBy)
-            .Add(p => p.OnSuccess, EventCallback.Factory.Create(this, () => { })));
-
-        // Act
-        var deleteButton = cut.FindAll("button").First(b => b.TextContent.Contains("削除を実行"));
-        await cut.InvokeAsync(() => deleteButton.Click());
-
-        // Assert
-        await _mediatorMock.Received(1).Send(
-            Arg.Is<DeleteProjectCommand>(cmd => cmd.DeletedBy == customDeletedBy),
-            Arg.Any<CancellationToken>());
     }
 }
