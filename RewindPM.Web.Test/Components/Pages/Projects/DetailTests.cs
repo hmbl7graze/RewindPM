@@ -718,8 +718,8 @@ public class DetailTests : Bunit.TestContext
         }, timeout: TimeSpan.FromSeconds(5));
     }
 
-    [Fact(DisplayName = "無効なクエリパラメータではデフォルトのGanttタブが選択されること")]
-    public void Detail_DisplaysGanttTab_WhenQueryParameterIsInvalid()
+    [Fact(DisplayName = "無効なクエリパラメータではデフォルトのKanbanタブが選択されること")]
+    public void Detail_DisplaysKanbanTab_WhenQueryParameterIsInvalid()
     {
         // Arrange
         var project = CreateTestProject();
@@ -741,13 +741,13 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
-        // Assert - デフォルトのGanttタブがアクティブ
-        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
-        Assert.Contains("active", ganttTab.ClassName);
+        // Assert - デフォルトのKanbanタブがアクティブ
+        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Kanban"));
+        Assert.Contains("active", kanbanTab.ClassName);
 
-        // Ganttチャートが表示されている
-        var ganttChart = cut.FindAll(".gantt-chart, .gantt-empty");
-        Assert.NotEmpty(ganttChart);
+        // Kanbanボードが表示されている
+        var kanbanBoard = cut.Find(".kanban-board");
+        Assert.NotNull(kanbanBoard);
     }
 
     [Fact(DisplayName = "Kanbanタブボタンクリック時にKanbanビューが表示されること")]
