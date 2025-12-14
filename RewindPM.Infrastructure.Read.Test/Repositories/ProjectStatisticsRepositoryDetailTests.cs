@@ -26,7 +26,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var asOfDate = DateTime.UtcNow;
+        var asOfDate = DateTimeOffset.UtcNow;
 
         _context.Projects.Add(new ProjectEntity
         {
@@ -117,7 +117,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
         // 工数統計
         Assert.Equal(80, result.TotalEstimatedHours); // 10 + 20 + 15 + 5 + 30
         Assert.Equal(43, result.TotalActualHours); // 8 + 25 + 10
-        Assert.Equal(50, result.RemainingEstimatedHours); // 15 + 5 + 30 (未完了分)
+        Assert.Equal(40, result.RemainingEstimatedHours); // (15-10) + (5-0) + (30-0) = 5 + 5 + 30 = 40
 
         // スケジュール統計
         Assert.Equal(1, result.OnTimeTasks); // Task 1のみ期限内
@@ -127,7 +127,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
         // 計算プロパティ
         Assert.Equal(40.0, result.CompletionRate); // 2/5 * 100
         Assert.Equal(-37, result.HoursOverrun); // 43 - 80
-        Assert.Equal(-46.2, result.OverrunRate, precision: 1); // -37/80 * 100
+        Assert.Equal(53.8, result.HoursConsumptionRate, precision: 1); // 43/80 * 100 = 53.8%
         Assert.Equal(50.0, result.OnTimeRate); // 1/2 * 100
     }
 
@@ -136,7 +136,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var asOfDate = DateTime.UtcNow;
+        var asOfDate = DateTimeOffset.UtcNow;
 
         // Act
         var result = await _repository.GetProjectStatisticsDetailAsync(
@@ -153,7 +153,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var asOfDate = new DateTime(2024, 6, 1, 0, 0, 0, DateTimeKind.Utc);
+        var asOfDate = new DateTimeOffset(2024, 6, 1, 0, 0, 0, TimeSpan.Zero);
 
         _context.Projects.Add(new ProjectEntity
         {
@@ -209,7 +209,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var asOfDate = DateTime.UtcNow;
+        var asOfDate = DateTimeOffset.UtcNow;
 
         _context.Projects.Add(new ProjectEntity
         {
@@ -257,7 +257,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var asOfDate = DateTime.UtcNow;
+        var asOfDate = DateTimeOffset.UtcNow;
 
         _context.Projects.Add(new ProjectEntity
         {
@@ -304,7 +304,7 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var asOfDate = DateTime.UtcNow;
+        var asOfDate = DateTimeOffset.UtcNow;
 
         _context.Projects.Add(new ProjectEntity
         {
@@ -357,6 +357,284 @@ public class ProjectStatisticsRepositoryDetailTests : IDisposable
         Assert.NotNull(result);
         Assert.Equal(2, result.DelayedTasks);
         Assert.Equal(3.0, result.AverageDelayDays); // (2 + 4) / 2
+    }
+
+    [Fact(DisplayName = "詳細統計リポジトリ: 見積もり精度 - 誤差率が正確に10%の場合、正確なタスクとしてカウントされる")]
+    public async Task GetProjectStatisticsDetailAsync_EstimateAccuracy_ExactlyTenPercentError_CountsAsAccurate()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var asOfDate = DateTimeOffset.UtcNow;
+
+        _context.Projects.Add(new ProjectEntity
+        {
+            Id = projectId,
+            Title = "Test Project",
+            CreatedAt = asOfDate.AddDays(-10),
+            CreatedBy = "test"
+        });
+
+        var tasks = new List<TaskEntity>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = projectId,
+                Title = "Exact 10% Error Task",
+                Status = TaskStatus.Done,
+                EstimatedHours = 10,
+                ActualHours = 11,
+                ScheduledStartDate = asOfDate.AddDays(-10),
+                ScheduledEndDate = asOfDate.AddDays(-5), // 予定期間: 5日
+                ActualStartDate = asOfDate.AddDays(-10),
+                ActualEndDate = asOfDate.AddDays(-4.5), // 実績期間: 5.5日 (誤差率 10%)
+                CreatedAt = asOfDate.AddDays(-15),
+                CreatedBy = "test"
+            }
+        };
+
+        _context.Tasks.AddRange(tasks);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.GetProjectStatisticsDetailAsync(
+            projectId,
+            asOfDate,
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(1, result.AccurateEstimateTasks); // 10%ちょうどなので正確
+        Assert.Equal(0, result.OverEstimateTasks);
+        Assert.Equal(0, result.UnderEstimateTasks);
+    }
+
+    [Fact(DisplayName = "詳細統計リポジトリ: 見積もり精度 - 誤差が正確に1日の場合、正確なタスクとしてカウントされる")]
+    public async Task GetProjectStatisticsDetailAsync_EstimateAccuracy_ExactlyOneDayError_CountsAsAccurate()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var asOfDate = DateTimeOffset.UtcNow;
+
+        _context.Projects.Add(new ProjectEntity
+        {
+            Id = projectId,
+            Title = "Test Project",
+            CreatedAt = asOfDate.AddDays(-10),
+            CreatedBy = "test"
+        });
+
+        var tasks = new List<TaskEntity>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = projectId,
+                Title = "Exact 1 Day Error Task",
+                Status = TaskStatus.Done,
+                EstimatedHours = 10,
+                ActualHours = 12,
+                ScheduledStartDate = asOfDate.AddDays(-10),
+                ScheduledEndDate = asOfDate.AddDays(-5), // 予定期間: 5日
+                ActualStartDate = asOfDate.AddDays(-10),
+                ActualEndDate = asOfDate.AddDays(-4), // 実績期間: 6日 (誤差 1日、誤差率 20%)
+                CreatedAt = asOfDate.AddDays(-15),
+                CreatedBy = "test"
+            }
+        };
+
+        _context.Tasks.AddRange(tasks);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.GetProjectStatisticsDetailAsync(
+            projectId,
+            asOfDate,
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(1, result.AccurateEstimateTasks); // 1日ちょうどなので正確
+        Assert.Equal(0, result.OverEstimateTasks);
+        Assert.Equal(0, result.UnderEstimateTasks);
+    }
+
+    [Fact(DisplayName = "詳細統計リポジトリ: 見積もり精度 - 誤差率と誤差日数の両方が境界値を超える場合、過大/過小見積もりとしてカウントされる")]
+    public async Task GetProjectStatisticsDetailAsync_EstimateAccuracy_BothThresholdsExceeded_CountsAsOverOrUnderEstimate()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var asOfDate = DateTimeOffset.UtcNow;
+
+        _context.Projects.Add(new ProjectEntity
+        {
+            Id = projectId,
+            Title = "Test Project",
+            CreatedAt = asOfDate.AddDays(-10),
+            CreatedBy = "test"
+        });
+
+        var tasks = new List<TaskEntity>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = projectId,
+                Title = "Over Estimate Task",
+                Status = TaskStatus.Done,
+                EstimatedHours = 20,
+                ActualHours = 8,
+                ScheduledStartDate = asOfDate.AddDays(-10),
+                ScheduledEndDate = asOfDate.AddDays(-5), // 予定期間: 5日
+                ActualStartDate = asOfDate.AddDays(-10),
+                ActualEndDate = asOfDate.AddDays(-7), // 実績期間: 3日 (誤差 2日、誤差率 40%)
+                CreatedAt = asOfDate.AddDays(-15),
+                CreatedBy = "test"
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = projectId,
+                Title = "Under Estimate Task",
+                Status = TaskStatus.Done,
+                EstimatedHours = 10,
+                ActualHours = 25,
+                ScheduledStartDate = asOfDate.AddDays(-10),
+                ScheduledEndDate = asOfDate.AddDays(-5), // 予定期間: 5日
+                ActualStartDate = asOfDate.AddDays(-10),
+                ActualEndDate = asOfDate.AddDays(-2), // 実績期間: 8日 (誤差 3日、誤差率 60%)
+                CreatedAt = asOfDate.AddDays(-15),
+                CreatedBy = "test"
+            }
+        };
+
+        _context.Tasks.AddRange(tasks);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.GetProjectStatisticsDetailAsync(
+            projectId,
+            asOfDate,
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(0, result.AccurateEstimateTasks);
+        Assert.Equal(1, result.OverEstimateTasks);
+        Assert.Equal(1, result.UnderEstimateTasks);
+        Assert.Equal(0.5, result.AverageEstimateErrorDays); // (-2 + 3) / 2 = 0.5
+    }
+
+    [Fact(DisplayName = "詳細統計リポジトリ: 見積もり精度 - 日付情報が不完全なタスクは計算から除外される")]
+    public async Task GetProjectStatisticsDetailAsync_EstimateAccuracy_IncompleteDateInfo_ExcludedFromCalculation()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var asOfDate = DateTimeOffset.UtcNow;
+
+        _context.Projects.Add(new ProjectEntity
+        {
+            Id = projectId,
+            Title = "Test Project",
+            CreatedAt = asOfDate.AddDays(-10),
+            CreatedBy = "test"
+        });
+
+        var tasks = new List<TaskEntity>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = projectId,
+                Title = "Complete Task",
+                Status = TaskStatus.Done,
+                EstimatedHours = 10,
+                ActualHours = 10,
+                ScheduledStartDate = asOfDate.AddDays(-10),
+                ScheduledEndDate = asOfDate.AddDays(-5),
+                ActualStartDate = asOfDate.AddDays(-10),
+                ActualEndDate = asOfDate.AddDays(-5),
+                CreatedAt = asOfDate.AddDays(-15),
+                CreatedBy = "test"
+            },
+            new()
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = projectId,
+                Title = "Incomplete Dates Task",
+                Status = TaskStatus.Done,
+                EstimatedHours = 15,
+                ActualHours = 20,
+                ScheduledStartDate = asOfDate.AddDays(-10),
+                // ScheduledEndDate がない
+                ActualStartDate = asOfDate.AddDays(-10),
+                ActualEndDate = asOfDate.AddDays(-3),
+                CreatedAt = asOfDate.AddDays(-15),
+                CreatedBy = "test"
+            }
+        };
+
+        _context.Tasks.AddRange(tasks);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.GetProjectStatisticsDetailAsync(
+            projectId,
+            asOfDate,
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(1, result.AccurateEstimateTasks); // 完全な日付情報を持つタスクのみカウント
+        Assert.Equal(0, result.OverEstimateTasks);
+        Assert.Equal(0, result.UnderEstimateTasks);
+        Assert.Equal(0, result.AverageEstimateErrorDays);
+    }
+
+    [Fact(DisplayName = "詳細統計リポジトリ: 見積もり精度 - 完了タスクがない場合、すべて0を返す")]
+    public async Task GetProjectStatisticsDetailAsync_EstimateAccuracy_NoCompletedTasks_ReturnsZero()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var asOfDate = DateTimeOffset.UtcNow;
+
+        _context.Projects.Add(new ProjectEntity
+        {
+            Id = projectId,
+            Title = "Test Project",
+            CreatedAt = asOfDate.AddDays(-10),
+            CreatedBy = "test"
+        });
+
+        var tasks = new List<TaskEntity>
+        {
+            new()
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = projectId,
+                Title = "Todo Task",
+                Status = TaskStatus.Todo,
+                EstimatedHours = 10,
+                CreatedAt = asOfDate.AddDays(-5),
+                CreatedBy = "test"
+            }
+        };
+
+        _context.Tasks.AddRange(tasks);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.GetProjectStatisticsDetailAsync(
+            projectId,
+            asOfDate,
+            TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(0, result.AccurateEstimateTasks);
+        Assert.Equal(0, result.OverEstimateTasks);
+        Assert.Equal(0, result.UnderEstimateTasks);
+        Assert.Equal(0, result.AverageEstimateErrorDays);
     }
 
     public void Dispose()

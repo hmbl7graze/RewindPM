@@ -3,8 +3,10 @@
 @using MediatR
 @using RewindPM.Application.Read.Queries.Projects
 @using RewindPM.Web.Components.Shared
+@using Microsoft.Extensions.Logging
 @inject IMediator Mediator
 @inject NavigationManager Navigation
+@inject ILogger<Index> Logger
 
 <PageTitle>プロジェクト一覧 - RewindPM</PageTitle>
 
@@ -33,7 +35,7 @@ else
     <div class="projects-grid">
         @foreach (var project in projects)
         {
-            <ProjectCard Project="@project" />
+            <ProjectCard Project="@project" OnDeleteRequest="HandleDeleteRequest" />
         }
     </div>
 }
@@ -42,9 +44,20 @@ else
     <CreateProjectForm OnSuccess="HandleCreateSuccess" OnCancel="HandleCreateCancel" />
 </Modal>
 
+<!-- 削除確認モーダル -->
+<ProjectDeleteModal
+    @bind-IsVisible="showDeleteModal"
+    ProjectId="@selectedProjectId"
+    TaskCount="@selectedProjectTaskCount"
+    OnSuccess="@HandleDeleteSuccess"
+    OnCancel="@CloseDeleteModal" />
+
 @code {
     private List<ProjectDto>? projects;
     private bool showCreateModal = false;
+    private bool showDeleteModal = false;
+    private Guid selectedProjectId = Guid.Empty;
+    private int selectedProjectTaskCount = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -82,5 +95,43 @@ else
     private void HandleCreateCancel()
     {
         showCreateModal = false;
+    }
+
+    private async Task HandleDeleteRequest(Guid projectId)
+    {
+        selectedProjectId = projectId;
+        
+        // タスク数を取得
+        try
+        {
+            var tasksQuery = new RewindPM.Application.Read.Queries.Tasks.GetTasksByProjectIdQuery(projectId);
+            var tasks = await Mediator.Send(tasksQuery);
+            selectedProjectTaskCount = tasks.Count;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "タスク数の取得に失敗しました。ProjectId: {ProjectId}", projectId);
+            selectedProjectTaskCount = 0;
+        }
+        
+        showDeleteModal = true;
+    }
+
+    private void CloseDeleteModal()
+    {
+        showDeleteModal = false;
+        selectedProjectId = Guid.Empty;
+        selectedProjectTaskCount = 0;
+    }
+
+    private async Task HandleDeleteSuccess()
+    {
+        showDeleteModal = false;
+        selectedProjectId = Guid.Empty;
+        selectedProjectTaskCount = 0;
+        
+        // プロジェクト一覧を再読み込み
+        await LoadProjects();
+        StateHasChanged();
     }
 }

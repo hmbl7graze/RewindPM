@@ -21,11 +21,11 @@ public record CreateTaskCommand(
     Guid ProjectId,
     string Title,
     string Description,
-    DateTime? ScheduledStartDate,
-    DateTime? ScheduledEndDate,
+    DateTimeOffset? ScheduledStartDate,
+    DateTimeOffset? ScheduledEndDate,
     int? EstimatedHours,
-    DateTime? ActualStartDate,
-    DateTime? ActualEndDate,
+    DateTimeOffset? ActualStartDate,
+    DateTimeOffset? ActualEndDate,
     int? ActualHours,
     string CreatedBy
 ) : IRequest<Guid>;

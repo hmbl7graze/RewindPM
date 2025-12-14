@@ -54,7 +54,7 @@ public class EventPublishingEventStoreDecorator : IEventStore
     /// <summary>
     /// 指定された時点までのイベントを取得する（委譲）
     /// </summary>
-    public Task<List<IDomainEvent>> GetEventsUntilAsync(Guid aggregateId, DateTime pointInTime)
+    public Task<List<IDomainEvent>> GetEventsUntilAsync(Guid aggregateId, DateTimeOffset pointInTime)
     {
         return _innerEventStore.GetEventsUntilAsync(aggregateId, pointInTime);
     }
@@ -62,8 +62,16 @@ public class EventPublishingEventStoreDecorator : IEventStore
     /// <summary>
     /// 指定されたイベント種別のイベントを期間指定で取得する（委譲）
     /// </summary>
-    public Task<List<IDomainEvent>> GetEventsByTypeAsync(string eventType, DateTime? from = null, DateTime? to = null)
+    public Task<List<IDomainEvent>> GetEventsByTypeAsync(string eventType, DateTimeOffset? from = null, DateTimeOffset? to = null)
     {
         return _innerEventStore.GetEventsByTypeAsync(eventType, from, to);
+    }
+
+    /// <summary>
+    /// 指定されたプロジェクトに関連するタスクのIDリストを取得する（委譲）
+    /// </summary>
+    public Task<List<Guid>> GetTaskIdsByProjectIdAsync(Guid projectId)
+    {
+        return _innerEventStore.GetTaskIdsByProjectIdAsync(projectId);
     }
 }

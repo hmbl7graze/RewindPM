@@ -31,6 +31,9 @@ public class ProjectionInitializer : IHostedService
         _eventPublisher.Subscribe<ProjectUpdated>(
             new ScopedEventHandlerAdapter<ProjectUpdated, ProjectUpdatedEventHandler>(_serviceProvider));
 
+        _eventPublisher.Subscribe<ProjectDeleted>(
+            new ScopedEventHandlerAdapter<ProjectDeleted, ProjectDeletedEventHandler>(_serviceProvider));
+
         _eventPublisher.Subscribe<TaskCreated>(
             new ScopedEventHandlerAdapter<TaskCreated, TaskCreatedEventHandler>(_serviceProvider));
 
@@ -45,6 +48,9 @@ public class ProjectionInitializer : IHostedService
 
         _eventPublisher.Subscribe<TaskActualPeriodChanged>(
             new ScopedEventHandlerAdapter<TaskActualPeriodChanged, TaskActualPeriodChangedEventHandler>(_serviceProvider));
+
+        _eventPublisher.Subscribe<TaskDeleted>(
+            new ScopedEventHandlerAdapter<TaskDeleted, TaskDeletedEventHandler>(_serviceProvider));
 
         return Task.CompletedTask;
     }

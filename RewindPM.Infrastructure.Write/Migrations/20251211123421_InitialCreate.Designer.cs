@@ -11,8 +11,8 @@ using RewindPM.Infrastructure.Write.Persistence;
 namespace RewindPM.Infrastructure.Write.Migrations
 {
     [DbContext(typeof(EventStoreDbContext))]
-    [Migration("20251204224503_InitialEventStore")]
-    partial class InitialEventStore
+    [Migration("20251211123421_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -20,7 +20,7 @@ namespace RewindPM.Infrastructure.Write.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.0");
 
-            modelBuilder.Entity("RewindPM.Infrastructure.Entities.EventEntity", b =>
+            modelBuilder.Entity("RewindPM.Infrastructure.Write.Entities.EventEntity", b =>
                 {
                     b.Property<Guid>("EventId")
                         .ValueGeneratedOnAdd()
@@ -29,7 +29,7 @@ namespace RewindPM.Infrastructure.Write.Migrations
                     b.Property<Guid>("AggregateId")
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("EventData")
@@ -41,7 +41,7 @@ namespace RewindPM.Infrastructure.Write.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTime>("OccurredAt")
+                    b.Property<DateTimeOffset>("OccurredAt")
                         .HasColumnType("TEXT");
 
                     b.Property<int>("Version")

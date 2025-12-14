@@ -35,12 +35,16 @@ public class GetProjectStatisticsDetailQueryHandlerTests
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2.5,
-            AsOfDate = DateTime.UtcNow
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
+            AsOfDate =  DateTimeOffset.UtcNow
         };
 
         _repository.GetProjectStatisticsDetailAsync(
             projectId,
-            Arg.Any<DateTime>(),
+            Arg.Any<DateTimeOffset>(),
             Arg.Any<CancellationToken>())
             .Returns(expectedDto);
 
@@ -58,7 +62,7 @@ public class GetProjectStatisticsDetailQueryHandlerTests
 
         await _repository.Received(1).GetProjectStatisticsDetailAsync(
             projectId,
-            Arg.Any<DateTime>(),
+            Arg.Any<DateTimeOffset>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -67,7 +71,7 @@ public class GetProjectStatisticsDetailQueryHandlerTests
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var asOfDate = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var asOfDate = new DateTimeOffset(new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc));
         var expectedDto = new ProjectStatisticsDetailDto
         {
             TotalTasks = 5,
@@ -81,6 +85,10 @@ public class GetProjectStatisticsDetailQueryHandlerTests
             OnTimeTasks = 2,
             DelayedTasks = 0,
             AverageDelayDays = 0,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
             AsOfDate = asOfDate
         };
 
@@ -113,7 +121,7 @@ public class GetProjectStatisticsDetailQueryHandlerTests
 
         _repository.GetProjectStatisticsDetailAsync(
             projectId,
-            Arg.Any<DateTime>(),
+            Arg.Any<DateTimeOffset>(),
             Arg.Any<CancellationToken>())
             .Returns((ProjectStatisticsDetailDto?)null);
 
@@ -127,7 +135,7 @@ public class GetProjectStatisticsDetailQueryHandlerTests
 
         await _repository.Received(1).GetProjectStatisticsDetailAsync(
             projectId,
-            Arg.Any<DateTime>(),
+            Arg.Any<DateTimeOffset>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -136,7 +144,7 @@ public class GetProjectStatisticsDetailQueryHandlerTests
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var beforeCall = DateTime.UtcNow;
+        var beforeCall = DateTimeOffset.UtcNow;
         
         var expectedDto = new ProjectStatisticsDetailDto
         {
@@ -151,12 +159,16 @@ public class GetProjectStatisticsDetailQueryHandlerTests
             OnTimeTasks = 4,
             DelayedTasks = 1,
             AverageDelayDays = 2.5,
-            AsOfDate = DateTime.UtcNow
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
+            AsOfDate = DateTimeOffset.UtcNow
         };
 
         _repository.GetProjectStatisticsDetailAsync(
             projectId,
-            Arg.Any<DateTime>(),
+            Arg.Any<DateTimeOffset>(),
             Arg.Any<CancellationToken>())
             .Returns(expectedDto);
 
@@ -164,14 +176,14 @@ public class GetProjectStatisticsDetailQueryHandlerTests
 
         // Act
         var result = await _handler.Handle(query, TestContext.Current.CancellationToken);
-        var afterCall = DateTime.UtcNow;
+        var afterCall = DateTimeOffset.UtcNow;
 
         // Assert
         Assert.NotNull(result);
 
         await _repository.Received(1).GetProjectStatisticsDetailAsync(
             projectId,
-            Arg.Is<DateTime>(d => d >= beforeCall && d <= afterCall),
+            Arg.Is<DateTimeOffset>(d => d >= beforeCall && d <= afterCall),
             Arg.Any<CancellationToken>());
     }
 }

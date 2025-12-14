@@ -2,6 +2,7 @@
 @using RewindPM.Application.Read.DTOs
 @using RewindPM.Application.Read.Queries.Statistics
 @using Microsoft.Extensions.Logging
+@using RewindPM.Web.Components.Statistics
 
 @inject IMediator Mediator
 @inject ILogger<ProjectStatisticsDashboard> Logger
@@ -25,28 +26,46 @@ else if (_statistics != null)
                 </div>
                 <div class="stat-card-content">
                     <div class="stat-primary">
-                        <span class="stat-value">@_statistics.CompletionRate%</span>
+                        <div class="stat-value-with-help">
+                            <span class="stat-value">@_statistics.CompletionRate%</span>
+                            <span class="stat-help-icon" data-tooltip="@StatisticsTitles.CompletionRate">ⓘ</span>
+                        </div>
                         <span class="stat-label">完了率</span>
                     </div>
                     <div class="stat-details">
                         <div class="stat-detail-item">
-                            <span class="stat-detail-label">合計:</span>
+                            <span class="stat-detail-label-with-help">
+                                <span>合計:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.TotalTasks">ⓘ</span>
+                            </span>
                             <span class="stat-detail-value">@_statistics.TotalTasks</span>
                         </div>
                         <div class="stat-detail-item">
-                            <span class="stat-detail-label">完了:</span>
+                            <span class="stat-detail-label-with-help">
+                                <span>完了:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.CompletedTasks">ⓘ</span>
+                            </span>
                             <span class="stat-detail-value stat-completed">@_statistics.CompletedTasks</span>
                         </div>
                         <div class="stat-detail-item">
-                            <span class="stat-detail-label">進行中:</span>
+                            <span class="stat-detail-label-with-help">
+                                <span>進行中:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.InProgressTasks">ⓘ</span>
+                            </span>
                             <span class="stat-detail-value stat-in-progress">@_statistics.InProgressTasks</span>
                         </div>
                         <div class="stat-detail-item">
-                            <span class="stat-detail-label">レビュー中:</span>
+                            <span class="stat-detail-label-with-help">
+                                <span>レビュー中:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.InReviewTasks">ⓘ</span>
+                            </span>
                             <span class="stat-detail-value stat-in-review">@_statistics.InReviewTasks</span>
                         </div>
                         <div class="stat-detail-item">
-                            <span class="stat-detail-label">未着手:</span>
+                            <span class="stat-detail-label-with-help">
+                                <span>未着手:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.TodoTasks">ⓘ</span>
+                            </span>
                             <span class="stat-detail-value stat-todo">@_statistics.TodoTasks</span>
                         </div>
                     </div>
@@ -60,24 +79,39 @@ else if (_statistics != null)
                 </div>
                 <div class="stat-card-content">
                     <div class="stat-primary">
-                        <span class="stat-value @GetOverrunClass()">@_statistics.OverrunRate%</span>
-                        <span class="stat-label">オーバーラン率</span>
+                        <div class="stat-value-with-help">
+                            <span class="stat-value @GetConsumptionRateClass()">@_statistics.HoursConsumptionRate%</span>
+                            <span class="stat-help-icon" data-tooltip="@StatisticsTitles.HoursConsumptionRate">ⓘ</span>
+                        </div>
+                        <span class="stat-label">工数消費率</span>
                     </div>
                     <div class="stat-details">
                         <div class="stat-detail-item">
-                            <span class="stat-detail-label">予定工数:</span>
+                            <span class="stat-detail-label-with-help">
+                                <span>予定工数:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.TotalEstimatedHours">ⓘ</span>
+                            </span>
                             <span class="stat-detail-value">@_statistics.TotalEstimatedHours h</span>
                         </div>
                         <div class="stat-detail-item">
-                            <span class="stat-detail-label">実績工数:</span>
+                            <span class="stat-detail-label-with-help">
+                                <span>実績工数:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.TotalActualHours">ⓘ</span>
+                            </span>
                             <span class="stat-detail-value">@_statistics.TotalActualHours h</span>
                         </div>
                         <div class="stat-detail-item">
-                            <span class="stat-detail-label">残予定工数:</span>
+                            <span class="stat-detail-label-with-help">
+                                <span>残予定工数:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.RemainingEstimatedHours">ⓘ</span>
+                            </span>
                             <span class="stat-detail-value">@_statistics.RemainingEstimatedHours h</span>
                         </div>
                         <div class="stat-detail-item">
-                            <span class="stat-detail-label">工数差分:</span>
+                            <span class="stat-detail-label-with-help">
+                                <span>工数差分:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.HoursOverrun">ⓘ</span>
+                            </span>
                             <span class="stat-detail-value @GetOverrunClass()">@GetHoursOverrunText()</span>
                         </div>
                     </div>
@@ -91,33 +125,106 @@ else if (_statistics != null)
                 </div>
                 <div class="stat-card-content">
                     <div class="stat-primary">
-                        <span class="stat-value @GetOnTimeRateClass()">@_statistics.OnTimeRate%</span>
+                        <div class="stat-value-with-help">
+                            <span class="stat-value @GetOnTimeRateClass()">@_statistics.OnTimeRate%</span>
+                            <span class="stat-help-icon" data-tooltip="@StatisticsTitles.OnTimeRate">ⓘ</span>
+                        </div>
                         <span class="stat-label">期限内完了率</span>
                     </div>
                     <div class="stat-details">
                         <div class="stat-detail-item">
-                            <span class="stat-detail-label">期限内:</span>
+                            <span class="stat-detail-label-with-help">
+                                <span>期限内:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.OnTimeTasks">ⓘ</span>
+                            </span>
                             <span class="stat-detail-value stat-on-time">@_statistics.OnTimeTasks</span>
                         </div>
                         <div class="stat-detail-item">
-                            <span class="stat-detail-label">遅延:</span>
+                            <span class="stat-detail-label-with-help">
+                                <span>遅延:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.DelayedTasks">ⓘ</span>
+                            </span>
                             <span class="stat-detail-value stat-delayed">@_statistics.DelayedTasks</span>
                         </div>
                         <div class="stat-detail-item">
-                            <span class="stat-detail-label">平均遅延:</span>
+                            <span class="stat-detail-label-with-help">
+                                <span>平均遅延:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.AverageDelayDays">ⓘ</span>
+                            </span>
                             <span class="stat-detail-value">@_statistics.AverageDelayDays 日</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 見積もり精度カード -->
+            <div class="stat-card">
+                <div class="stat-card-header">
+                    <h4>見積もり精度</h4>
+                </div>
+                <div class="stat-card-content">
+                    <div class="stat-primary">
+                        <div class="stat-value-with-help">
+                            <span class="stat-value @GetEstimateAccuracyClass()">@_statistics.EstimateAccuracyRate%</span>
+                            <span class="stat-help-icon" data-tooltip="@StatisticsTitles.EstimateAccuracyRate">ⓘ</span>
+                        </div>
+                        <span class="stat-label">見積もり精度率</span>
+                    </div>
+                    <div class="stat-details">
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label-with-help">
+                                <span>正確:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.AccurateEstimateTasks">ⓘ</span>
+                            </span>
+                            <span class="stat-detail-value stat-good">@_statistics.AccurateEstimateTasks</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label-with-help">
+                                <span>過大見積:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.OverEstimateTasks">ⓘ</span>
+                            </span>
+                            <span class="stat-detail-value stat-under">@_statistics.OverEstimateTasks</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label-with-help">
+                                <span>過小見積:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.UnderEstimateTasks">ⓘ</span>
+                            </span>
+                            <span class="stat-detail-value stat-over">@_statistics.UnderEstimateTasks</span>
+                        </div>
+                        <div class="stat-detail-item">
+                            <span class="stat-detail-label-with-help">
+                                <span>平均誤差:</span>
+                                <span class="stat-help-icon-small" data-tooltip="@StatisticsTitles.AverageEstimateErrorDays">ⓘ</span>
+                            </span>
+                            <span class="stat-detail-value">@_statistics.AverageEstimateErrorDays 日</span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         
-        @if (_statistics.AsOfDate.Date < DateTime.UtcNow.Date)
+        @if (_statistics.AsOfDate.Date < DateTimeOffset.UtcNow.Date)
         {
             <div class="rewind-notice">
                 <p>⏰ リワインド表示中: @_statistics.AsOfDate.ToString("yyyy年MM月dd日") 時点の統計</p>
             </div>
         }
+
+        <!-- グラフセクション -->
+        <div class="charts-section">
+            <div class="chart-row">
+                <div class="chart-container">
+                    <CumulativeFlowDiagram ProjectId="@ProjectId" AsOfDate="@AsOfDate" />
+                </div>
+            </div>
+
+            <div class="chart-row">
+                <div class="chart-container">
+                    <BurndownChart ProjectId="@ProjectId" AsOfDate="@AsOfDate" />
+                </div>
+            </div>
+        </div>
     </div>
 }
 else
@@ -132,14 +239,25 @@ else
     public required Guid ProjectId { get; set; }
     
     [Parameter]
-    public DateTime? AsOfDate { get; set; }
+    public DateTimeOffset? AsOfDate { get; set; }
 
     private ProjectStatisticsDetailDto? _statistics;
     private bool _isLoading = true;
     
     // パラメータ変更検知用
     private Guid _prevProjectId;
-    private DateTime? _prevAsOfDate;
+    private DateTimeOffset? _prevAsOfDate;
+
+    // 見積もり精度の閾値定数
+    /// <summary>
+    /// 見積もり精度が良好と判定される閾値（80%以上）
+    /// </summary>
+    private const double GoodEstimateAccuracyThreshold = 80.0;
+
+    /// <summary>
+    /// 見積もり精度が警告レベルと判定される閾値（60%以上80%未満）
+    /// </summary>
+    private const double WarningEstimateAccuracyThreshold = 60.0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -180,15 +298,29 @@ else
         }
     }
 
+    private string GetConsumptionRateClass()
+    {
+        if (_statistics == null) return "";
+
+        // 工数消費率が100%を超える場合は予定より多くの工数を消費（赤）
+        if (_statistics.HoursConsumptionRate > 100)
+            return "stat-over";
+        // 工数消費率が100%未満の場合は予定より少ない工数で完了（緑）
+        else if (_statistics.HoursConsumptionRate < 100)
+            return "stat-under";
+
+        return "";
+    }
+
     private string GetOverrunClass()
     {
         if (_statistics == null) return "";
-        
+
         if (_statistics.HoursOverrun > 0)
             return "stat-over";
         else if (_statistics.HoursOverrun < 0)
             return "stat-under";
-        
+
         return "";
     }
 
@@ -203,12 +335,24 @@ else
     private string GetOnTimeRateClass()
     {
         if (_statistics == null) return "";
-        
-        if (_statistics.OnTimeRate >= 80)
+
+        if (_statistics.OnTimeRate >= GoodEstimateAccuracyThreshold)
             return "stat-good";
-        else if (_statistics.OnTimeRate >= 60)
+        else if (_statistics.OnTimeRate >= WarningEstimateAccuracyThreshold)
             return "stat-warning";
-        
+
+        return "stat-bad";
+    }
+
+    private string GetEstimateAccuracyClass()
+    {
+        if (_statistics == null) return "";
+
+        if (_statistics.EstimateAccuracyRate >= GoodEstimateAccuracyThreshold)
+            return "stat-good";
+        else if (_statistics.EstimateAccuracyRate >= WarningEstimateAccuracyThreshold)
+            return "stat-warning";
+
         return "stat-bad";
     }
 }

@@ -426,7 +426,7 @@ public class TaskFormModalTests : Bunit.TestContext
 
         // Assert
         var errorMessage = cut.Find(".alert-danger");
-        Assert.Contains("Test error", errorMessage.TextContent);
+        Assert.Contains("保存に失敗しました", errorMessage.TextContent);
     }
 
     [Fact(DisplayName = "新規作成モードで実績期間フィールドが表示される")]

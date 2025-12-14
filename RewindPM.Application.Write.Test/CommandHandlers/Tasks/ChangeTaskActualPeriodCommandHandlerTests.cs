@@ -18,7 +18,7 @@ public class ChangeTaskActualPeriodCommandHandlerTests
     {
         _repository = Substitute.For<IAggregateRepository>();
         _dateTimeProvider = Substitute.For<IDateTimeProvider>();
-        _dateTimeProvider.UtcNow.Returns(DateTime.UtcNow);
+        _dateTimeProvider.UtcNow.Returns(DateTimeOffset.UtcNow);
         _handler = new ChangeTaskActualPeriodCommandHandler(_repository, _dateTimeProvider);
     }
 
@@ -33,7 +33,7 @@ public class ChangeTaskActualPeriodCommandHandlerTests
             projectId,
             "Test Task",
             "Description",
-            new ScheduledPeriod(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), 40),
+            new ScheduledPeriod(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(7), 40),
             "user1",
             _dateTimeProvider
         );
@@ -41,8 +41,8 @@ public class ChangeTaskActualPeriodCommandHandlerTests
         _repository.GetByIdAsync<TaskAggregate>(taskId)
             .Returns(task);
 
-        var actualStartDate = DateTime.UtcNow;
-        var actualEndDate = DateTime.UtcNow.AddDays(8);
+        var actualStartDate = DateTimeOffset.UtcNow;
+        var actualEndDate = DateTimeOffset.UtcNow.AddDays(8);
         var actualHours = 50;
 
         var command = new ChangeTaskActualPeriodCommand(
@@ -75,14 +75,14 @@ public class ChangeTaskActualPeriodCommandHandlerTests
             Guid.NewGuid(),
             "Test Task",
             "Description",
-            new ScheduledPeriod(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), 40),
+            new ScheduledPeriod(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddDays(7), 40),
             "user1",
             _dateTimeProvider
         );
 
         _repository.GetByIdAsync<TaskAggregate>(taskId).Returns(task);
 
-        var actualStartDate = DateTime.UtcNow;
+        var actualStartDate = DateTimeOffset.UtcNow;
         var command = new ChangeTaskActualPeriodCommand(
             taskId,
             actualStartDate,

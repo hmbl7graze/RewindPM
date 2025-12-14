@@ -8,7 +8,7 @@ namespace RewindPM.Infrastructure.Write.Services;
 /// </summary>
 public class FixedDateTimeProvider : IDateTimeProvider
 {
-    private DateTime _currentTime;
+    private DateTimeOffset _currentTime;
 
     /// <summary>
     /// 指定した時刻で初期化
@@ -22,14 +22,14 @@ public class FixedDateTimeProvider : IDateTimeProvider
     /// <summary>
     /// 設定された固定時刻を返す
     /// </summary>
-    public DateTime UtcNow => _currentTime;
+    public DateTimeOffset UtcNow => _currentTime;
 
     /// <summary>
     /// 現在時刻を設定
     /// SeedDataで時系列に沿ってデータを作成する際に使用
     /// </summary>
     /// <param name="newTime">新しい時刻（UTC）</param>
-    public void SetCurrentTime(DateTime newTime)
+    public void SetCurrentTime(DateTimeOffset newTime)
     {
         _currentTime = newTime;
     }

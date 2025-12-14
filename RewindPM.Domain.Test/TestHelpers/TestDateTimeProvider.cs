@@ -7,16 +7,16 @@ namespace RewindPM.Domain.Test.TestHelpers;
 /// </summary>
 public class TestDateTimeProvider : IDateTimeProvider
 {
-    private DateTime _currentTime;
+    private DateTimeOffset _currentTime;
 
-    public TestDateTimeProvider(DateTime? fixedTime = null)
+    public TestDateTimeProvider(DateTimeOffset? fixedTime = null)
     {
-        _currentTime = fixedTime ?? DateTime.UtcNow;
+        _currentTime = fixedTime ?? DateTimeOffset.UtcNow;
     }
 
-    public DateTime UtcNow => _currentTime;
+    public DateTimeOffset UtcNow => _currentTime;
 
-    public void SetTime(DateTime time)
+    public void SetTime(DateTimeOffset time)
     {
         _currentTime = time;
     }

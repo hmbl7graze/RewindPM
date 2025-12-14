@@ -7,7 +7,7 @@ namespace RewindPM.Application.Read.QueryHandlers.Projects;
 /// <summary>
 /// GetProjectEditDatesQueryのハンドラー
 /// </summary>
-public class GetProjectEditDatesQueryHandler : IRequestHandler<GetProjectEditDatesQuery, List<DateTime>>
+public class GetProjectEditDatesQueryHandler : IRequestHandler<GetProjectEditDatesQuery, List<DateTimeOffset>>
 {
     private readonly IReadModelRepository _repository;
 
@@ -16,7 +16,7 @@ public class GetProjectEditDatesQueryHandler : IRequestHandler<GetProjectEditDat
         _repository = repository;
     }
 
-    public async Task<List<DateTime>> Handle(GetProjectEditDatesQuery request, CancellationToken cancellationToken)
+    public async Task<List<DateTimeOffset>> Handle(GetProjectEditDatesQuery request, CancellationToken cancellationToken)
     {
         return await _repository.GetProjectEditDatesAsync(request.ProjectId, request.Ascending, cancellationToken);
     }

@@ -27,8 +27,8 @@ public class DomainEventSerializerTests
         var taskId = Guid.NewGuid();
         var projectId = Guid.NewGuid();
         var scheduledPeriod = new ScheduledPeriod(
-            DateTime.UtcNow,
-            DateTime.UtcNow.AddDays(7),
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddDays(7),
             40);
 
         var taskCreated = new TaskCreated
@@ -57,7 +57,7 @@ public class DomainEventSerializerTests
         // Arrange
         var taskId = Guid.NewGuid();
         var projectId = Guid.NewGuid();
-        var now = DateTime.UtcNow;
+        var now = DateTimeOffset.UtcNow;
         var scheduledPeriod = new ScheduledPeriod(now, now.AddDays(7), 40);
 
         var original = new TaskCreated
@@ -116,7 +116,7 @@ public class DomainEventSerializerTests
         // Arrange
         var taskId = Guid.NewGuid();
         var projectId = Guid.NewGuid();
-        var now = DateTime.UtcNow;
+        var now = DateTimeOffset.UtcNow;
 
         var taskCreated = new TaskCreated
         {

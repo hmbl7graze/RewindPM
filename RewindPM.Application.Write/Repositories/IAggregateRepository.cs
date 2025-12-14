@@ -22,4 +22,12 @@ public interface IAggregateRepository
     /// <typeparam name="T">Aggregateの型</typeparam>
     /// <param name="aggregate">保存するAggregate</param>
     Task SaveAsync<T>(T aggregate) where T : AggregateRoot;
+
+    /// <summary>
+    /// 指定されたプロジェクトに関連するタスクのIDリストを取得する
+    /// イベントストアから削除されていないタスクのIDを取得
+    /// </summary>
+    /// <param name="projectId">プロジェクトID</param>
+    /// <returns>タスクIDのリスト</returns>
+    Task<List<Guid>> GetTaskIdsByProjectIdAsync(Guid projectId);
 }

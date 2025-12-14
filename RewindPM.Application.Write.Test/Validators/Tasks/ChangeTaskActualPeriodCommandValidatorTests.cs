@@ -18,8 +18,8 @@ public class ChangeTaskActualPeriodCommandValidatorTests
         // Arrange
         var command = new ChangeTaskActualPeriodCommand(
             Guid.NewGuid(),
-            DateTime.UtcNow,
-            DateTime.UtcNow.AddDays(7),
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddDays(7),
             40,
             "user1"
         );
@@ -38,8 +38,8 @@ public class ChangeTaskActualPeriodCommandValidatorTests
         // Arrange
         var command = new ChangeTaskActualPeriodCommand(
             Guid.NewGuid(),
-            DateTime.UtcNow,
-            DateTime.UtcNow.AddDays(-1),
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddDays(-1),
             40,
             "user1"
         );
@@ -58,8 +58,8 @@ public class ChangeTaskActualPeriodCommandValidatorTests
         // Arrange
         var command = new ChangeTaskActualPeriodCommand(
             Guid.NewGuid(),
-            DateTime.UtcNow,
-            DateTime.UtcNow.AddDays(7),
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow.AddDays(7),
             0,
             "user1"
         );

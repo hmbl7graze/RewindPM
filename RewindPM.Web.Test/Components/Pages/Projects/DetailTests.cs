@@ -5,8 +5,10 @@ using NSubstitute;
 using RewindPM.Application.Read.DTOs;
 using RewindPM.Application.Read.Queries.Projects;
 using RewindPM.Application.Read.Queries.Tasks;
+using RewindPM.Application.Read.Queries.Statistics;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 using ProjectsDetail = RewindPM.Web.Components.Pages.Projects.Detail;
+using ProjectInfoModal = RewindPM.Web.Components.Pages.Projects.ProjectInfoModal;
 using Microsoft.AspNetCore.Components;
 
 namespace RewindPM.Web.Test.Components.Pages.Projects;
@@ -20,6 +22,11 @@ public class DetailTests : Bunit.TestContext
     {
         _mediatorMock = Substitute.For<IMediator>();
         Services.AddSingleton(_mediatorMock);
+
+        // 統計クエリのデフォルトモック設定
+        _mediatorMock
+            .Send(Arg.Any<GetProjectStatisticsDetailQuery>(), Arg.Any<CancellationToken>())
+            .Returns(CreateTestStatistics());
     }
 
     private ProjectDto CreateTestProject()
@@ -73,6 +80,29 @@ public class DetailTests : Bunit.TestContext
                 UpdatedAt = null,
                 CreatedBy = "admin"
             }
+        };
+    }
+
+    private ProjectStatisticsDetailDto CreateTestStatistics()
+    {
+        return new ProjectStatisticsDetailDto
+        {
+            TotalTasks = 10,
+            CompletedTasks = 5,
+            InProgressTasks = 3,
+            InReviewTasks = 1,
+            TodoTasks = 1,
+            TotalEstimatedHours = 100,
+            TotalActualHours = 80,
+            RemainingEstimatedHours = 20,
+            OnTimeTasks = 4,
+            DelayedTasks = 1,
+            AverageDelayDays = 2,
+            AccurateEstimateTasks = 0,
+            OverEstimateTasks = 0,
+            UnderEstimateTasks = 0,
+            AverageEstimateErrorDays = 0,
+            AsOfDate = DateTimeOffset.UtcNow
         };
     }
 
@@ -147,7 +177,7 @@ public class DetailTests : Bunit.TestContext
         Assert.Contains("Test Project", title.TextContent.Trim());
 
         var buttons = cut.FindAll("button, a.btn, a.btn-icon");
-        Assert.Contains(buttons, b => b.TextContent.Contains("Edit"));
+        Assert.Contains(buttons, b => b.TextContent.Contains("Info"));
         Assert.Contains(buttons, b => b.TextContent.Contains("Add Task"));
     }
 
@@ -167,9 +197,9 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
-        // Assert
-        var description = cut.Find(".project-description");
-        Assert.Contains("Test Description", description.TextContent);
+        // Assert - プロジェクト説明はProjectInfoModalに移動されたため、タイトルのみ検証
+        var title = cut.Find(".project-title");
+        Assert.Contains("Test Project", title.TextContent);
     }
 
     [Fact(DisplayName = "タスクが存在しない場合、空のメッセージが表示される")]
@@ -364,11 +394,11 @@ public class DetailTests : Bunit.TestContext
     {
         // Arrange
         var project = CreateTestProject();
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10),
-            new DateTime(2025, 1, 5)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
         };
 
         _mediatorMock
@@ -401,7 +431,7 @@ public class DetailTests : Bunit.TestContext
             .Returns(project);
         _mediatorMock
             .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new List<DateTime> { DateTime.Today.AddDays(-1) });
+            .Returns(new List<DateTimeOffset> { new DateTimeOffset(DateTime.UtcNow.Date.AddDays(-1), TimeSpan.Zero) });
         _mediatorMock
             .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(new List<TaskDto>());
@@ -429,7 +459,7 @@ public class DetailTests : Bunit.TestContext
             .Returns(project);
         _mediatorMock
             .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new List<DateTime>());
+            .Returns(new List<DateTimeOffset>());
         _mediatorMock
             .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(new List<TaskDto>());
@@ -453,7 +483,7 @@ public class DetailTests : Bunit.TestContext
             .Returns(project);
         _mediatorMock
             .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new List<DateTime>());
+            .Returns(new List<DateTimeOffset>());
         _mediatorMock
             .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
             .Returns(new List<TaskDto>());
@@ -472,10 +502,10 @@ public class DetailTests : Bunit.TestContext
     {
         // Arrange
         var project = CreateTestProject();
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero)
         };
         var currentTasks = CreateTestTasks();
         var pastTasks = new List<TaskDto>
@@ -487,10 +517,10 @@ public class DetailTests : Bunit.TestContext
                 Title = "Past Task",
                 Description = "Past Task Description",
                 Status = TaskStatus.Todo,
-                ScheduledStartDate = new DateTime(2025, 1, 10),
-                ScheduledEndDate = new DateTime(2025, 1, 15),
+                ScheduledStartDate = new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
                 EstimatedHours = 5,
-                CreatedAt = new DateTime(2025, 1, 10),
+                CreatedAt = new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
                 CreatedBy = "admin",
                 UpdatedAt = null
             }
@@ -518,7 +548,7 @@ public class DetailTests : Bunit.TestContext
             var instance = cut.Instance;
             var method = instance.GetType()
                 .GetMethod("HandleDateChanged", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            await (method!.Invoke(instance, new object?[] { new DateTime(2025, 1, 10) }) as Task ?? Task.CompletedTask);
+            await (method!.Invoke(instance, new object?[] { new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero) }) as Task ?? Task.CompletedTask);
         });
 
         // Assert - GetTasksByProjectIdAtTimeQueryが呼ばれたことを確認
@@ -532,11 +562,11 @@ public class DetailTests : Bunit.TestContext
     {
         // Arrange
         var project = CreateTestProject();
-        var initialEditDates = new List<DateTime> { new DateTime(2025, 1, 10) };
-        var updatedEditDates = new List<DateTime>
+        var initialEditDates = new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero) };
+        var updatedEditDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero)
         };
 
         _mediatorMock
@@ -573,4 +603,420 @@ public class DetailTests : Bunit.TestContext
             Arg.Any<GetProjectEditDatesQuery>(),
             Arg.Any<CancellationToken>());
     }
+
+    // ========== タブ切り替え機能のテスト ==========
+
+    [Fact(DisplayName = "初期表示時にデフォルトでGanttタブが選択されること")]
+    public void Detail_DisplaysGanttTab_ByDefault()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DateTimeOffset>());
+
+        // Act
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Assert - Ganttタブがアクティブ
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        Assert.Contains("active", ganttTab.ClassName);
+
+        // Ganttチャートが表示されている
+        var ganttChart = cut.FindAll(".gantt-chart, .gantt-empty");
+        Assert.NotEmpty(ganttChart);
+    }
+
+    [Fact(DisplayName = "クエリパラメータ tab=kanban でKanbanタブが選択されること")]
+    public void Detail_DisplaysKanbanTab_WhenQueryParameterIsKanban()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        var tasks = CreateTestTasks();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(tasks);
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DateTimeOffset>());
+
+        // NavigationManagerのURIを設定
+        var navMan = Services.GetRequiredService<NavigationManager>();
+        navMan.NavigateTo($"/projects/{_testProjectId}?tab=kanban");
+
+        // Act
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Assert - Kanbanタブがアクティブ
+        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Kanban"));
+        Assert.Contains("active", kanbanTab.ClassName);
+
+        // Kanbanボードが表示されている
+        var kanbanBoard = cut.Find(".kanban-board");
+        Assert.NotNull(kanbanBoard);
+    }
+
+    [Fact(DisplayName = "クエリパラメータ tab=statistics でStatisticsタブが選択されること")]
+    public void Detail_DisplaysStatisticsTab_WhenQueryParameterIsStatistics()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DateTimeOffset>());
+
+        // NavigationManagerのURIを設定
+        var navMan = Services.GetRequiredService<NavigationManager>();
+        navMan.NavigateTo($"/projects/{_testProjectId}?tab=statistics");
+
+        // Act
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Assert - Statisticsタブがアクティブ
+        var statisticsTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Statistics"));
+        Assert.Contains("active", statisticsTab.ClassName);
+
+        // Statisticsダッシュボードが表示されている（レンダリング完了を待つ）
+        cut.WaitForAssertion(() =>
+        {
+            var statisticsDashboard = cut.Find(".statistics-dashboard");
+            Assert.NotNull(statisticsDashboard);
+        }, timeout: TimeSpan.FromSeconds(5));
+    }
+
+    [Fact(DisplayName = "無効なクエリパラメータではデフォルトのGanttタブが選択されること")]
+    public void Detail_DisplaysGanttTab_WhenQueryParameterIsInvalid()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DateTimeOffset>());
+
+        // NavigationManagerのURIを設定（無効なタブ値）
+        var navMan = Services.GetRequiredService<NavigationManager>();
+        navMan.NavigateTo($"/projects/{_testProjectId}?tab=invalid");
+
+        // Act
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Assert - デフォルトのGanttタブがアクティブ
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        Assert.Contains("active", ganttTab.ClassName);
+
+        // Ganttチャートが表示されている
+        var ganttChart = cut.FindAll(".gantt-chart, .gantt-empty");
+        Assert.NotEmpty(ganttChart);
+    }
+
+    [Fact(DisplayName = "Kanbanタブボタンクリック時にKanbanビューが表示されること")]
+    public void Detail_DisplaysKanbanView_WhenKanbanTabClicked()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        var tasks = CreateTestTasks();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(tasks);
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DateTimeOffset>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - Kanbanタブをクリック
+        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Kanban"));
+        kanbanTab.Click();
+
+        // Assert - Kanbanボードが表示されている（レンダリング完了を待つ）
+        cut.WaitForAssertion(() =>
+        {
+            var kanbanBoard = cut.Find(".kanban-board");
+            Assert.NotNull(kanbanBoard);
+        });
+
+        // Kanbanタブがアクティブ
+        var updatedKanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Kanban"));
+        Assert.Contains("active", updatedKanbanTab.ClassName);
+    }
+
+    [Fact(DisplayName = "Statisticsタブボタンクリック時にStatisticsビューが表示されること")]
+    public void Detail_DisplaysStatisticsView_WhenStatisticsTabClicked()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DateTimeOffset>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - Statisticsタブをクリック
+        var statisticsTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Statistics"));
+        statisticsTab.Click();
+
+        // Assert - Statisticsダッシュボードが表示されている（レンダリング完了を待つ）
+        cut.WaitForAssertion(() =>
+        {
+            var statisticsDashboard = cut.Find(".statistics-dashboard");
+            Assert.NotNull(statisticsDashboard);
+        }, timeout: TimeSpan.FromSeconds(5));
+
+        // Statisticsタブがアクティブ
+        var updatedStatisticsTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Statistics"));
+        Assert.Contains("active", updatedStatisticsTab.ClassName);
+    }
+
+    [Fact(DisplayName = "タブ切り替え後に再度Ganttタブに戻れること")]
+    public void Detail_CanSwitchBackToGanttTab_AfterChangingTab()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        var tasks = CreateTestTasks();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(tasks);
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DateTimeOffset>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - Kanbanタブをクリック
+        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Kanban"));
+        kanbanTab.Click();
+
+        // Kanbanボードが表示されるのを待つ
+        cut.WaitForAssertion(() =>
+        {
+            var kanbanBoard = cut.Find(".kanban-board");
+            Assert.NotNull(kanbanBoard);
+        });
+
+        // 再度Ganttタブをクリック
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        ganttTab.Click();
+
+        // Assert - Ganttチャートが表示されている（レンダリング完了を待つ）
+        cut.WaitForAssertion(() =>
+        {
+            var ganttChart = cut.FindAll(".gantt-chart, .gantt-empty");
+            Assert.NotEmpty(ganttChart);
+        });
+
+        // Ganttタブがアクティブ
+        var updatedGanttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        Assert.Contains("active", updatedGanttTab.ClassName);
+    }
+
+    // ========== ビュー切り替え時のモーダル状態管理テスト ==========
+
+    [Fact(DisplayName = "ビュー切り替え時にモーダルが閉じられること")]
+    public void Detail_ClosesModal_WhenViewIsToggled()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - モーダルを開く
+        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("Add Task"));
+        addTaskButton.Click();
+
+        // モーダルが表示されていることを確認
+        var modalBeforeToggle = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalBeforeToggle);
+
+        // ビューを切り替える（Gantt → Kanban）
+        var kanbanButton = cut.FindAll("button").First(b => b.TextContent.Contains("Kanban") && b.ClassList.Contains("view-tab"));
+        kanbanButton.Click();
+
+        // Assert - モーダルが閉じられていることを確認
+        var modalAfterToggle = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterToggle);
+    }
+
+    [Fact(DisplayName = "タスク選択後にビューを切り替えるとモーダルが閉じられること")]
+    public void Detail_ClosesTaskModal_WhenViewIsToggledAfterSelectingTask()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        var tasks = CreateTestTasks();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(tasks);
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - タスクをクリックしてモーダルを開く
+        var taskNameCell = cut.Find(".gantt-task-name-cell");
+        taskNameCell.Click();
+
+        // モーダルが表示されていることを確認
+        var modalBeforeToggle = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalBeforeToggle);
+
+        // ビューを切り替える（Gantt → Statistics）
+        var statisticsButton = cut.FindAll("button").First(b => b.TextContent.Contains("Statistics") && b.ClassList.Contains("view-tab"));
+        statisticsButton.Click();
+
+        // Assert - モーダルが閉じられていることを確認
+        var modalAfterToggle = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterToggle);
+    }
+
+    [Fact(DisplayName = "複数のビュー間を切り替えてもモーダル状態が正しく管理されること")]
+    public void Detail_MaintainsCorrectModalState_WhenTogglingBetweenMultipleViews()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - モーダルを開く
+        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("Add Task"));
+        addTaskButton.Click();
+
+        // Gantt → Kanban
+        var kanbanButton = cut.FindAll("button").First(b => b.TextContent.Contains("Kanban") && b.ClassList.Contains("view-tab"));
+        kanbanButton.Click();
+
+        var modalAfterKanban = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterKanban);
+
+        // Kanban → Statistics
+        var statisticsButton = cut.FindAll("button").First(b => b.TextContent.Contains("Statistics") && b.ClassList.Contains("view-tab"));
+        statisticsButton.Click();
+
+        var modalAfterStatistics = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterStatistics);
+
+        // Statistics → Gantt
+        var ganttButton = cut.FindAll("button").First(b => b.TextContent.Contains("Gantt") && b.ClassList.Contains("view-tab"));
+        ganttButton.Click();
+
+        var modalAfterGantt = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterGantt);
+
+        // Assert - 各ビュー切り替え後にモーダルが閉じていることを確認
+        // 上記のアサートで既に検証済み
+    }
+
+    [Fact(DisplayName = "Infoボタンをクリックするとプロジェクト情報モーダルが表示される")]
+    public void Detail_ShowsInfoModal_WhenInfoButtonClicked()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act
+        var infoButton = cut.FindAll("button").First(b => b.TextContent.Contains("Info"));
+        infoButton.Click();
+
+        // Assert
+        Assert.Contains("プロジェクト情報", cut.Markup);
+    }
+
+    [Fact(DisplayName = "プロジェクト情報更新後にプロジェクトデータが再読み込みされる")]
+    public async Task Detail_ReloadsProjectData_AfterInfoUpdate()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        var updatedProject = new ProjectDto
+        {
+            Id = _testProjectId,
+            Title = "Updated Project",
+            Description = "Updated Description",
+            CreatedAt = project.CreatedAt,
+            UpdatedAt = DateTime.Now,
+            CreatedBy = project.CreatedBy,
+            UpdatedBy = "test-user"
+        };
+
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project, updatedProject);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - プロジェクト情報モーダルのOnSuccessコールバックを直接呼び出す
+        var modalComponent = cut.FindComponent<ProjectInfoModal>();
+        await cut.InvokeAsync(async () => await modalComponent.Instance.OnSuccess.InvokeAsync());
+
+        // Assert - 2回目のクエリが送信されたことを確認
+        await _mediatorMock.Received(2).Send(
+            Arg.Any<GetProjectByIdQuery>(),
+            Arg.Any<CancellationToken>());
+    }
 }
+

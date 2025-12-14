@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Events;
 using RewindPM.Domain.ValueObjects;
 using RewindPM.Infrastructure.Read.Persistence;
+using RewindPM.Infrastructure.Read.Services;
 using RewindPM.Projection.Handlers;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 
@@ -35,13 +36,36 @@ public class ProjectionHandlerTests : IAsyncDisposable
             .CreateLogger<T>();
     }
 
+    private ITimeZoneService CreateTimeZoneService()
+    {
+        return new TestTimeZoneService();
+    }
+
+    /// <summary>
+    /// テスト用のTimeZoneService実装（UTCを使用）
+    /// </summary>
+    private class TestTimeZoneService : ITimeZoneService
+    {
+        public TimeZoneInfo TimeZone => TimeZoneInfo.Utc;
+
+        public DateTimeOffset GetSnapshotDate(DateTimeOffset utcDateTime)
+        {
+            return new DateTimeOffset(utcDateTime.Date, TimeSpan.Zero);
+        }
+
+        public DateTimeOffset ConvertUtcToLocal(DateTimeOffset utcDateTime)
+        {
+            return utcDateTime;
+        }
+    }
+
     #region ProjectCreatedEventHandler Tests
 
     [Fact(DisplayName = "ProjectCreatedイベントでプロジェクトとスナップショットが作成されること")]
     public async Task ProjectCreatedEventHandler_Should_Create_Project_And_Snapshot()
     {
         // Arrange
-        var handler = new ProjectCreatedEventHandler(_context, CreateLogger<ProjectCreatedEventHandler>());
+        var handler = new ProjectCreatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<ProjectCreatedEventHandler>());
         var projectId = Guid.NewGuid();
         var occurredAt = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc);
         var @event = new ProjectCreated
@@ -98,7 +122,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.Projects.Add(project);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new ProjectUpdatedEventHandler(_context, CreateLogger<ProjectUpdatedEventHandler>());
+        var handler = new ProjectUpdatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<ProjectUpdatedEventHandler>());
         var @event = new ProjectUpdated
         {
             AggregateId = projectId,
@@ -158,7 +182,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.ProjectHistories.Add(existingSnapshot);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new ProjectUpdatedEventHandler(_context, CreateLogger<ProjectUpdatedEventHandler>());
+        var handler = new ProjectUpdatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<ProjectUpdatedEventHandler>());
         var @event = new ProjectUpdated
         {
             AggregateId = projectId,
@@ -190,7 +214,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
     public async Task TaskCreatedEventHandler_Should_Create_Task_And_Snapshot()
     {
         // Arrange
-        var handler = new TaskCreatedEventHandler(_context, CreateLogger<TaskCreatedEventHandler>());
+        var handler = new TaskCreatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskCreatedEventHandler>());
         var taskId = Guid.NewGuid();
         var projectId = Guid.NewGuid();
         var occurredAt = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc);
@@ -263,7 +287,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.Tasks.Add(task);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskUpdatedEventHandler(_context, CreateLogger<TaskUpdatedEventHandler>());
+        var handler = new TaskUpdatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskUpdatedEventHandler>());
         var @event = new TaskUpdated
         {
             AggregateId = taskId,
@@ -328,7 +352,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.TaskHistories.Add(existingSnapshot);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskUpdatedEventHandler(_context, CreateLogger<TaskUpdatedEventHandler>());
+        var handler = new TaskUpdatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskUpdatedEventHandler>());
         var @event = new TaskUpdated
         {
             AggregateId = taskId,
@@ -378,7 +402,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.Tasks.Add(task);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskStatusChangedEventHandler(_context, CreateLogger<TaskStatusChangedEventHandler>());
+        var handler = new TaskStatusChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskStatusChangedEventHandler>());
         var @event = new TaskStatusChanged
         {
             AggregateId = taskId,
@@ -441,7 +465,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.TaskHistories.Add(existingSnapshot);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskStatusChangedEventHandler(_context, CreateLogger<TaskStatusChangedEventHandler>());
+        var handler = new TaskStatusChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskStatusChangedEventHandler>());
         var firstChange = new TaskStatusChanged
         {
             AggregateId = taskId,
@@ -484,7 +508,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
     public async Task TaskStatusChangedEventHandler_Should_Handle_Missing_Task_Gracefully()
     {
         // Arrange
-        var handler = new TaskStatusChangedEventHandler(_context, CreateLogger<TaskStatusChangedEventHandler>());
+        var handler = new TaskStatusChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskStatusChangedEventHandler>());
         var @event = new TaskStatusChanged
         {
             AggregateId = Guid.NewGuid(), // 存在しないタスク
@@ -532,7 +556,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.Tasks.Add(task);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskScheduledPeriodChangedEventHandler(_context, CreateLogger<TaskScheduledPeriodChangedEventHandler>());
+        var handler = new TaskScheduledPeriodChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskScheduledPeriodChangedEventHandler>());
         var newScheduledPeriod = new ScheduledPeriod(
             new DateTime(2025, 12, 12),
             new DateTime(2025, 12, 22),
@@ -609,7 +633,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.TaskHistories.Add(existingSnapshot);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskScheduledPeriodChangedEventHandler(_context, CreateLogger<TaskScheduledPeriodChangedEventHandler>());
+        var handler = new TaskScheduledPeriodChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskScheduledPeriodChangedEventHandler>());
         var newScheduledPeriod = new ScheduledPeriod(
             new DateTime(2025, 12, 12),
             new DateTime(2025, 12, 22),
@@ -667,7 +691,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.Tasks.Add(task);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateLogger<TaskActualPeriodChangedEventHandler>());
+        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskActualPeriodChangedEventHandler>());
         var newActualPeriod = new ActualPeriod(
             new DateTime(2025, 12, 11),
             new DateTime(2025, 12, 20),
@@ -744,7 +768,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.TaskHistories.Add(existingSnapshot);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateLogger<TaskActualPeriodChangedEventHandler>());
+        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskActualPeriodChangedEventHandler>());
         var newActualPeriod = new ActualPeriod(
             new DateTime(2025, 12, 10),
             new DateTime(2025, 12, 15),
@@ -795,7 +819,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.Tasks.Add(task);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateLogger<TaskActualPeriodChangedEventHandler>());
+        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskActualPeriodChangedEventHandler>());
 
         // 開始日のみ設定
         var partialActualPeriod = new ActualPeriod(
@@ -820,6 +844,137 @@ public class ProjectionHandlerTests : IAsyncDisposable
         Assert.Equal(new DateTime(2025, 12, 11), updatedTask.ActualStartDate);
         Assert.Null(updatedTask.ActualEndDate);
         Assert.Null(updatedTask.ActualHours);
+    }
+
+    #endregion
+
+    #region ProjectDeletedEventHandler Tests
+
+    [Fact(DisplayName = "ProjectDeletedイベントでプロジェクトが論理削除されること")]
+    public async Task ProjectDeletedEventHandler_Should_Mark_Project_As_Deleted()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var createdAt = new DateTime(2025, 12, 5, 10, 0, 0, DateTimeKind.Utc);
+        var deletedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
+
+        // 既存のプロジェクトを作成
+        var project = new Infrastructure.Read.Entities.ProjectEntity
+        {
+            Id = projectId,
+            Title = "Test Project",
+            Description = "Test Description",
+            CreatedBy = "user1",
+            CreatedAt = createdAt
+        };
+        _context.Projects.Add(project);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var handler = new ProjectDeletedEventHandler(_context, CreateLogger<ProjectDeletedEventHandler>());
+        var @event = new ProjectDeleted
+        {
+            AggregateId = projectId,
+            DeletedBy = "user2",
+            OccurredAt = deletedAt
+        };
+
+        // Act
+        await handler.HandleAsync(@event);
+
+        // Assert
+        var deletedProject = await _context.Projects.FindAsync([projectId], TestContext.Current.CancellationToken);
+        Assert.NotNull(deletedProject);
+        Assert.True(deletedProject.IsDeleted);
+        Assert.Equal(deletedAt, deletedProject.DeletedAt);
+        Assert.Equal("user2", deletedProject.DeletedBy);
+    }
+
+    [Fact(DisplayName = "ProjectDeletedイベントで存在しないプロジェクトを適切に処理すること")]
+    public async Task ProjectDeletedEventHandler_Should_Handle_Missing_Project_Gracefully()
+    {
+        // Arrange
+        var handler = new ProjectDeletedEventHandler(_context, CreateLogger<ProjectDeletedEventHandler>());
+        var @event = new ProjectDeleted
+        {
+            AggregateId = Guid.NewGuid(), // 存在しないプロジェクト
+            DeletedBy = "user1",
+            OccurredAt = DateTime.UtcNow
+        };
+
+        // Act & Assert - 例外が発生しないことを確認
+        await handler.HandleAsync(@event);
+
+        // プロジェクトが存在しないため、何も更新されないことを確認
+        var project = await _context.Projects.FindAsync([@event.AggregateId], TestContext.Current.CancellationToken);
+        Assert.Null(project);
+    }
+
+    #endregion
+
+    #region TaskDeletedEventHandler Tests
+
+    [Fact(DisplayName = "TaskDeletedイベントでタスクが論理削除されること")]
+    public async Task TaskDeletedEventHandler_Should_Mark_Task_As_Deleted()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+        var createdAt = new DateTime(2025, 12, 5, 10, 0, 0, DateTimeKind.Utc);
+        var deletedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
+
+        // 既存のタスクを作成
+        var task = new Infrastructure.Read.Entities.TaskEntity
+        {
+            Id = taskId,
+            ProjectId = projectId,
+            Title = "Test Task",
+            Description = "Test Description",
+            Status = TaskStatus.Todo,
+            CreatedBy = "user1",
+            CreatedAt = createdAt
+        };
+        _context.Tasks.Add(task);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var handler = new TaskDeletedEventHandler(_context, CreateLogger<TaskDeletedEventHandler>());
+        var @event = new TaskDeleted
+        {
+            AggregateId = taskId,
+            ProjectId = projectId,
+            DeletedBy = "user2",
+            OccurredAt = deletedAt
+        };
+
+        // Act
+        await handler.HandleAsync(@event);
+
+        // Assert
+        var deletedTask = await _context.Tasks.FindAsync([taskId], TestContext.Current.CancellationToken);
+        Assert.NotNull(deletedTask);
+        Assert.True(deletedTask.IsDeleted);
+        Assert.Equal(deletedAt, deletedTask.DeletedAt);
+        Assert.Equal("user2", deletedTask.DeletedBy);
+    }
+
+    [Fact(DisplayName = "TaskDeletedイベントで存在しないタスクを適切に処理すること")]
+    public async Task TaskDeletedEventHandler_Should_Handle_Missing_Task_Gracefully()
+    {
+        // Arrange
+        var handler = new TaskDeletedEventHandler(_context, CreateLogger<TaskDeletedEventHandler>());
+        var @event = new TaskDeleted
+        {
+            AggregateId = Guid.NewGuid(), // 存在しないタスク
+            ProjectId = Guid.NewGuid(),
+            DeletedBy = "user1",
+            OccurredAt = DateTime.UtcNow
+        };
+
+        // Act & Assert - 例外が発生しないことを確認
+        await handler.HandleAsync(@event);
+
+        // タスクが存在しないため、何も更新されないことを確認
+        var task = await _context.Tasks.FindAsync([@event.AggregateId], TestContext.Current.CancellationToken);
+        Assert.Null(task);
     }
 
     #endregion

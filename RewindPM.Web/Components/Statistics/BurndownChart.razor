@@ -1,0 +1,146 @@
+@using MediatR
+@using RewindPM.Application.Read.Queries.Statistics
+@using RewindPM.Application.Read.DTOs
+
+@inject IMediator Mediator
+@inject ILogger<BurndownChart> Logger
+
+@if (_isLoading)
+{
+    <div class="chart-loading">
+        <p>チャートを読み込み中...</p>
+    </div>
+}
+else if (_actualData != null && _actualData.Any())
+{
+    <div class="burndown-chart">
+        <h4>Burndown Chart</h4>
+        <ApexChart TItem="ChartDataPoint"
+                   Title="残タスク数の推移"
+                   Height="400">
+
+            @* 理想線（予定） *@
+            <ApexPointSeries TItem="ChartDataPoint"
+                             Items="_idealData"
+                             Name="理想線"
+                             SeriesType="SeriesType.Line"
+                             XValue="@(e => e.X)"
+                             YAggregate="@(e => e.Sum(y => y.Y))"
+                             OrderBy="e => e.X"
+                             Color="#adb5bd" />
+
+            @* 実績線 *@
+            <ApexPointSeries TItem="ChartDataPoint"
+                             Items="_actualData"
+                             Name="実績"
+                             SeriesType="SeriesType.Line"
+                             XValue="@(e => e.X)"
+                             YAggregate="@(e => e.Sum(y => y.Y))"
+                             OrderBy="e => e.X"
+                             Color="#007bff" />
+        </ApexChart>
+    </div>
+}
+else
+{
+    <div class="chart-error">
+        <p>表示するデータがありません</p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public required Guid ProjectId { get; set; }
+
+    [Parameter]
+    public DateTimeOffset? AsOfDate { get; set; }
+
+    private List<ChartDataPoint>? _actualData;
+    private List<ChartDataPoint>? _idealData;
+    private bool _isLoading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadChartDataAsync();
+    }
+
+    private async Task LoadChartDataAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            // 終了日を設定（AsOfDateがあればそれを使用、なければ現在日時）
+            var endDate = AsOfDate ?? DateTimeOffset.UtcNow;
+
+            // 開始日を計算（終了日の30日前）
+            var startDate = endDate.AddDays(-30);
+
+            var query = new GetProjectStatisticsTimeSeriesQuery(ProjectId, startDate, endDate);
+            var timeSeriesData = await Mediator.Send(query);
+
+            if (timeSeriesData != null && timeSeriesData.DailySnapshots.Any())
+            {
+                var snapshots = timeSeriesData.DailySnapshots;
+
+                // 実績線データを作成
+                _actualData = snapshots
+                    .Select(s => new ChartDataPoint
+                    {
+                        X = s.Date.ToString("M/d"),
+                        Y = s.RemainingTasks
+                    })
+                    .ToList();
+
+                // 理想線データを作成
+                // 開始時の残タスク数から終了時（0タスク）まで線形に減少
+                var startingTasks = snapshots.First().TotalTasks;
+                var totalDays = snapshots.Count;
+
+                // totalDaysが1の場合はゼロ除算を避けるため、理想線は開始タスク数のまま
+                if (totalDays <= 1)
+                {
+                    _idealData = snapshots
+                        .Select(s => new ChartDataPoint
+                        {
+                            X = s.Date.ToString("M/d"),
+                            Y = startingTasks
+                        })
+                        .ToList();
+                }
+                else
+                {
+                    _idealData = snapshots
+                        .Select((s, index) => new ChartDataPoint
+                        {
+                            X = s.Date.ToString("M/d"),
+                            // 線形に減少する理想線
+                            Y = Math.Max(0, startingTasks - (int)Math.Round((double)startingTasks * index / (totalDays - 1)))
+                        })
+                        .ToList();
+                }
+            }
+            else
+            {
+                _actualData = null;
+                _idealData = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Burndown Chartの読み込みに失敗しました。ProjectId: {ProjectId}", ProjectId);
+            _actualData = null;
+            _idealData = null;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private class ChartDataPoint
+    {
+        public string X { get; set; } = string.Empty;
+        public int Y { get; set; }
+    }
+}

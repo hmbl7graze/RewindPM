@@ -42,7 +42,7 @@ public class GanttChartTests : Bunit.TestContext
                 ActualStartDate = null,
                 ActualEndDate = null,
                 ActualHours = null,
-                CreatedAt = DateTime.Now,
+                CreatedAt = DateTimeOffset.Now,
                 UpdatedAt = null,
                 CreatedBy = "test-user",
                 UpdatedBy = null
@@ -177,8 +177,8 @@ public class GanttChartTests : Bunit.TestContext
     public void GanttChart_CalculatesTimelineRange_Correctly()
     {
         // Arrange
-        var startDate = new DateTime(2024, 1, 1);
-        var endDate = new DateTime(2024, 1, 10);
+        var startDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2024, 1, 10, 0, 0, 0, TimeSpan.Zero);
         var tasks = new List<TaskDto>
         {
             new TaskDto
@@ -194,7 +194,7 @@ public class GanttChartTests : Bunit.TestContext
                 ActualStartDate = null,
                 ActualEndDate = null,
                 ActualHours = null,
-                CreatedAt = DateTime.Now,
+                CreatedAt = DateTimeOffset.Now,
                 UpdatedAt = null,
                 CreatedBy = "test-user",
                 UpdatedBy = null
@@ -223,13 +223,13 @@ public class GanttChartTests : Bunit.TestContext
                 Title = "Task",
                 Description = "Test",
                 Status = TaskStatus.Done,
-                ScheduledStartDate = new DateTime(2024, 1, 5),
-                ScheduledEndDate = new DateTime(2024, 1, 10),
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 10, 0, 0, 0, TimeSpan.Zero),
                 EstimatedHours = 40,
-                ActualStartDate = new DateTime(2024, 1, 1), // Earlier than scheduled
-                ActualEndDate = new DateTime(2024, 1, 15), // Later than scheduled
+                ActualStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero), // Earlier than scheduled
+                ActualEndDate = new DateTimeOffset(2024, 1, 15, 0, 0, 0, TimeSpan.Zero), // Later than scheduled
                 ActualHours = 60,
-                CreatedAt = DateTime.Now,
+                CreatedAt = DateTimeOffset.Now,
                 UpdatedAt = null,
                 CreatedBy = "test-user",
                 UpdatedBy = null
@@ -289,13 +289,13 @@ public class GanttChartTests : Bunit.TestContext
                 Title = "Task spanning months",
                 Description = "Test",
                 Status = TaskStatus.InProgress,
-                ScheduledStartDate = new DateTime(2024, 1, 15),
-                ScheduledEndDate = new DateTime(2024, 3, 15),
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 15, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 3, 15, 0, 0, 0, TimeSpan.Zero),
                 EstimatedHours = 100,
                 ActualStartDate = null,
                 ActualEndDate = null,
                 ActualHours = null,
-                CreatedAt = DateTime.Now,
+                CreatedAt = DateTimeOffset.Now,
                 UpdatedAt = null,
                 CreatedBy = "test-user",
                 UpdatedBy = null
@@ -327,13 +327,13 @@ public class GanttChartTests : Bunit.TestContext
                 Title = "Task",
                 Description = "Test",
                 Status = TaskStatus.Todo,
-                ScheduledStartDate = new DateTime(2024, 1, 1),
-                ScheduledEndDate = new DateTime(2024, 1, 3),
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 3, 0, 0, 0, TimeSpan.Zero),
                 EstimatedHours = 10,
                 ActualStartDate = null,
                 ActualEndDate = null,
                 ActualHours = null,
-                CreatedAt = DateTime.Now,
+                CreatedAt = DateTimeOffset.Now,
                 UpdatedAt = null,
                 CreatedBy = "test-user",
                 UpdatedBy = null
@@ -424,8 +424,8 @@ public class GanttChartTests : Bunit.TestContext
         var tasks = CreateTestTasks();
         var taskId = tasks[0].Id;
 
-        (Guid taskId, string barType, DateTime newStartDate, DateTime newEndDate)? resizeData = null;
-        var onBarResize = EventCallback.Factory.Create<(Guid, string, DateTime, DateTime)>(
+        (Guid taskId, string barType, DateTimeOffset newStartDate, DateTimeOffset newEndDate)? resizeData = null;
+        var onBarResize = EventCallback.Factory.Create<(Guid, string, DateTimeOffset, DateTimeOffset)>(
             this,
             (data) => resizeData = data
         );
@@ -441,8 +441,8 @@ public class GanttChartTests : Bunit.TestContext
         Assert.NotNull(resizeData);
         Assert.Equal(taskId, resizeData.Value.taskId);
         Assert.Equal("scheduled", resizeData.Value.barType);
-        Assert.Equal(new DateTime(2024, 1, 1), resizeData.Value.newStartDate);
-        Assert.Equal(new DateTime(2024, 1, 3), resizeData.Value.newEndDate);
+        Assert.Equal(new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero), resizeData.Value.newStartDate);
+        Assert.Equal(new DateTimeOffset(2024, 1, 3, 0, 0, 0, TimeSpan.Zero), resizeData.Value.newEndDate);
     }
 
     [Fact(DisplayName = "OnBarResizedで無効なGUIDの場合は処理されない")]
@@ -451,7 +451,7 @@ public class GanttChartTests : Bunit.TestContext
         // Arrange
         var tasks = CreateTestTasks();
         var callbackInvoked = false;
-        var onBarResize = EventCallback.Factory.Create<(Guid, string, DateTime, DateTime)>(
+        var onBarResize = EventCallback.Factory.Create<(Guid, string, DateTimeOffset, DateTimeOffset)>(
             this,
             (data) => callbackInvoked = true
         );
@@ -480,21 +480,21 @@ public class GanttChartTests : Bunit.TestContext
                 Title = "Task",
                 Description = "Test",
                 Status = TaskStatus.InProgress,
-                ScheduledStartDate = new DateTime(2024, 1, 1),
-                ScheduledEndDate = new DateTime(2024, 1, 10),
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 10, 0, 0, 0, TimeSpan.Zero),
                 EstimatedHours = 40,
-                ActualStartDate = new DateTime(2024, 1, 1),
-                ActualEndDate = new DateTime(2024, 1, 5),
+                ActualStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                ActualEndDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero),
                 ActualHours = 20,
-                CreatedAt = DateTime.Now,
+                CreatedAt = DateTimeOffset.Now,
                 UpdatedAt = null,
                 CreatedBy = "test-user",
                 UpdatedBy = null
             }
         };
 
-        (Guid taskId, string barType, DateTime newStartDate, DateTime newEndDate)? resizeData = null;
-        var onBarResize = EventCallback.Factory.Create<(Guid, string, DateTime, DateTime)>(
+        (Guid taskId, string barType, DateTimeOffset newStartDate, DateTimeOffset newEndDate)? resizeData = null;
+        var onBarResize = EventCallback.Factory.Create<(Guid, string, DateTimeOffset, DateTimeOffset)>(
             this,
             (data) => resizeData = data
         );
@@ -508,8 +508,8 @@ public class GanttChartTests : Bunit.TestContext
 
         // Assert
         Assert.NotNull(resizeData);
-        Assert.Equal(new DateTime(2024, 1, 6), resizeData.Value.newStartDate); // 1/1 + 5日
-        Assert.Equal(new DateTime(2024, 1, 9), resizeData.Value.newEndDate);   // 1/1 + 8日
+        Assert.Equal(new DateTimeOffset(2024, 1, 6, 0, 0, 0, TimeSpan.Zero), resizeData.Value.newStartDate); // 1/1 + 5日
+        Assert.Equal(new DateTimeOffset(2024, 1, 9, 0, 0, 0, TimeSpan.Zero), resizeData.Value.newEndDate);   // 1/1 + 8日
     }
 
     // ========== リワインド機能（IsReadOnly）のテスト ==========
@@ -624,7 +624,7 @@ public class GanttChartTests : Bunit.TestContext
     {
         // Arrange
         var tasks = CreateTestTasks();
-        var viewDate = new DateTime(2024, 1, 5);
+        var viewDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero);
 
         // Act
         var cut = RenderComponent<GanttChart>(parameters => parameters
@@ -679,13 +679,13 @@ public class GanttChartTests : Bunit.TestContext
                 Title = "Task 1",
                 Description = "Description 1",
                 Status = TaskStatus.Todo,
-                ScheduledStartDate = new DateTime(2024, 1, 1),
-                ScheduledEndDate = new DateTime(2024, 1, 5),
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero),
                 EstimatedHours = 20,
                 ActualStartDate = null,
                 ActualEndDate = null,
                 ActualHours = null,
-                CreatedAt = DateTime.Now,
+                CreatedAt = DateTimeOffset.Now,
                 UpdatedAt = null,
                 CreatedBy = "test-user",
                 UpdatedBy = null
@@ -697,13 +697,13 @@ public class GanttChartTests : Bunit.TestContext
                 Title = "Task 2",
                 Description = "Description 2",
                 Status = TaskStatus.InProgress,
-                ScheduledStartDate = new DateTime(2024, 1, 3),
-                ScheduledEndDate = new DateTime(2024, 1, 8),
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 3, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 8, 0, 0, 0, TimeSpan.Zero),
                 EstimatedHours = 30,
-                ActualStartDate = new DateTime(2024, 1, 3),
-                ActualEndDate = new DateTime(2024, 1, 7),
+                ActualStartDate = new DateTimeOffset(2024, 1, 3, 0, 0, 0, TimeSpan.Zero),
+                ActualEndDate = new DateTimeOffset(2024, 1, 7, 0, 0, 0, TimeSpan.Zero),
                 ActualHours = 28,
-                CreatedAt = DateTime.Now,
+                CreatedAt = DateTimeOffset.Now,
                 UpdatedAt = null,
                 CreatedBy = "test-user",
                 UpdatedBy = null

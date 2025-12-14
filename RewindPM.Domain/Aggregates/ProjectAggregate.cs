@@ -101,6 +101,27 @@ public class ProjectAggregate : AggregateRoot
     }
 
     /// <summary>
+    /// プロジェクトを削除する（論理削除）
+    /// </summary>
+    /// <param name="deletedBy">削除者のユーザーID</param>
+    /// <param name="dateTimeProvider">時刻プロバイダー</param>
+    public void Delete(string deletedBy, IDateTimeProvider dateTimeProvider)
+    {
+        if (string.IsNullOrWhiteSpace(deletedBy))
+        {
+            throw new DomainException("削除者のユーザーIDは必須です");
+        }
+
+        ApplyEvent(new ProjectDeleted
+        {
+            AggregateId = Id,
+            OccurredAt = dateTimeProvider.UtcNow,
+            DeletedBy = deletedBy,
+            Reason = string.Empty
+        });
+    }
+
+    /// <summary>
     /// イベントに応じてAggregateの状態を変更する
     /// </summary>
     /// <param name="event">適用するドメインイベント</param>
@@ -120,6 +141,11 @@ public class ProjectAggregate : AggregateRoot
                 Title = e.Title;
                 Description = e.Description;
                 UpdatedBy = e.UpdatedBy;
+                break;
+
+            case ProjectDeleted:
+                // 論理削除のため、Aggregate自体の状態は変更しない
+                // イベントストアに記録するのみ
                 break;
         }
     }

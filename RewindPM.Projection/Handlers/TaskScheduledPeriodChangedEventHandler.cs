@@ -4,6 +4,7 @@ using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
 using RewindPM.Infrastructure.Read.Entities;
 using RewindPM.Infrastructure.Read.Persistence;
+using RewindPM.Infrastructure.Read.Services;
 
 namespace RewindPM.Projection.Handlers;
 
@@ -13,13 +14,16 @@ namespace RewindPM.Projection.Handlers;
 public class TaskScheduledPeriodChangedEventHandler : IEventHandler<TaskScheduledPeriodChanged>
 {
     private readonly ReadModelDbContext _context;
+    private readonly ITimeZoneService _timeZoneService;
     private readonly ILogger<TaskScheduledPeriodChangedEventHandler> _logger;
 
     public TaskScheduledPeriodChangedEventHandler(
         ReadModelDbContext context,
+        ITimeZoneService timeZoneService,
         ILogger<TaskScheduledPeriodChangedEventHandler> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _timeZoneService = timeZoneService ?? throw new ArgumentNullException(nameof(timeZoneService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -51,9 +55,9 @@ public class TaskScheduledPeriodChangedEventHandler : IEventHandler<TaskSchedule
         _logger.LogInformation("Successfully updated scheduled period for task {TaskId}", @event.AggregateId);
     }
 
-    private async Task UpsertTaskSnapshotAsync(Guid taskId, TaskEntity currentState, DateTime occurredAt)
+    private async Task UpsertTaskSnapshotAsync(Guid taskId, TaskEntity currentState, DateTimeOffset occurredAt)
     {
-        var snapshotDate = occurredAt.Date;
+        var snapshotDate = _timeZoneService.GetSnapshotDate(occurredAt);
         var snapshot = await _context.TaskHistories
             .FirstOrDefaultAsync(h => h.TaskId == taskId && h.SnapshotDate == snapshotDate);
 
@@ -97,7 +101,7 @@ public class TaskScheduledPeriodChangedEventHandler : IEventHandler<TaskSchedule
                 UpdatedAt = occurredAt,
                 CreatedBy = currentState.CreatedBy,
                 UpdatedBy = currentState.UpdatedBy,
-                SnapshotCreatedAt = DateTime.UtcNow
+                SnapshotCreatedAt = DateTimeOffset.UtcNow
             };
 
             _context.TaskHistories.Add(snapshot);

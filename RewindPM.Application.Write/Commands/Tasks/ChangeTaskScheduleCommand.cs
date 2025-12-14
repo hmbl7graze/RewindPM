@@ -12,8 +12,8 @@ namespace RewindPM.Application.Write.Commands.Tasks;
 /// <param name="ChangedBy">変更者のユーザーID</param>
 public record ChangeTaskScheduleCommand(
     Guid TaskId,
-    DateTime ScheduledStartDate,
-    DateTime ScheduledEndDate,
+    DateTimeOffset ScheduledStartDate,
+    DateTimeOffset ScheduledEndDate,
     int EstimatedHours,
     string ChangedBy
 ) : IRequest;

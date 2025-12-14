@@ -24,7 +24,7 @@ public class GetProjectStatisticsDetailQueryHandler
     {
         return await _repository.GetProjectStatisticsDetailAsync(
             request.ProjectId,
-            request.AsOfDate ?? DateTime.UtcNow,
+            request.AsOfDate ?? DateTimeOffset.UtcNow,
             cancellationToken);
     }
 }

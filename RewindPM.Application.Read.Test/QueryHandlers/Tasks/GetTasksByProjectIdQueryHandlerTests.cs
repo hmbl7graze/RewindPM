@@ -32,7 +32,7 @@ public class GetTasksByProjectIdQueryHandlerTests
                 Title = "Task 1",
                 Description = "Description 1",
                 Status = TaskStatus.Todo,
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = null,
                 CreatedBy = "user1"
             },
@@ -43,7 +43,7 @@ public class GetTasksByProjectIdQueryHandlerTests
                 Title = "Task 2",
                 Description = "Description 2",
                 Status = TaskStatus.InProgress,
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = null,
                 CreatedBy = "user1"
             }

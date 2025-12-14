@@ -12,8 +12,8 @@ public class TaskAggregateTests
     private readonly IDateTimeProvider _dateTimeProvider = new TestDateTimeProvider();
     private readonly Guid _projectId = Guid.NewGuid();
     private readonly ScheduledPeriod _scheduledPeriod = new(
-        new DateTime(2025, 1, 1),
-        new DateTime(2025, 1, 10),
+        new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero),
+        new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero),
         40);
 
     [Fact(DisplayName = "有効な値でタスクを作成できる")]
@@ -239,8 +239,8 @@ public class TaskAggregateTests
         task.ClearUncommittedEvents();
 
         var newSchedule = new ScheduledPeriod(
-            new DateTime(2025, 2, 1),
-            new DateTime(2025, 2, 15),
+            new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2025, 2, 15, 0, 0, 0, TimeSpan.Zero),
             60);
         var changedBy = "user456";
 
@@ -260,8 +260,8 @@ public class TaskAggregateTests
         task.ClearUncommittedEvents();
 
         var newSchedule = new ScheduledPeriod(
-            new DateTime(2025, 2, 1),
-            new DateTime(2025, 2, 15),
+            new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2025, 2, 15, 0, 0, 0, TimeSpan.Zero),
             60);
         var changedBy = "user456";
 
@@ -286,8 +286,8 @@ public class TaskAggregateTests
         task.ClearUncommittedEvents();
 
         var actualPeriod = new ActualPeriod(
-            new DateTime(2025, 1, 2),
-            new DateTime(2025, 1, 8),
+            new DateTimeOffset(2025, 1, 2, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2025, 1, 8, 0, 0, 0, TimeSpan.Zero),
             35);
         var changedBy = "user456";
 
@@ -307,8 +307,8 @@ public class TaskAggregateTests
         task.ClearUncommittedEvents();
 
         var actualPeriod = new ActualPeriod(
-            new DateTime(2025, 1, 2),
-            new DateTime(2025, 1, 8),
+            new DateTimeOffset(2025, 1, 2, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2025, 1, 8, 0, 0, 0, TimeSpan.Zero),
             35);
         var changedBy = "user456";
 
@@ -372,5 +372,72 @@ public class TaskAggregateTests
         Assert.Equal("user789", task.UpdatedBy);
         Assert.Equal(2, task.Version); // 3つのイベント = Version 2 (0-indexed)
         Assert.Empty(task.UncommittedEvents);
+    }
+
+    [Fact(DisplayName = "タスクを削除できる")]
+    public void Delete_WithValidValues_ShouldDeleteTask()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
+        task.ClearUncommittedEvents();
+
+        var deletedBy = "user456";
+
+        // Act
+        task.Delete(deletedBy, _dateTimeProvider);
+
+        // Assert
+        // Aggregateの状態は変わらない（論理削除はProjectionで処理）
+        Assert.Equal("タスク", task.Title);
+        Assert.Single(task.UncommittedEvents);
+    }
+
+    [Fact(DisplayName = "タスク削除時にTaskDeletedイベントが発生する")]
+    public void Delete_ShouldRaiseTaskDeletedEvent()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
+        task.ClearUncommittedEvents();
+
+        var deletedBy = "user456";
+
+        // Act
+        task.Delete(deletedBy, _dateTimeProvider);
+
+        // Assert
+        Assert.Single(task.UncommittedEvents);
+        var @event = task.UncommittedEvents.First();
+        Assert.IsType<TaskDeleted>(@event);
+
+        var taskDeletedEvent = (TaskDeleted)@event;
+        Assert.Equal(task.Id, taskDeletedEvent.AggregateId);
+        Assert.Equal(_projectId, taskDeletedEvent.ProjectId);
+        Assert.Equal(deletedBy, taskDeletedEvent.DeletedBy);
+    }
+
+    [Fact(DisplayName = "削除者がnullの場合、DomainExceptionをスローする")]
+    public void Delete_WhenDeletedByIsNull_ShouldThrowDomainException()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
+        string deletedBy = null!;
+
+        // Act & Assert
+        var exception = Assert.Throws<DomainException>(() =>
+            task.Delete(deletedBy, _dateTimeProvider));
+        Assert.Equal("削除者のユーザーIDは必須です", exception.Message);
+    }
+
+    [Fact(DisplayName = "削除者が空文字列の場合、DomainExceptionをスローする")]
+    public void Delete_WhenDeletedByIsEmpty_ShouldThrowDomainException()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
+        var deletedBy = "";
+
+        // Act & Assert
+        var exception = Assert.Throws<DomainException>(() =>
+            task.Delete(deletedBy, _dateTimeProvider));
+        Assert.Equal("削除者のユーザーIDは必須です", exception.Message);
     }
 }

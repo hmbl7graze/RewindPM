@@ -76,19 +76,19 @@
     /// 現在表示中の日付（nullの場合は最新）
     /// </summary>
     [Parameter]
-    public DateTime? CurrentDate { get; set; }
+    public DateTimeOffset? CurrentDate { get; set; }
 
     /// <summary>
     /// 編集日一覧（降順：新しい順）
     /// </summary>
     [Parameter]
-    public List<DateTime> EditDates { get; set; } = new();
+    public List<DateTimeOffset> EditDates { get; set; } = new();
 
     /// <summary>
     /// 日付変更イベント
     /// </summary>
     [Parameter]
-    public EventCallback<DateTime?> OnDateChanged { get; set; }
+    public EventCallback<DateTimeOffset?> OnDateChanged { get; set; }
 
     /// <summary>
     /// 過去を表示中かどうか
@@ -164,26 +164,26 @@
         if (!CanMoveToPrevious)
             return;
 
-        var newDate = IsViewingLatest 
-            ? GetLatestEditDate() 
-            : GetPreviousEditDate();
+        DateTimeOffset? newDate;
 
-        if (newDate.HasValue)
+        if (!CurrentDate.HasValue)
         {
-            await OnDateChanged.InvokeAsync(newDate.Value);
+            // 最新表示中の場合、最新の編集日（リストの先頭）へ
+            newDate = EditDates.FirstOrDefault();
         }
-    }
+        else
+        {
+            // 現在の日付より古い日付のうち、最も新しいものを取得
+            newDate = EditDates
+                .Where(d => d < CurrentDate.Value)
+                .OrderByDescending(d => d)
+                .FirstOrDefault();
+        }
 
-    private DateTime? GetLatestEditDate() => EditDates.FirstOrDefault();
-
-    private DateTime? GetPreviousEditDate()
-    {
-        var previousDate = EditDates
-            .Where(d => d < CurrentDate!.Value)
-            .OrderByDescending(d => d)
-            .FirstOrDefault();
-
-        return previousDate != default ? previousDate : null;
+        if (newDate != default(DateTimeOffset))
+        {
+            await OnDateChanged.InvokeAsync(newDate);
+        }
     }
 
     /// <summary>
@@ -194,26 +194,21 @@
         if (!CanMoveToNext)
             return;
 
-        var newDate = GetNextEditDate();
-
-        if (newDate.HasValue)
-        {
-            await OnDateChanged.InvokeAsync(newDate.Value);
-        }
-        else
-        {
-            await MoveToLatest();
-        }
-    }
-
-    private DateTime? GetNextEditDate()
-    {
-        var nextDate = EditDates
+        var newDate = EditDates
             .Where(d => d > CurrentDate!.Value)
             .OrderBy(d => d)
             .FirstOrDefault();
 
-        return nextDate != default ? nextDate : null;
+        // もし新しい日付がなければ（＝現在が最新の過去スナップショット）、
+        // または見つからなければ、最新状態(null)に戻る
+        if (newDate == default(DateTimeOffset))
+        {
+            await MoveToLatest();
+        }
+        else
+        {
+            await OnDateChanged.InvokeAsync(newDate);
+        }
     }
 
     /// <summary>
@@ -309,7 +304,7 @@
             : string.Empty;
     }
 
-    private bool TryGetEditDateAtSliderValue(int sliderValue, out DateTime date)
+    private bool TryGetEditDateAtSliderValue(int sliderValue, out DateTimeOffset date)
     {
         date = default;
         if (sliderValue < 0 || sliderValue >= MaxSliderValue)

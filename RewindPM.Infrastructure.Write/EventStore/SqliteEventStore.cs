@@ -65,7 +65,7 @@ public class SqliteEventStore : IEventStore
                     EventData = _serializer.Serialize(domainEvent),
                     OccurredAt = domainEvent.OccurredAt,
                     Version = version,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTimeOffset.UtcNow
                 };
 
                 _context.Events.Add(eventEntity);
@@ -99,7 +99,7 @@ public class SqliteEventStore : IEventStore
     /// <summary>
     /// 指定された時点までのイベントを取得する（タイムトラベル用）
     /// </summary>
-    public async Task<List<IDomainEvent>> GetEventsUntilAsync(Guid aggregateId, DateTime pointInTime)
+    public async Task<List<IDomainEvent>> GetEventsUntilAsync(Guid aggregateId, DateTimeOffset pointInTime)
     {
         var eventEntities = await _context.Events
             .Where(e => e.AggregateId == aggregateId && e.OccurredAt <= pointInTime)
@@ -114,7 +114,7 @@ public class SqliteEventStore : IEventStore
     /// <summary>
     /// 指定されたイベント種別のイベントを期間指定で取得する
     /// </summary>
-    public async Task<List<IDomainEvent>> GetEventsByTypeAsync(string eventType, DateTime? from = null, DateTime? to = null)
+    public async Task<List<IDomainEvent>> GetEventsByTypeAsync(string eventType, DateTimeOffset? from = null, DateTimeOffset? to = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(eventType);
 
@@ -137,5 +137,32 @@ public class SqliteEventStore : IEventStore
         return eventEntities
             .Select(e => _serializer.Deserialize(e.EventType, e.EventData))
             .ToList();
+    }
+
+    /// <summary>
+    /// 指定されたプロジェクトに関連するタスクのIDリストを取得する
+    /// </summary>
+    public async Task<List<Guid>> GetTaskIdsByProjectIdAsync(Guid projectId)
+    {
+        // TaskCreatedイベントを全て取得してデシリアライズし、該当プロジェクトのタスクIDを抽出
+        var taskCreatedEvents = await _context.Events
+            .Where(e => e.EventType == "TaskCreated")
+            .ToListAsync();
+
+        var createdTasks = taskCreatedEvents
+            .Select(e => _serializer.Deserialize(e.EventType, e.EventData))
+            .OfType<Domain.Events.TaskCreated>()
+            .Where(e => e.ProjectId == projectId)
+            .Select(e => e.AggregateId)
+            .ToList();
+
+        // TaskDeletedイベントで削除されたタスクIDを取得
+        var deletedTasks = await _context.Events
+            .Where(e => e.EventType == "TaskDeleted" && createdTasks.Contains(e.AggregateId))
+            .Select(e => e.AggregateId)
+            .ToListAsync();
+
+        // 削除されていないタスクIDを返す
+        return createdTasks.Except(deletedTasks).ToList();
     }
 }

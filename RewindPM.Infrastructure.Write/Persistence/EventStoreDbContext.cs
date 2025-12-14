@@ -46,13 +46,19 @@ public class EventStoreDbContext : DbContext
                 .IsRequired();
 
             entity.Property(e => e.OccurredAt)
-                .IsRequired();
+                .IsRequired()
+                .HasConversion(
+                    v => v.UtcDateTime,
+                    v => new DateTimeOffset(v, TimeSpan.Zero));
 
             entity.Property(e => e.Version)
                 .IsRequired();
 
             entity.Property(e => e.CreatedAt)
-                .IsRequired();
+                .IsRequired()
+                .HasConversion(
+                    v => v.UtcDateTime,
+                    v => new DateTimeOffset(v, TimeSpan.Zero));
 
             // インデックス
             // AggregateIdでの検索を高速化（特定のAggregateのイベント取得）

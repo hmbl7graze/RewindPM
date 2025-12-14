@@ -20,7 +20,7 @@ public class ProjectHistoryEntity
     /// スナップショット日付（日単位、UTC）
     /// この日の最後の状態を保存
     /// </summary>
-    public DateTime SnapshotDate { get; set; }
+    public DateTimeOffset SnapshotDate { get; set; }
 
     /// <summary>
     /// プロジェクト名
@@ -35,13 +35,13 @@ public class ProjectHistoryEntity
     /// <summary>
     /// 作成日時（UTC）
     /// </summary>
-    public DateTime CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
     /// 更新日時（UTC）
     /// この時点での最終更新日時
     /// </summary>
-    public DateTime? UpdatedAt { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
 
     /// <summary>
     /// 作成者
@@ -58,5 +58,5 @@ public class ProjectHistoryEntity
     /// スナップショット作成日時（UTC）
     /// このレコードがいつ作成されたか
     /// </summary>
-    public DateTime SnapshotCreatedAt { get; set; }
+    public DateTimeOffset SnapshotCreatedAt { get; set; }
 }
