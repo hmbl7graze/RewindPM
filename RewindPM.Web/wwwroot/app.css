@@ -5,12 +5,17 @@
     --success: #16a34a;
     --success-hover: #15803d;
     --danger: #dc2626;
+    --danger-hover: #b91c1c;
+    --danger-bg: #ffebe9;
+    --danger-border: #ff8182;
+    --danger-text: #d1242f;
     --warning: #ca8a04;
 
     /* Backgrounds */
     --bg-body: #f8fafc;
     --bg-surface: #ffffff;
     --bg-subtle: #f1f5f9;
+    --bg-hover: #f3f4f6;
 
     /* Text */
     --text-primary: #0f172a;

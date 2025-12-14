@@ -38,28 +38,19 @@ else
         <div class="header-center">
             <h1 class="project-title">
                 @project.Title
-                <a href="/projects/@Id/edit" class="btn-icon header-edit-btn" title="Edit Project">
-                    Edit
-                </a>
             </h1>
         </div>
         <div class="header-right">
-            <button class="btn @(_isRetrospectiveMode ? "btn-primary" : "btn-outline-secondary")" @onclick="ToggleRetrospectiveMode">
+            <button class="btn btn-outline-secondary" @onclick="ShowInfoModal">
+                Info
+            </button>
+            <button class="btn btn-primary" @onclick="ToggleRetrospectiveMode">
                 Retrospective
             </button>
         </div>
     </div>
 
-    <!-- プロジェクト情報表示 -->
-    <div class="project-info">
-        @if (!string.IsNullOrWhiteSpace(project.Description))
-        {
-            <div class="project-description">
-                <strong>Description:</strong>
-                <p>@project.Description</p>
-            </div>
-        }
-    </div>
+
 
     <!-- タイムラインコントロール(リワインド機能) - 振り返りモード時のみ表示 -->
     @if (_isRetrospectiveMode)
@@ -125,6 +116,13 @@ else
                    OnSuccess="HandleTaskModalSuccess"
                    OnCancel="HandleTaskModalCancel"
                    IsReadOnly="_isViewingPast" />
+
+    <!-- プロジェクト情報モーダル -->
+    <ProjectInfoModal @bind-IsVisible="showInfoModal"
+                      ProjectId="@Id"
+                      ProjectTitle="@project.Title"
+                      ProjectDescription="@project.Description"
+                      OnSuccess="HandleProjectInfoUpdate" />
 }
 
 @code {
@@ -137,6 +135,7 @@ else
     private bool isLoadingTasks = true;
     private string? errorMessage;
     private bool showTaskModal = false;
+    private bool showInfoModal = false;
     private TaskDto? selectedTask = null;
 
     // リワインド機能用の状態
@@ -332,6 +331,18 @@ else
     {
         showTaskModal = false;
         selectedTask = null;
+    }
+
+    private void ShowInfoModal()
+    {
+        showInfoModal = true;
+    }
+
+    private async Task HandleProjectInfoUpdate()
+    {
+        // プロジェクト情報を再読み込み
+        await LoadProject();
+        StateHasChanged();
     }
 
     /// <summary>

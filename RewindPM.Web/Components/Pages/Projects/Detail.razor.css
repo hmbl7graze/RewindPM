@@ -66,31 +66,47 @@
     text-decoration: none;
 }
 
-/* プロジェクト情報 */
-.project-info {
-    background-color: #ffffff;
-    border: 1px solid #d0d7de;
-    border-radius: 6px;
-    padding: 16px;
-    margin-bottom: 24px;
-}
-
-.project-description {
-    margin: 0;
-}
-
-.project-description strong {
-    color: #656d76;
+/* ヘッダーボタン共通スタイル */
+.header-right .btn {
+    padding: 6px 16px;
     font-size: 0.9rem;
-    display: block;
-    margin-bottom: 8px;
+    font-weight: 500;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-subtle);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.project-description p {
-    color: #1f2328;
-    margin: 0;
-    white-space: pre-wrap;
-    line-height: 1.6;
+.header-right .btn:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.header-right .btn-primary {
+    background-color: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.header-right .btn-primary:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+    color: white;
+}
+
+.header-right .btn-outline-secondary {
+    background-color: var(--bg-subtle);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.header-right .btn-outline-secondary:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
 /* タスクセクション */

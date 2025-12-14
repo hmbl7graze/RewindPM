@@ -8,6 +8,7 @@ using RewindPM.Application.Read.Queries.Tasks;
 using RewindPM.Application.Read.Queries.Statistics;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 using ProjectsDetail = RewindPM.Web.Components.Pages.Projects.Detail;
+using ProjectInfoModal = RewindPM.Web.Components.Pages.Projects.ProjectInfoModal;
 using Microsoft.AspNetCore.Components;
 
 namespace RewindPM.Web.Test.Components.Pages.Projects;
@@ -176,7 +177,7 @@ public class DetailTests : Bunit.TestContext
         Assert.Contains("Test Project", title.TextContent.Trim());
 
         var buttons = cut.FindAll("button, a.btn, a.btn-icon");
-        Assert.Contains(buttons, b => b.TextContent.Contains("Edit"));
+        Assert.Contains(buttons, b => b.TextContent.Contains("Info"));
         Assert.Contains(buttons, b => b.TextContent.Contains("Add Task"));
     }
 
@@ -196,9 +197,9 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
-        // Assert
-        var description = cut.Find(".project-description");
-        Assert.Contains("Test Description", description.TextContent);
+        // Assert - プロジェクト説明はProjectInfoModalに移動されたため、タイトルのみ検証
+        var title = cut.Find(".project-title");
+        Assert.Contains("Test Project", title.TextContent);
     }
 
     [Fact(DisplayName = "タスクが存在しない場合、空のメッセージが表示される")]
@@ -958,4 +959,64 @@ public class DetailTests : Bunit.TestContext
         // Assert - 各ビュー切り替え後にモーダルが閉じていることを確認
         // 上記のアサートで既に検証済み
     }
+
+    [Fact(DisplayName = "Infoボタンをクリックするとプロジェクト情報モーダルが表示される")]
+    public void Detail_ShowsInfoModal_WhenInfoButtonClicked()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act
+        var infoButton = cut.FindAll("button").First(b => b.TextContent.Contains("Info"));
+        infoButton.Click();
+
+        // Assert
+        Assert.Contains("プロジェクト情報", cut.Markup);
+    }
+
+    [Fact(DisplayName = "プロジェクト情報更新後にプロジェクトデータが再読み込みされる")]
+    public async Task Detail_ReloadsProjectData_AfterInfoUpdate()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        var updatedProject = new ProjectDto
+        {
+            Id = _testProjectId,
+            Title = "Updated Project",
+            Description = "Updated Description",
+            CreatedAt = project.CreatedAt,
+            UpdatedAt = DateTime.Now,
+            CreatedBy = project.CreatedBy,
+            UpdatedBy = "test-user"
+        };
+
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project, updatedProject);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - プロジェクト情報モーダルのOnSuccessコールバックを直接呼び出す
+        var modalComponent = cut.FindComponent<ProjectInfoModal>();
+        await cut.InvokeAsync(async () => await modalComponent.Instance.OnSuccess.InvokeAsync());
+
+        // Assert - 2回目のクエリが送信されたことを確認
+        await _mediatorMock.Received(2).Send(
+            Arg.Any<GetProjectByIdQuery>(),
+            Arg.Any<CancellationToken>());
+    }
 }
+

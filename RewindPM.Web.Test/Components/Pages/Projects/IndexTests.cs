@@ -5,6 +5,9 @@ using NSubstitute;
 using NSubstitute.ReceivedExtensions;
 using RewindPM.Application.Read.DTOs;
 using RewindPM.Application.Read.Queries.Projects;
+using RewindPM.Web.Components.Shared;
+using RewindPM.Domain.ValueObjects;
+using RewindPM.Web.Components.Pages.Projects;
 using ProjectsIndex = RewindPM.Web.Components.Pages.Projects.Index;
 
 namespace RewindPM.Web.Test.Components.Pages.Projects;
@@ -17,6 +20,31 @@ public class IndexTests : Bunit.TestContext
     {
         _mediatorMock = Substitute.For<IMediator>();
         Services.AddSingleton(_mediatorMock);
+    }
+
+    private List<ProjectDto> CreateTestProjects()
+    {
+        return new List<ProjectDto>
+        {
+            new ProjectDto
+            {
+                Id = Guid.NewGuid(),
+                Title = "Project 1",
+                Description = "Description 1",
+                CreatedAt = DateTime.Now,
+                UpdatedAt = null,
+                CreatedBy = "user1"
+            },
+            new ProjectDto
+            {
+                Id = Guid.NewGuid(),
+                Title = "Project 2",
+                Description = "Description 2",
+                CreatedAt = DateTime.Now,
+                UpdatedAt = null,
+                CreatedBy = "user2"
+            }
+        };
     }
 
     [Fact(DisplayName = "初期表示時に読み込み中メッセージが表示される")]
@@ -190,4 +218,107 @@ public class IndexTests : Bunit.TestContext
         var emptyState = cut.Find(".empty-state");
         Assert.Contains("プロジェクトがありません", emptyState.TextContent);
     }
+
+    [Fact(DisplayName = "削除ボタンをクリックすると削除確認モーダルが表示される")]
+    public async Task Index_ShowsDeleteModal_WhenDeleteButtonClicked()
+    {
+        // Arrange
+        var projects = CreateTestProjects();
+        _mediatorMock
+            .Send(Arg.Any<GetAllProjectsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(projects);
+        _mediatorMock
+            .Send(Arg.Any<RewindPM.Application.Read.Queries.Tasks.GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsIndex>();
+
+        // Act - ProjectCardの削除ボタンをクリックしたときのコールバックを実行
+        var projectCard = cut.FindComponent<ProjectCard>();
+        await cut.InvokeAsync(async () => 
+            await projectCard.Instance.OnDeleteRequest.InvokeAsync(projects[0].Id));
+
+        // Assert
+        Assert.Contains("プロジェクトを削除", cut.Markup);
+    }
+
+    [Fact(DisplayName = "削除成功後にプロジェクト一覧が再読み込みされる")]
+    public async Task Index_ReloadsProjects_AfterSuccessfulDelete()
+    {
+        // Arrange
+        var projects = CreateTestProjects();
+        var projectsAfterDelete = projects.Take(1).ToList();
+        
+        _mediatorMock
+            .Send(Arg.Any<GetAllProjectsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(projects, projectsAfterDelete);
+        _mediatorMock
+            .Send(Arg.Any<RewindPM.Application.Read.Queries.Tasks.GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsIndex>();
+
+        // Act - 削除成功コールバックを実行
+        var deleteModal = cut.FindComponent<ProjectDeleteModal>();
+        await cut.InvokeAsync(async () => 
+            await deleteModal.Instance.OnSuccess.InvokeAsync());
+
+        // Assert - プロジェクト一覧が再読み込みされたことを確認
+        await _mediatorMock.Received(2).Send(
+            Arg.Any<GetAllProjectsQuery>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "削除リクエスト時にタスク数が取得される")]
+    public async Task Index_RetrievesTaskCount_WhenDeleteRequested()
+    {
+        // Arrange
+        var projects = CreateTestProjects();
+        var tasks = new List<TaskDto>
+        {
+            new TaskDto 
+            { 
+                Id = Guid.NewGuid(), 
+                Title = "Task 1", 
+                ProjectId = projects[0].Id,
+                Description = "Description 1",
+                Status = Domain.ValueObjects.TaskStatus.Todo,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = null,
+                CreatedBy = "user1"
+            },
+            new TaskDto 
+            { 
+                Id = Guid.NewGuid(), 
+                Title = "Task 2", 
+                ProjectId = projects[0].Id,
+                Description = "Description 2",
+                Status = Domain.ValueObjects.TaskStatus.Todo,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = null,
+                CreatedBy = "user1"
+            }
+        };
+        
+        _mediatorMock
+            .Send(Arg.Any<GetAllProjectsQuery>(), Arg.Any<CancellationToken>())
+            .Returns(projects);
+        _mediatorMock
+            .Send(Arg.Any<RewindPM.Application.Read.Queries.Tasks.GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(tasks);
+
+        var cut = RenderComponent<ProjectsIndex>();
+
+        // Act - ProjectCardの削除ボタンをクリックしたときのコールバックを実行
+        var projectCard = cut.FindComponent<ProjectCard>();
+        await cut.InvokeAsync(async () => 
+            await projectCard.Instance.OnDeleteRequest.InvokeAsync(projects[0].Id));
+
+        // Assert - タスク数取得クエリが送信されたことを確認
+        await _mediatorMock.Received(1).Send(
+            Arg.Is<RewindPM.Application.Read.Queries.Tasks.GetTasksByProjectIdQuery>(
+                q => q.ProjectId == projects[0].Id),
+            Arg.Any<CancellationToken>());
+    }
 }
+
