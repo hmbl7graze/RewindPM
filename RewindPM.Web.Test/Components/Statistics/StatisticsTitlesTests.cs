@@ -89,9 +89,9 @@ public class StatisticsTitlesTests
     {
         // Assert
         Assert.Contains("完了率", StatisticsTitles.CompletionRate);
-        Assert.Contains("完了したタスク数", StatisticsTitles.CompletionRate);
+        Assert.Contains("完了済みのタスク数", StatisticsTitles.CompletionRate);
         Assert.Contains("全タスク数", StatisticsTitles.CompletionRate);
-        Assert.Contains("100%", StatisticsTitles.CompletionRate);
+        Assert.Contains("× 100", StatisticsTitles.CompletionRate);
     }
 
     [Fact(DisplayName = "StatisticsTitles: HoursConsumptionRateの説明文に計算式が含まれている")]
@@ -111,7 +111,7 @@ public class StatisticsTitlesTests
         Assert.Contains("期限内完了率", StatisticsTitles.OnTimeRate);
         Assert.Contains("期限内完了数", StatisticsTitles.OnTimeRate);
         Assert.Contains("完了済みタスク数", StatisticsTitles.OnTimeRate);
-        Assert.Contains("100%", StatisticsTitles.OnTimeRate);
+        Assert.Contains("× 100", StatisticsTitles.OnTimeRate);
     }
 
     [Fact(DisplayName = "StatisticsTitles: EstimateAccuracyRateの説明文に精度判定基準が含まれている")]
