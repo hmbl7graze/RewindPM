@@ -218,6 +218,10 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
+        // デフォルトはKanbanなので、Ganttビューに切り替える
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        ganttTab.Click();
+
         // Assert
         var emptyGantt = cut.Find(".gantt-empty");
         Assert.Contains("タスクがありません", emptyGantt.TextContent);
@@ -239,6 +243,10 @@ public class DetailTests : Bunit.TestContext
         // Act
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
+
+        // デフォルトはKanbanなので、Ganttビューに切り替える
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        ganttTab.Click();
 
         // Assert - Gantt chart rows
         var ganttRows = cut.FindAll(".gantt-task-name-cell");
@@ -271,6 +279,10 @@ public class DetailTests : Bunit.TestContext
         // Act
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
+
+        // デフォルトはKanbanなので、Ganttビューに切り替える
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        ganttTab.Click();
 
         // Assert - Gantt chart status badges
         var statusBadges = cut.FindAll(".gantt-task-status");
@@ -317,6 +329,10 @@ public class DetailTests : Bunit.TestContext
 
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
+
+        // デフォルトはKanbanなので、Ganttビューに切り替える
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        ganttTab.Click();
 
         // Act - Click on Gantt task name cell
         var taskNameCell = cut.Find(".gantt-task-name-cell");
@@ -606,8 +622,8 @@ public class DetailTests : Bunit.TestContext
 
     // ========== タブ切り替え機能のテスト ==========
 
-    [Fact(DisplayName = "初期表示時にデフォルトでGanttタブが選択されること")]
-    public void Detail_DisplaysGanttTab_ByDefault()
+    [Fact(DisplayName = "初期表示時にデフォルトでKanbanタブが選択されること")]
+    public void Detail_DisplaysKanbanTab_ByDefault()
     {
         // Arrange
         var project = CreateTestProject();
@@ -625,13 +641,13 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
-        // Assert - Ganttタブがアクティブ
-        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
-        Assert.Contains("active", ganttTab.ClassName);
+        // Assert - Kanbanタブがアクティブ
+        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Kanban"));
+        Assert.Contains("active", kanbanTab.ClassName);
 
-        // Ganttチャートが表示されている
-        var ganttChart = cut.FindAll(".gantt-chart, .gantt-empty");
-        Assert.NotEmpty(ganttChart);
+        // Kanbanボードが表示されている
+        var kanbanBoard = cut.FindAll(".kanban-board, .kanban-empty");
+        Assert.NotEmpty(kanbanBoard);
     }
 
     [Fact(DisplayName = "クエリパラメータ tab=kanban でKanbanタブが選択されること")]
@@ -899,6 +915,10 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
+        // デフォルトはKanbanなので、Ganttビューに切り替える
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        ganttTab.Click();
+
         // Act - タスクをクリックしてモーダルを開く
         var taskNameCell = cut.Find(".gantt-task-name-cell");
         taskNameCell.Click();
@@ -1116,6 +1136,10 @@ public class DetailTests : Bunit.TestContext
 
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
+
+        // デフォルトはKanbanなので、Ganttビューに切り替える
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        ganttTab.Click();
 
         // Act - 1回目: タスクをクリックしてモーダルを開く
         var taskNameCell = cut.Find(".gantt-task-name-cell");

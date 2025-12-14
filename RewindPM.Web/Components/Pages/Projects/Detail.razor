@@ -67,8 +67,8 @@ else
     <div class="tasks-section">
         <div class="view-header">
             <div class="view-tabs">
-                <button class="view-tab @(_viewType == "Gantt" ? "active" : "")" @onclick='() => ToggleView("Gantt")'>Gantt Chart</button>
                 <button class="view-tab @(_viewType == "Kanban" ? "active" : "")" @onclick='() => ToggleView("Kanban")'>Kanban</button>
+                <button class="view-tab @(_viewType == "Gantt" ? "active" : "")" @onclick='() => ToggleView("Gantt")'>Gantt Chart</button>
                 <button class="view-tab @(_viewType == "Statistics" ? "active" : "")" @onclick='() => ToggleView("Statistics")'>Statistics</button>
             </div>
             <div class="view-actions">
@@ -147,7 +147,7 @@ else
     private bool _isRetrospectiveMode = false;
     
     // ビュー切り替え用の状態
-    private string _viewType = "Gantt";
+    private string _viewType = "Kanban";
     private Guid? _previousId = null; // 前回のIdパラメータ値
     private string? _previousTabQuery = null; // 前回のtabクエリパラメータ値
 
@@ -220,7 +220,7 @@ else
                 "gantt" => "Gantt",
                 "kanban" => "Kanban",
                 "statistics" => "Statistics",
-                null or "" => "Gantt", // デフォルト
+                null or "" => "Kanban", // デフォルト
                 _ => "Gantt" // 無効な値の場合もデフォルト
             };
         }
