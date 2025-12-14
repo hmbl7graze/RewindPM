@@ -360,3 +360,10 @@
         transform: scaleX(0.9);
     }
 }
+/* アクセシビリティ: prefers-reduced-motion対応 */
+@media (prefers-reduced-motion: reduce) {
+    .gantt-bar.animating,
+    .gantt-bar.fading-out {
+        animation: none !important;
+    }
+}

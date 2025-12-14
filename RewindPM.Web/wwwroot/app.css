@@ -36,6 +36,17 @@
     --radius: 0.375rem;
     --radius-lg: 0.5rem;
     --radius-pill: 9999px;
+
+    /* Slider Colors */
+    --color-accent: #0969da;
+    --color-accent-hover: #0860ca;
+    --color-accent-transparent: rgba(9, 105, 218, 0.2);
+    --color-slider-track: #d0d7de;
+    --color-slider-tick: #656d76;
+    --color-past-mode: #f57c00;
+    --color-past-mode-hover: #ef6c00;
+    --color-past-mode-light: #fff8e1;
+    --color-past-track: #ffc107;
 }
 
 html,

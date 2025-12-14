@@ -162,3 +162,16 @@
     transform: rotate(2deg) scale(1.02);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
+/* アクセシビリティ: prefers-reduced-motion対応 */
+@media (prefers-reduced-motion: reduce) {
+    .task-card,
+    .task-card.fading-out {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .task-card:hover,
+    .task-card:active {
+        transform: none !important;
+    }
+}

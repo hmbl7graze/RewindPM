@@ -1,6 +1,7 @@
 @using RewindPM.Application.Read.DTOs
 @using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus
 @using Microsoft.JSInterop
+@using RewindPM.Web.Components.Shared
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
@@ -139,9 +140,8 @@
     // 前回のバー状態を保持（アニメーション判定用）
     private Dictionary<string, BarState> previousBarStates = new();
     private HashSet<string> barsToAnimate = new();
-    private HashSet<string> fadingOutBars = new();
+    private readonly HashSet<string> fadingOutBars = new();
     private Dictionary<string, BarState> displayBarStates = new();
-    private const int FadeOutAnimationDurationMs = 400;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -252,7 +252,7 @@
         StateHasChanged();
 
         // アニメーション期間待機
-        await Task.Delay(FadeOutAnimationDurationMs);
+        await Task.Delay(AnimationConstants.FadeOutDurationMs);
 
         // フェードアウト完了後、実際に削除
         fadingOutBars.Clear();
@@ -533,12 +533,6 @@
         return "";
     }
 
-    private bool ShouldAnimateBar(Guid taskId, string barType, DateTimeOffset startDate, DateTimeOffset endDate)
-    {
-        var key = GetBarKey(taskId, barType);
-        return barsToAnimate.Contains(key);
-    }
-
     private class MonthGroup
     {
         public int Year { get; set; }
@@ -548,5 +542,21 @@
         public int DayCount { get; set; }
     }
 
-    private record BarState(DateTimeOffset StartDate, DateTimeOffset EndDate);
+    private record BarState(DateTimeOffset StartDate, DateTimeOffset EndDate)
+    {
+        public virtual bool Equals(BarState? other)
+        {
+            if (ReferenceEquals(this, other)) return true;
+            if (other is null) return false;
+            // UTC時刻で比較
+            return StartDate.UtcDateTime == other.StartDate.UtcDateTime
+                && EndDate.UtcDateTime == other.EndDate.UtcDateTime;
+        }
+
+        public override int GetHashCode()
+        {
+            // UTC時刻でハッシュ化
+            return HashCode.Combine(StartDate.UtcDateTime, EndDate.UtcDateTime);
+        }
+    }
 }

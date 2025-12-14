@@ -57,7 +57,6 @@
             min="0"
             max="@MaxSliderValue"
             value="@CurrentSliderValue"
-            @oninput="HandleSliderInput"
             @onchange="HandleSliderChange"
             aria-label="日付スライダー"
             title="@GetSliderTooltip()" />
@@ -120,11 +119,6 @@
             return MaxSliderValue; // 見つからない場合は最新
         }
     }
-
-    /// <summary>
-    /// スライドバー操作中の一時的な値（デバウンス用）
-    /// </summary>
-    private int _pendingSliderValue = 0;
 
     private const string LiveStateLabel = "最新の状態";
     private const string DateFormat = "yyyy/MM/dd";
@@ -217,18 +211,6 @@
     private async Task MoveToLatest()
     {
         await OnDateChanged.InvokeAsync(null);
-    }
-
-    /// <summary>
-    /// スライドバーの入力イベント（ドラッグ中）
-    /// </summary>
-    private void HandleSliderInput(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out var value))
-        {
-            _pendingSliderValue = value;
-            // ドラッグ中はUIのみ更新（データ取得は行わない）
-        }
     }
 
     /// <summary>

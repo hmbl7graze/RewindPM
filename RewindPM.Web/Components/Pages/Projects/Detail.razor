@@ -313,6 +313,7 @@ else
         try
         {
             isLoadingTasks = true;
+            StateHasChanged(); // ローディング表示を即座に反映
             tasks = _isViewingPast 
                 ? await LoadTasksAtTime(_currentViewDate!.Value)
                 : await LoadLatestTasks();
@@ -324,6 +325,7 @@ else
         finally
         {
             isLoadingTasks = false;
+            StateHasChanged(); // ローディング解除を確実に反映
         }
     }
 
@@ -399,6 +401,7 @@ else
     {
         _currentViewDate = newDate;
         await LoadTasks();
+        StateHasChanged();
     }
 
     private async Task HandleBarResize((Guid taskId, string barType, DateTimeOffset newStartDate, DateTimeOffset newEndDate) resizeData)
@@ -483,14 +486,5 @@ else
     {
         _currentViewDate = null;
         await LoadTasks();
-    }
-
-    /// <summary>
-    /// 現在のユーザーIDを取得（未実装）
-    /// </summary>
-    private string GetCurrentUserId()
-    {
-        // TODO: 認証サービスから実際のユーザーIDを取得する
-        return DefaultUserId;
     }
 }

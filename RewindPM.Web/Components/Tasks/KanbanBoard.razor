@@ -1,6 +1,7 @@
 @using RewindPM.Application.Read.DTOs
 @using RewindPM.Domain.ValueObjects
 @using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus
+@using RewindPM.Web.Components.Shared
 
 <div class="kanban-board">
     @foreach (var status in _statuses)
@@ -44,8 +45,6 @@
 </div>
 
 @code {
-    private const int FadeOutAnimationDurationMs = 300;
-
     [Parameter]
     public List<TaskDto> Tasks { get; set; } = new();
 
@@ -60,7 +59,7 @@
 
     private TaskDto? _draggedTask;
     private List<TaskDto> _previousTasks = new();
-    private HashSet<Guid> _fadingOutTasks = new();
+    private readonly HashSet<Guid> _fadingOutTasks = new();
     private List<TaskDto> _displayTasks = new();
 
     private readonly List<TaskStatus> _statuses = new()
@@ -133,7 +132,7 @@
     {
         MarkTasksForFadeOut(removedTasks);
         StateHasChanged();
-        await Task.Delay(FadeOutAnimationDurationMs);
+        await Task.Delay(AnimationConstants.FadeOutDurationMs);
         CompleteTaskRemoval();
     }
 
@@ -157,6 +156,10 @@
         _displayTasks = Tasks.ToList();
     }
 
+    /// <summary>
+    /// タスクリストの等価性を判定（IDとStatusのみを比較）
+    /// 他のプロパティ（Title、Descriptionなど）の変更は検出しません
+    /// </summary>
     private bool TasksAreEqual(List<TaskDto> list1, List<TaskDto> list2)
     {
         if (list1.Count != list2.Count) return false;

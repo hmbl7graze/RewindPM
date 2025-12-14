@@ -272,11 +272,11 @@
 .slider-label {
     font-size: 0.75rem;
     font-weight: 500;
-    color: #656d76;
+    color: var(--text-muted);
 }
 
 .slider-label-center {
-    color: #1f2328;
+    color: var(--text-primary);
     font-weight: 600;
 }
 
@@ -289,7 +289,7 @@
     width: 100%;
     height: 8px;
     border-radius: 4px;
-    background: linear-gradient(to right, #d0d7de 0%, #d0d7de 100%);
+    background: linear-gradient(to right, var(--color-slider-track) 0%, var(--color-slider-track) 100%);
     outline: none;
     cursor: pointer;
     position: relative;
@@ -303,15 +303,15 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #0969da;
+    background: var(--color-accent);
     cursor: pointer;
-    border: 3px solid #ffffff;
+    border: 3px solid var(--bg-surface);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     transition: all 0.2s ease;
 }
 
 .timeline-slider::-webkit-slider-thumb:hover {
-    background: #0860ca;
+    background: var(--color-accent-hover);
     transform: scale(1.1);
     box-shadow: 0 3px 10px rgba(9, 105, 218, 0.4);
 }
@@ -326,15 +326,15 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: #0969da;
+    background: var(--color-accent);
     cursor: pointer;
-    border: 3px solid #ffffff;
+    border: 3px solid var(--bg-surface);
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
     transition: all 0.2s ease;
 }
 
 .timeline-slider::-moz-range-thumb:hover {
-    background: #0860ca;
+    background: var(--color-accent-hover);
     transform: scale(1.1);
     box-shadow: 0 3px 10px rgba(9, 105, 218, 0.4);
 }
@@ -348,30 +348,30 @@
 .timeline-slider::-moz-range-track {
     height: 8px;
     border-radius: 4px;
-    background: #d0d7de;
+    background: var(--color-slider-track);
 }
 
 /* 過去表示モード時のスライダー */
 .timeline-toolbar.viewing-past ~ .timeline-slider-container .timeline-slider {
-    background: linear-gradient(to right, #ffc107 0%, #d0d7de 100%);
+    background: linear-gradient(to right, var(--color-past-track) 0%, var(--color-slider-track) 100%);
 }
 
 .timeline-toolbar.viewing-past ~ .timeline-slider-container .timeline-slider::-webkit-slider-thumb {
-    background: #f57c00;
-    border-color: #fff8e1;
+    background: var(--color-past-mode);
+    border-color: var(--color-past-mode-light);
 }
 
 .timeline-toolbar.viewing-past ~ .timeline-slider-container .timeline-slider::-webkit-slider-thumb:hover {
-    background: #ef6c00;
+    background: var(--color-past-mode-hover);
 }
 
 .timeline-toolbar.viewing-past ~ .timeline-slider-container .timeline-slider::-moz-range-thumb {
-    background: #f57c00;
-    border-color: #fff8e1;
+    background: var(--color-past-mode);
+    border-color: var(--color-past-mode-light);
 }
 
 .timeline-toolbar.viewing-past ~ .timeline-slider-container .timeline-slider::-moz-range-thumb:hover {
-    background: #ef6c00;
+    background: var(--color-past-mode-hover);
 }
 
 /* ========================================
@@ -391,14 +391,14 @@
     position: absolute;
     width: 2px;
     height: 12px;
-    background-color: #d0d7de;
+    background-color: var(--color-slider-track);
     transform: translateX(-50%);
     transition: all 0.2s ease;
 }
 
 .slider-tick.active {
     height: 16px;
-    background-color: #0969da;
+    background-color: var(--color-accent);
     width: 3px;
 }
 
@@ -407,12 +407,12 @@
 .slider-tick:last-child {
     height: 14px;
     width: 2.5px;
-    background-color: #656d76;
+    background-color: var(--color-slider-tick);
 }
 
 /* 過去表示モード時の目盛り */
 .timeline-toolbar.viewing-past ~ .timeline-slider-container .slider-tick.active {
-    background-color: #f57c00;
+    background-color: var(--color-past-mode);
 }
 
 /* ========================================
@@ -472,17 +472,34 @@
    アクセシビリティ: フォーカス表示
    ======================================== */
 .timeline-slider:focus-visible {
-    outline: 2px solid #0969da;
+    outline: 2px solid var(--color-accent);
     outline-offset: 4px;
     border-radius: 4px;
 }
 
 .timeline-slider:focus-visible::-webkit-slider-thumb {
-    box-shadow: 0 0 0 4px rgba(9, 105, 218, 0.2),
+    box-shadow: 0 0 0 4px var(--color-accent-transparent),
                 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .timeline-slider:focus-visible::-moz-range-thumb {
-    box-shadow: 0 0 0 4px rgba(9, 105, 218, 0.2),
+    box-shadow: 0 0 0 4px var(--color-accent-transparent),
                 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* ========================================
+   アクセシビリティ: prefers-reduced-motion対応
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+    .timeline-slider,
+    .timeline-slider::-webkit-slider-thumb,
+    .timeline-slider::-moz-range-thumb,
+    .slider-tick {
+        transition: none !important;
+    }
+
+    .timeline-slider::-webkit-slider-thumb:hover,
+    .timeline-slider::-moz-range-thumb:hover {
+        transform: none !important;
+    }
 }
