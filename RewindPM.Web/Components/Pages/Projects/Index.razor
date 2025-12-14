@@ -40,13 +40,14 @@ else
     </div>
 }
 
-<Modal Title="プロジェクト作成" @bind-IsVisible="showCreateModal">
+<Modal Title="プロジェクト作成" IsVisible="showCreateModal" IsVisibleChanged="HandleCreateModalVisibilityChanged">
     <CreateProjectForm OnSuccess="HandleCreateSuccess" OnCancel="HandleCreateCancel" />
 </Modal>
 
 <!-- 削除確認モーダル -->
 <ProjectDeleteModal
-    @bind-IsVisible="showDeleteModal"
+    IsVisible="showDeleteModal"
+    IsVisibleChanged="HandleDeleteModalVisibilityChanged"
     ProjectId="@selectedProjectId"
     TaskCount="@selectedProjectTaskCount"
     OnSuccess="@HandleDeleteSuccess"
@@ -129,9 +130,19 @@ else
         showDeleteModal = false;
         selectedProjectId = Guid.Empty;
         selectedProjectTaskCount = 0;
-        
+
         // プロジェクト一覧を再読み込み
         await LoadProjects();
         StateHasChanged();
+    }
+
+    private void HandleCreateModalVisibilityChanged(bool isVisible)
+    {
+        showCreateModal = isVisible;
+    }
+
+    private void HandleDeleteModalVisibilityChanged(bool isVisible)
+    {
+        showDeleteModal = isVisible;
     }
 }

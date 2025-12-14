@@ -67,8 +67,8 @@ else
     <div class="tasks-section">
         <div class="view-header">
             <div class="view-tabs">
-                <button class="view-tab @(_viewType == "Gantt" ? "active" : "")" @onclick='() => ToggleView("Gantt")'>Gantt Chart</button>
                 <button class="view-tab @(_viewType == "Kanban" ? "active" : "")" @onclick='() => ToggleView("Kanban")'>Kanban</button>
+                <button class="view-tab @(_viewType == "Gantt" ? "active" : "")" @onclick='() => ToggleView("Gantt")'>Gantt Chart</button>
                 <button class="view-tab @(_viewType == "Statistics" ? "active" : "")" @onclick='() => ToggleView("Statistics")'>Statistics</button>
             </div>
             <div class="view-actions">
@@ -123,7 +123,8 @@ else
     }
 
     <!-- タスク作成・編集モーダル -->
-    <TaskFormModal @bind-IsVisible="showTaskModal"
+    <TaskFormModal IsVisible="showTaskModal"
+                   IsVisibleChanged="HandleTaskModalVisibleChanged"
                    ProjectId="@Id"
                    ExistingTask="@selectedTask"
                    OnSuccess="HandleTaskModalSuccess"
@@ -131,7 +132,8 @@ else
                    IsReadOnly="_isViewingPast" />
 
     <!-- プロジェクト情報モーダル -->
-    <ProjectInfoModal @bind-IsVisible="showInfoModal"
+    <ProjectInfoModal IsVisible="showInfoModal"
+                      IsVisibleChanged="HandleProjectInfoModalVisibleChanged"
                       ProjectId="@Id"
                       ProjectTitle="@project.Title"
                       ProjectDescription="@project.Description"
@@ -261,8 +263,8 @@ else
                 "gantt" => "Gantt",
                 "kanban" => "Kanban",
                 "statistics" => "Statistics",
-                null or "" => "Gantt", // デフォルト
-                _ => "Gantt" // 無効な値の場合もデフォルト
+                null or "" => "Kanban", // デフォルト
+                _ => "Kanban" // 無効な値の場合もデフォルト
             };
         }
     }
@@ -371,6 +373,11 @@ else
         await ReloadTaskData();
     }
 
+    private void HandleTaskModalVisibleChanged(bool isVisible)
+    {
+        showTaskModal = isVisible;
+    }
+
     private void HandleTaskModalCancel()
     {
         CloseTaskModal();
@@ -392,6 +399,11 @@ else
         // プロジェクト情報を再読み込み
         await LoadProject();
         StateHasChanged();
+    }
+
+    private void HandleProjectInfoModalVisibleChanged(bool isVisible)
+    {
+        showInfoModal = isVisible;
     }
 
     /// <summary>

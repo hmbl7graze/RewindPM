@@ -7,7 +7,7 @@
 @inject IMediator Mediator
 @inject ILogger<TaskFormModal> Logger
 
-<Modal Title="@ModalTitle" @bind-IsVisible="IsVisible" Size="ModalSize.ExtraLarge">
+<Modal Title="@ModalTitle" IsVisible="IsVisible" IsVisibleChanged="HandleModalVisibilityChanged" Size="ModalSize.ExtraLarge">
     <div class="task-form-layout">
         @if (!string.IsNullOrEmpty(errorMessage))
         {
@@ -476,5 +476,11 @@
     {
         ResetForm();
         await IsVisibleChanged.InvokeAsync(false);
+    }
+
+    private void HandleModalVisibilityChanged(bool isVisible)
+    {
+        IsVisible = isVisible;
+        _ = IsVisibleChanged.InvokeAsync(isVisible);
     }
 }

@@ -218,6 +218,10 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
+        // デフォルトはKanbanなので、Ganttビューに切り替える
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        ganttTab.Click();
+
         // Assert
         var emptyGantt = cut.Find(".gantt-empty");
         Assert.Contains("タスクがありません", emptyGantt.TextContent);
@@ -239,6 +243,10 @@ public class DetailTests : Bunit.TestContext
         // Act
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
+
+        // デフォルトはKanbanなので、Ganttビューに切り替える
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        ganttTab.Click();
 
         // Assert - Gantt chart rows
         var ganttRows = cut.FindAll(".gantt-task-name-cell");
@@ -271,6 +279,10 @@ public class DetailTests : Bunit.TestContext
         // Act
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
+
+        // デフォルトはKanbanなので、Ganttビューに切り替える
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        ganttTab.Click();
 
         // Assert - Gantt chart status badges
         var statusBadges = cut.FindAll(".gantt-task-status");
@@ -317,6 +329,10 @@ public class DetailTests : Bunit.TestContext
 
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
+
+        // デフォルトはKanbanなので、Ganttビューに切り替える
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        ganttTab.Click();
 
         // Act - Click on Gantt task name cell
         var taskNameCell = cut.Find(".gantt-task-name-cell");
@@ -606,8 +622,8 @@ public class DetailTests : Bunit.TestContext
 
     // ========== タブ切り替え機能のテスト ==========
 
-    [Fact(DisplayName = "初期表示時にデフォルトでGanttタブが選択されること")]
-    public void Detail_DisplaysGanttTab_ByDefault()
+    [Fact(DisplayName = "初期表示時にデフォルトでKanbanタブが選択されること")]
+    public void Detail_DisplaysKanbanTab_ByDefault()
     {
         // Arrange
         var project = CreateTestProject();
@@ -625,13 +641,13 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
-        // Assert - Ganttタブがアクティブ
-        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
-        Assert.Contains("active", ganttTab.ClassName);
+        // Assert - Kanbanタブがアクティブ
+        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Kanban"));
+        Assert.Contains("active", kanbanTab.ClassName);
 
-        // Ganttチャートが表示されている
-        var ganttChart = cut.FindAll(".gantt-chart, .gantt-empty");
-        Assert.NotEmpty(ganttChart);
+        // Kanbanボードが表示されている
+        var kanbanBoard = cut.FindAll(".kanban-board, .kanban-empty");
+        Assert.NotEmpty(kanbanBoard);
     }
 
     [Fact(DisplayName = "クエリパラメータ tab=kanban でKanbanタブが選択されること")]
@@ -702,8 +718,8 @@ public class DetailTests : Bunit.TestContext
         }, timeout: TimeSpan.FromSeconds(5));
     }
 
-    [Fact(DisplayName = "無効なクエリパラメータではデフォルトのGanttタブが選択されること")]
-    public void Detail_DisplaysGanttTab_WhenQueryParameterIsInvalid()
+    [Fact(DisplayName = "無効なクエリパラメータではデフォルトのKanbanタブが選択されること")]
+    public void Detail_DisplaysKanbanTab_WhenQueryParameterIsInvalid()
     {
         // Arrange
         var project = CreateTestProject();
@@ -725,13 +741,13 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
-        // Assert - デフォルトのGanttタブがアクティブ
-        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
-        Assert.Contains("active", ganttTab.ClassName);
+        // Assert - デフォルトのKanbanタブがアクティブ
+        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Kanban"));
+        Assert.Contains("active", kanbanTab.ClassName);
 
-        // Ganttチャートが表示されている
-        var ganttChart = cut.FindAll(".gantt-chart, .gantt-empty");
-        Assert.NotEmpty(ganttChart);
+        // Kanbanボードが表示されている
+        var kanbanBoard = cut.Find(".kanban-board");
+        Assert.NotNull(kanbanBoard);
     }
 
     [Fact(DisplayName = "Kanbanタブボタンクリック時にKanbanビューが表示されること")]
@@ -899,6 +915,10 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
+        // デフォルトはKanbanなので、Ganttビューに切り替える
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        ganttTab.Click();
+
         // Act - タスクをクリックしてモーダルを開く
         var taskNameCell = cut.Find(".gantt-task-name-cell");
         taskNameCell.Click();
@@ -1017,6 +1037,133 @@ public class DetailTests : Bunit.TestContext
         await _mediatorMock.Received(2).Send(
             Arg.Any<GetProjectByIdQuery>(),
             Arg.Any<CancellationToken>());
+    }
+
+    // ========== モーダル再表示テスト ==========
+
+    [Fact(DisplayName = "タスクモーダルを閉じた後、再度開くことができる")]
+    public void Detail_CanReopenTaskModal_AfterClosing()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - 1回目: モーダルを開く
+        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("Add Task"));
+        addTaskButton.Click();
+
+        // モーダルが表示されていることを確認
+        var modalFirstOpen = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalFirstOpen);
+
+        // モーダルを閉じる
+        var closeButton = cut.FindAll("button").First(b => b.TextContent.Contains("キャンセル"));
+        closeButton.Click();
+
+        // モーダルが閉じられていることを確認
+        var modalAfterClose = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterClose);
+
+        // Act - 2回目: 再度モーダルを開く
+        addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("Add Task"));
+        addTaskButton.Click();
+
+        // Assert - モーダルが再度表示されていることを確認
+        var modalSecondOpen = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalSecondOpen);
+    }
+
+    [Fact(DisplayName = "プロジェクト情報モーダルを閉じた後、再度開くことができる")]
+    public void Detail_CanReopenProjectInfoModal_AfterClosing()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - 1回目: プロジェクト情報モーダルを開く
+        var infoButton = cut.FindAll("button").First(b => b.TextContent.Contains("Info"));
+        infoButton.Click();
+
+        // モーダルが表示されていることを確認
+        var modalFirstOpen = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalFirstOpen);
+
+        // モーダルを閉じる (×ボタンをクリック)
+        var closeButton = cut.Find(".modal-close-btn");
+        closeButton.Click();
+
+        // モーダルが閉じられていることを確認
+        var modalAfterClose = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterClose);
+
+        // Act - 2回目: 再度プロジェクト情報モーダルを開く
+        infoButton = cut.FindAll("button").First(b => b.TextContent.Contains("Info"));
+        infoButton.Click();
+
+        // Assert - モーダルが再度表示されていることを確認
+        var modalSecondOpen = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalSecondOpen);
+    }
+
+    [Fact(DisplayName = "タスク編集モーダルを閉じた後、再度開くことができる")]
+    public void Detail_CanReopenTaskEditModal_AfterClosing()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        var tasks = CreateTestTasks();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(tasks);
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // デフォルトはKanbanなので、Ganttビューに切り替える
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        ganttTab.Click();
+
+        // Act - 1回目: タスクをクリックしてモーダルを開く
+        var taskNameCell = cut.Find(".gantt-task-name-cell");
+        taskNameCell.Click();
+
+        // モーダルが表示されていることを確認
+        var modalFirstOpen = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalFirstOpen);
+
+        // モーダルを閉じる
+        var closeButton = cut.FindAll("button").First(b => b.TextContent.Contains("キャンセル"));
+        closeButton.Click();
+
+        // モーダルが閉じられていることを確認
+        var modalAfterClose = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterClose);
+
+        // Act - 2回目: 再度タスクをクリックしてモーダルを開く
+        taskNameCell = cut.Find(".gantt-task-name-cell");
+        taskNameCell.Click();
+
+        // Assert - モーダルが再度表示されていることを確認
+        var modalSecondOpen = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalSecondOpen);
     }
 }
 
