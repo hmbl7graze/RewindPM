@@ -280,6 +280,18 @@
                 // JavaScript初期化エラーをサイレントに処理
             }
         }
+        else
+        {
+            try
+            {
+                // 再レンダリング後にリサイズハンドルを再初期化
+                await JSRuntime.InvokeVoidAsync("ganttScrollSync.reinitializeResizeHandles");
+            }
+            catch (Exception)
+            {
+                // JavaScript再初期化エラーをサイレントに処理
+            }
+        }
     }
 
     [JSInvokable]
