@@ -6,7 +6,7 @@
 @inject ILogger<ProjectCard> Logger
 @inject NavigationManager Navigation
 
-<div class="project-card" @onclick="NavigateToProject" @onkeydown="HandleKeyDown" tabindex="0" role="button" aria-label="プロジェクト @Project.Title を開く">
+<div class="project-card" @onclick="NavigateToProject" @onkeydown="HandleKeyDown" @onkeydown:preventDefault="true" tabindex="0" role="button" aria-label="プロジェクト @Project.Title を開く">
     <div class="project-card-header">
         <h3 class="project-card-title">@Project.Title</h3>
         <button class="delete-btn" @onclick="HandleDelete" @onclick:stopPropagation="true" aria-label="プロジェクトを削除" title="削除">
