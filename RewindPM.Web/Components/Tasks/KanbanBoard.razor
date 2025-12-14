@@ -192,10 +192,10 @@
 
     private string GetStatusLabel(TaskStatus status) => status switch
     {
-        TaskStatus.Todo => "To Do",
-        TaskStatus.InProgress => "In Progress",
-        TaskStatus.InReview => "In Review",
-        TaskStatus.Done => "Done",
+        TaskStatus.Todo => "未着手",
+        TaskStatus.InProgress => "進行中",
+        TaskStatus.InReview => "レビュー中",
+        TaskStatus.Done => "完了",
         _ => status.ToString()
     };
 

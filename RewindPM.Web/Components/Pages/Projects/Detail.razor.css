@@ -290,8 +290,8 @@
     color: #656d76;
 }
 
-/* Retrospective Mode */
-.retrospective-panel {
+/* Rewind Mode */
+.Rewind-panel {
     background-color: #f6f8fa;
     border: 1px solid #d0d7de;
     border-radius: 6px;
@@ -300,20 +300,20 @@
     animation: slideDown 0.3s ease-out;
 }
 
-.retrospective-header {
+.Rewind-header {
     margin-bottom: 16px;
     border-bottom: 1px solid #d0d7de;
     padding-bottom: 8px;
 }
 
-.retrospective-header h3 {
+.Rewind-header h3 {
     font-size: 1.25rem;
     font-weight: 600;
     color: #1f2328;
     margin: 0 0 4px 0;
 }
 
-.retrospective-header p {
+.Rewind-header p {
     margin: 0;
     font-size: 0.9rem;
     color: #656d76;

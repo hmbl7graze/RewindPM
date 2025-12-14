@@ -64,10 +64,10 @@ public class KanbanBoardTests : Bunit.TestContext
         Assert.Equal(4, columns.Count); // Todo, InProgress, InReview, Done
 
         var headers = cut.FindAll(".column-header h3");
-        Assert.Contains("To Do", headers[0].TextContent);
-        Assert.Contains("In Progress", headers[1].TextContent);
-        Assert.Contains("In Review", headers[2].TextContent);
-        Assert.Contains("Done", headers[3].TextContent);
+        Assert.Contains("未着手", headers[0].TextContent);
+        Assert.Contains("進行中", headers[1].TextContent);
+        Assert.Contains("レビュー中", headers[2].TextContent);
+        Assert.Contains("完了", headers[3].TextContent);
     }
 
     [Fact(DisplayName = "KanbanBoard_RendersTasksInCorrectColumns")]
