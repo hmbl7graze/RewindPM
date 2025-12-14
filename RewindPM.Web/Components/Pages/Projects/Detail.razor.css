@@ -291,7 +291,7 @@
 }
 
 /* Rewind Mode */
-.Rewind-panel {
+.rewind-panel {
     background-color: #f6f8fa;
     border: 1px solid #d0d7de;
     border-radius: 6px;
@@ -300,20 +300,20 @@
     animation: slideDown 0.3s ease-out;
 }
 
-.Rewind-header {
+.rewind-header {
     margin-bottom: 16px;
     border-bottom: 1px solid #d0d7de;
     padding-bottom: 8px;
 }
 
-.Rewind-header h3 {
+.rewind-header h3 {
     font-size: 1.25rem;
     font-weight: 600;
     color: #1f2328;
     margin: 0 0 4px 0;
 }
 
-.Rewind-header p {
+.rewind-header p {
     margin: 0;
     font-size: 0.9rem;
     color: #656d76;
