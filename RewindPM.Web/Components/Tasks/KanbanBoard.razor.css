@@ -143,13 +143,13 @@
 }
 
 .task-card {
-    animation: cardFadeIn 0.3s ease-out;
+    animation: cardFadeIn 0.4s ease-out;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* フェードアウトアニメーションの適用 */
 .task-card.fading-out {
-    animation: cardFadeOut 0.3s ease-in forwards;
+    animation: cardFadeOut 0.4s ease-in forwards;
 }
 
 /* ホバー時の効果 */
