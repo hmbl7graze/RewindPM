@@ -546,13 +546,13 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             // すべてのヘルプアイコンにdata-tooltip属性が存在
             Assert.NotEmpty(allHelpIcons);
 
-            // 各ヘルプアイコンのツールチップテキストが空でないことを確認
-            foreach (var icon in allHelpIcons)
-            {
-                var tooltipText = icon.GetAttribute("data-tooltip");
-                Assert.NotNull(tooltipText);
-                Assert.NotEmpty(tooltipText);
-            }
+            // すべてのヘルプアイコンのツールチップテキストがnullや空でないことを一括で検証
+            Assert.True(
+                allHelpIcons
+                    .Select(icon => icon.GetAttribute("data-tooltip"))
+                    .All(tooltipText => !string.IsNullOrEmpty(tooltipText)),
+                "すべてのヘルプアイコンのdata-tooltip属性がnullまたは空でないことを確認してください。"
+            );
         });
     }
 }
