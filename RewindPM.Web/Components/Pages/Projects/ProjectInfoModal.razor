@@ -6,7 +6,7 @@
 @inject IMediator Mediator
 @inject ILogger<ProjectInfoModal> Logger
 
-<Modal Title="@ModalTitle" @bind-IsVisible="IsVisible" Size="ModalSize.Large">
+<Modal Title="@ModalTitle" IsVisible="IsVisible" IsVisibleChanged="HandleModalVisibilityChanged" Size="ModalSize.Large">
     <div class="project-info-modal-content">
         @if (!string.IsNullOrEmpty(errorMessage))
         {
@@ -192,6 +192,12 @@
         errorMessage = null;
         isSaving = false;
         await IsVisibleChanged.InvokeAsync(false);
+    }
+
+    private async Task HandleModalVisibilityChanged(bool isVisible)
+    {
+        IsVisible = isVisible;
+        await IsVisibleChanged.InvokeAsync(isVisible);
     }
 
     public class ProjectFormModel

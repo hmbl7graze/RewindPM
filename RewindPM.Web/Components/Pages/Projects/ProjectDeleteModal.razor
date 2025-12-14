@@ -5,7 +5,7 @@
 @inject IMediator Mediator
 @inject ILogger<ProjectDeleteModal> Logger
 
-<Modal Title="プロジェクトの削除" @bind-IsVisible="IsVisible">
+<Modal Title="プロジェクトの削除" IsVisible="IsVisible" IsVisibleChanged="HandleModalVisibilityChanged">
     <div class="delete-modal-content">
         @if (!string.IsNullOrEmpty(errorMessage))
         {
@@ -132,5 +132,11 @@
         errorMessage = null;
         isDeleting = false;
         await IsVisibleChanged.InvokeAsync(false);
+    }
+
+    private async Task HandleModalVisibilityChanged(bool isVisible)
+    {
+        IsVisible = isVisible;
+        await IsVisibleChanged.InvokeAsync(isVisible);
     }
 }
