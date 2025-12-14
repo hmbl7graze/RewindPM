@@ -365,4 +365,194 @@ public class ProjectStatisticsDashboardTests : BunitTestContext
             Arg.Is<GetProjectStatisticsDetailQuery>(q => q.ProjectId == projectId2),
             Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "統計ダッシュボード: すべての統計値にヘルプアイコンが表示される")]
+    public void ProjectStatisticsDashboard_DisplaysHelpIconsForAllStatistics()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var statisticsDto = new ProjectStatisticsDetailDto
+        {
+            TotalTasks = 10,
+            CompletedTasks = 5,
+            InProgressTasks = 3,
+            InReviewTasks = 1,
+            TodoTasks = 1,
+            TotalEstimatedHours = 100,
+            TotalActualHours = 80,
+            RemainingEstimatedHours = 60,
+            OnTimeTasks = 4,
+            DelayedTasks = 1,
+            AverageDelayDays = 2.5,
+            AccurateEstimateTasks = 3,
+            OverEstimateTasks = 1,
+            UnderEstimateTasks = 1,
+            AverageEstimateErrorDays = 1.2,
+            AsOfDate = DateTimeOffset.UtcNow
+        };
+
+        _mediator.Send(Arg.Any<GetProjectStatisticsDetailQuery>(), Arg.Any<CancellationToken>())
+            .Returns(statisticsDto);
+
+        // Act
+        var cut = RenderComponent<ProjectStatisticsDashboard>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            var markup = cut.Markup;
+
+            // ヘルプアイコン（ⓘ）が存在することを確認
+            Assert.Contains("ⓘ", markup);
+
+            // data-tooltip属性が存在することを確認
+            Assert.Contains("data-tooltip", markup);
+
+            // stat-help-iconクラスが存在することを確認
+            Assert.Contains("stat-help-icon", markup);
+
+            // stat-help-icon-smallクラスが存在することを確認
+            Assert.Contains("stat-help-icon-small", markup);
+        });
+    }
+
+    [Fact(DisplayName = "統計ダッシュボード: メイン統計値にヘルプアイコンが表示される")]
+    public void ProjectStatisticsDashboard_DisplaysHelpIconsForMainStatistics()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var statisticsDto = new ProjectStatisticsDetailDto
+        {
+            TotalTasks = 10,
+            CompletedTasks = 5,
+            InProgressTasks = 3,
+            InReviewTasks = 1,
+            TodoTasks = 1,
+            TotalEstimatedHours = 100,
+            TotalActualHours = 80,
+            RemainingEstimatedHours = 60,
+            OnTimeTasks = 4,
+            DelayedTasks = 1,
+            AverageDelayDays = 2.5,
+            AccurateEstimateTasks = 3,
+            OverEstimateTasks = 1,
+            UnderEstimateTasks = 1,
+            AverageEstimateErrorDays = 1.2,
+            AsOfDate = DateTimeOffset.UtcNow
+        };
+
+        _mediator.Send(Arg.Any<GetProjectStatisticsDetailQuery>(), Arg.Any<CancellationToken>())
+            .Returns(statisticsDto);
+
+        // Act
+        var cut = RenderComponent<ProjectStatisticsDashboard>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            var helpIcons = cut.FindAll(".stat-help-icon");
+
+            // メイン統計値のヘルプアイコンは4個（完了率、工数消費率、期限内完了率、見積もり精度率）
+            Assert.Equal(4, helpIcons.Count);
+        });
+    }
+
+    [Fact(DisplayName = "統計ダッシュボード: 詳細統計値にヘルプアイコンが表示される")]
+    public void ProjectStatisticsDashboard_DisplaysHelpIconsForDetailStatistics()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var statisticsDto = new ProjectStatisticsDetailDto
+        {
+            TotalTasks = 10,
+            CompletedTasks = 5,
+            InProgressTasks = 3,
+            InReviewTasks = 1,
+            TodoTasks = 1,
+            TotalEstimatedHours = 100,
+            TotalActualHours = 80,
+            RemainingEstimatedHours = 60,
+            OnTimeTasks = 4,
+            DelayedTasks = 1,
+            AverageDelayDays = 2.5,
+            AccurateEstimateTasks = 3,
+            OverEstimateTasks = 1,
+            UnderEstimateTasks = 1,
+            AverageEstimateErrorDays = 1.2,
+            AsOfDate = DateTimeOffset.UtcNow
+        };
+
+        _mediator.Send(Arg.Any<GetProjectStatisticsDetailQuery>(), Arg.Any<CancellationToken>())
+            .Returns(statisticsDto);
+
+        // Act
+        var cut = RenderComponent<ProjectStatisticsDashboard>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            var smallHelpIcons = cut.FindAll(".stat-help-icon-small");
+
+            // 詳細統計値のヘルプアイコン（小サイズ）
+            // タスク統計: 5個 (合計、完了、進行中、レビュー中、未着手)
+            // 工数統計: 4個 (予定工数、実績工数、残予定工数、工数差分)
+            // スケジュール統計: 3個 (期限内、遅延、平均遅延)
+            // 見積もり精度: 4個 (正確、過大見積、過小見積、平均誤差)
+            // 合計: 16個
+            Assert.Equal(16, smallHelpIcons.Count);
+        });
+    }
+
+    [Fact(DisplayName = "統計ダッシュボード: ヘルプアイコンにツールチップテキストが設定されている")]
+    public void ProjectStatisticsDashboard_HelpIconsHaveTooltipText()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var statisticsDto = new ProjectStatisticsDetailDto
+        {
+            TotalTasks = 10,
+            CompletedTasks = 5,
+            InProgressTasks = 3,
+            InReviewTasks = 1,
+            TodoTasks = 1,
+            TotalEstimatedHours = 100,
+            TotalActualHours = 80,
+            RemainingEstimatedHours = 60,
+            OnTimeTasks = 4,
+            DelayedTasks = 1,
+            AverageDelayDays = 2.5,
+            AccurateEstimateTasks = 3,
+            OverEstimateTasks = 1,
+            UnderEstimateTasks = 1,
+            AverageEstimateErrorDays = 1.2,
+            AsOfDate = DateTimeOffset.UtcNow
+        };
+
+        _mediator.Send(Arg.Any<GetProjectStatisticsDetailQuery>(), Arg.Any<CancellationToken>())
+            .Returns(statisticsDto);
+
+        // Act
+        var cut = RenderComponent<ProjectStatisticsDashboard>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        // Assert
+        cut.WaitForAssertion(() =>
+        {
+            var allHelpIcons = cut.FindAll("[data-tooltip]");
+
+            // すべてのヘルプアイコンにdata-tooltip属性が存在
+            Assert.NotEmpty(allHelpIcons);
+
+            // 各ヘルプアイコンのツールチップテキストが空でないことを確認
+            foreach (var icon in allHelpIcons)
+            {
+                var tooltipText = icon.GetAttribute("data-tooltip");
+                Assert.NotNull(tooltipText);
+                Assert.NotEmpty(tooltipText);
+            }
+        });
+    }
 }
