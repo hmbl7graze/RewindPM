@@ -1,5 +1,6 @@
 @using MediatR
 @using RewindPM.Application.Read.Queries.Statistics
+@using RewindPM.Application.Read.Queries.Projects
 @using RewindPM.Application.Read.DTOs
 
 @inject IMediator Mediator
@@ -25,7 +26,6 @@ else if (_chartData != null && _chartData.Any())
                              SeriesType="SeriesType.Area"
                              XValue="@(e => e.X)"
                              YAggregate="@(e => e.Sum(y => y.Y))"
-                             OrderBy="e => e.X"
                              Color="#28a745" />
 
             <ApexPointSeries TItem="ChartDataPoint"
@@ -34,7 +34,6 @@ else if (_chartData != null && _chartData.Any())
                              SeriesType="SeriesType.Area"
                              XValue="@(e => e.X)"
                              YAggregate="@(e => e.Sum(y => y.Y))"
-                             OrderBy="e => e.X"
                              Color="#ffc107" />
 
             <ApexPointSeries TItem="ChartDataPoint"
@@ -43,7 +42,6 @@ else if (_chartData != null && _chartData.Any())
                              SeriesType="SeriesType.Area"
                              XValue="@(e => e.X)"
                              YAggregate="@(e => e.Sum(y => y.Y))"
-                             OrderBy="e => e.X"
                              Color="#007bff" />
 
             <ApexPointSeries TItem="ChartDataPoint"
@@ -52,7 +50,6 @@ else if (_chartData != null && _chartData.Any())
                              SeriesType="SeriesType.Area"
                              XValue="@(e => e.X)"
                              YAggregate="@(e => e.Sum(y => y.Y))"
-                             OrderBy="e => e.X"
                              Color="#6c757d" />
         </ApexChart>
     </div>
@@ -89,11 +86,26 @@ else
 
         try
         {
-            // 終了日を設定（AsOfDateがあればそれを使用、なければ現在日時）
-            var endDate = AsOfDate ?? DateTimeOffset.UtcNow;
+            // プロジェクトの編集日一覧を取得してグラフの範囲を決定
+            var editDatesQuery = new GetProjectEditDatesQuery(ProjectId, Ascending: true);
+            var editDates = await Mediator.Send(editDatesQuery);
 
-            // 開始日を計算（終了日の30日前）
-            var startDate = endDate.AddDays(-30);
+            DateTimeOffset startDate;
+            DateTimeOffset endDate;
+
+            if (editDates != null && editDates.Any())
+            {
+                // 最初の編集日から開始
+                startDate = editDates.First();
+                // リワインド時はAsOfDate、通常時は最後の編集日または現在日時
+                endDate = AsOfDate ?? (editDates.Any() ? editDates.Last() : DateTimeOffset.UtcNow);
+            }
+            else
+            {
+                // フォールバック: 編集履歴がない場合は30日前から
+                endDate = AsOfDate ?? DateTimeOffset.UtcNow;
+                startDate = endDate.AddDays(-30);
+            }
 
             var query = new GetProjectStatisticsTimeSeriesQuery(ProjectId, startDate, endDate);
             var timeSeriesData = await Mediator.Send(query);

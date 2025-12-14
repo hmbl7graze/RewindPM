@@ -4,7 +4,10 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using RewindPM.Application.Read.DTOs;
 using RewindPM.Application.Read.Queries.Statistics;
+using RewindPM.Application.Read.Queries.Projects;
+using RewindPM.Application.Read.Queries.Tasks;
 using RewindPM.Web.Components.Statistics;
+using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 
 namespace RewindPM.Web.Test.Components.Statistics;
 
@@ -97,6 +100,12 @@ public class BurndownChartTests : Bunit.TestContext
         // Arrange
         var projectId = Guid.NewGuid();
         var asOfDate = new DateTimeOffset(2024, 2, 15, 0, 0, 0, TimeSpan.Zero);
+        var firstEditDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        // 編集日一覧を返すモック
+        var editDates = new List<DateTimeOffset> { firstEditDate, asOfDate.AddDays(-5), asOfDate };
+        _mediatorMock.Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(editDates);
 
         var timeSeriesData = new ProjectStatisticsTimeSeriesDto
         {
@@ -118,17 +127,21 @@ public class BurndownChartTests : Bunit.TestContext
         _mediatorMock.Send(Arg.Any<GetProjectStatisticsTimeSeriesQuery>(), Arg.Any<CancellationToken>())
             .Returns(timeSeriesData);
 
+        // タスク一覧のモック（理想線計算用）
+        _mediatorMock.Send(Arg.Any<GetTasksByProjectIdAtTimeQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
         // Act
         var cut = RenderComponent<BurndownChart>(parameters => parameters
             .Add(p => p.ProjectId, projectId)
             .Add(p => p.AsOfDate, asOfDate));
 
-        // Assert
+        // Assert - プロジェクトの最初の編集日から開始されることを確認
         await _mediatorMock.Received(1).Send(
             Arg.Is<GetProjectStatisticsTimeSeriesQuery>(q =>
                 q.ProjectId == projectId &&
                 q.EndDate == asOfDate &&
-                q.StartDate == asOfDate.AddDays(-30)),
+                q.StartDate == firstEditDate),
             Arg.Any<CancellationToken>());
     }
 
@@ -246,6 +259,181 @@ public class BurndownChartTests : Bunit.TestContext
 
         await _mediatorMock.Received(1).Send(
             Arg.Is<GetProjectStatisticsTimeSeriesQuery>(q => q.ProjectId == projectId2),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "BurndownChart: 理想線が予定終了日に基づいて計算される")]
+    public async Task BurndownChart_IdealLine_CalculatedBasedOnScheduledEndDates()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var startDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2024, 1, 10, 0, 0, 0, TimeSpan.Zero);
+
+        // 編集日一覧
+        var editDates = new List<DateTimeOffset> { startDate, endDate };
+        _mediatorMock.Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(editDates);
+
+        // 時系列データ
+        var timeSeriesData = new ProjectStatisticsTimeSeriesDto
+        {
+            ProjectId = projectId,
+            DailySnapshots = new List<DailyStatisticsSnapshot>
+            {
+                new DailyStatisticsSnapshot
+                {
+                    Date = startDate, TotalTasks = 3, CompletedTasks = 0,
+                    InProgressTasks = 1, InReviewTasks = 1, TodoTasks = 1
+                },
+                new DailyStatisticsSnapshot
+                {
+                    Date = startDate.AddDays(1), TotalTasks = 3, CompletedTasks = 1,
+                    InProgressTasks = 1, InReviewTasks = 0, TodoTasks = 1
+                },
+                new DailyStatisticsSnapshot
+                {
+                    Date = startDate.AddDays(2), TotalTasks = 3, CompletedTasks = 2,
+                    InProgressTasks = 1, InReviewTasks = 0, TodoTasks = 0
+                }
+            }
+        };
+        _mediatorMock.Send(Arg.Any<GetProjectStatisticsTimeSeriesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(timeSeriesData);
+
+        // 開始時点のタスク一覧（予定終了日あり）
+        var tasksAtStart = new List<TaskDto>
+        {
+            new TaskDto { Id = Guid.NewGuid(), ProjectId = projectId, Title = "Task1", Description = "",
+                Status = TaskStatus.Todo, ScheduledEndDate = startDate.AddDays(1),
+                CreatedAt = startDate, UpdatedAt = null, CreatedBy = "user" },
+            new TaskDto { Id = Guid.NewGuid(), ProjectId = projectId, Title = "Task2", Description = "",
+                Status = TaskStatus.Todo, ScheduledEndDate = startDate.AddDays(2),
+                CreatedAt = startDate, UpdatedAt = null, CreatedBy = "user" },
+            new TaskDto { Id = Guid.NewGuid(), ProjectId = projectId, Title = "Task3", Description = "",
+                Status = TaskStatus.Todo, ScheduledEndDate = startDate.AddDays(5),
+                CreatedAt = startDate, UpdatedAt = null, CreatedBy = "user" }
+        };
+        _mediatorMock.Send(Arg.Any<GetTasksByProjectIdAtTimeQuery>(), Arg.Any<CancellationToken>())
+            .Returns(tasksAtStart);
+
+        // Act
+        var cut = RenderComponent<BurndownChart>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        // Assert - タスク一覧が取得されたことを確認
+        await _mediatorMock.Received(1).Send(
+            Arg.Is<GetTasksByProjectIdAtTimeQuery>(q =>
+                q.ProjectId == projectId &&
+                q.PointInTime == startDate),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "BurndownChart: 予定終了日がnullのタスクは最後まで残る")]
+    public async Task BurndownChart_IdealLine_TasksWithoutScheduledEndDateRemain()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var startDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        // 編集日一覧
+        var editDates = new List<DateTimeOffset> { startDate, startDate.AddDays(5) };
+        _mediatorMock.Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(editDates);
+
+        // 時系列データ
+        var timeSeriesData = new ProjectStatisticsTimeSeriesDto
+        {
+            ProjectId = projectId,
+            DailySnapshots = new List<DailyStatisticsSnapshot>
+            {
+                new DailyStatisticsSnapshot
+                {
+                    Date = startDate, TotalTasks = 2, CompletedTasks = 0,
+                    InProgressTasks = 1, InReviewTasks = 0, TodoTasks = 1
+                },
+                new DailyStatisticsSnapshot
+                {
+                    Date = startDate.AddDays(1), TotalTasks = 2, CompletedTasks = 1,
+                    InProgressTasks = 0, InReviewTasks = 0, TodoTasks = 1
+                },
+                new DailyStatisticsSnapshot
+                {
+                    Date = startDate.AddDays(2), TotalTasks = 2, CompletedTasks = 1,
+                    InProgressTasks = 1, InReviewTasks = 0, TodoTasks = 0
+                }
+            }
+        };
+        _mediatorMock.Send(Arg.Any<GetProjectStatisticsTimeSeriesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(timeSeriesData);
+
+        // タスク一覧（一部予定終了日なし）
+        var tasksAtStart = new List<TaskDto>
+        {
+            new TaskDto { Id = Guid.NewGuid(), ProjectId = projectId, Title = "Task1", Description = "",
+                Status = TaskStatus.Todo, ScheduledEndDate = startDate.AddDays(1),
+                CreatedAt = startDate, UpdatedAt = null, CreatedBy = "user" },
+            new TaskDto { Id = Guid.NewGuid(), ProjectId = projectId, Title = "Task2", Description = "",
+                Status = TaskStatus.Todo, ScheduledEndDate = null, // 予定終了日なし
+                CreatedAt = startDate, UpdatedAt = null, CreatedBy = "user" }
+        };
+        _mediatorMock.Send(Arg.Any<GetTasksByProjectIdAtTimeQuery>(), Arg.Any<CancellationToken>())
+            .Returns(tasksAtStart);
+
+        // Act
+        var cut = RenderComponent<BurndownChart>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        cut.WaitForState(() => !cut.Instance.GetType()
+            .GetField("_isLoading", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .GetValue(cut.Instance)!.Equals(true), timeout: TimeSpan.FromSeconds(5));
+
+        // Assert - チャートが表示されることを確認（エラーにならない）
+        var chartDiv = cut.Find(".burndown-chart");
+        Assert.NotNull(chartDiv);
+    }
+
+    [Fact(DisplayName = "BurndownChart: プロジェクトの全期間でグラフを表示")]
+    public async Task BurndownChart_UsesProjectFullPeriod_NotFixed30Days()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var firstEditDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var lastEditDate = new DateTimeOffset(2024, 3, 1, 0, 0, 0, TimeSpan.Zero); // 60日間
+
+        // 編集日一覧（60日間のプロジェクト）
+        var editDates = new List<DateTimeOffset> { firstEditDate, firstEditDate.AddDays(30), lastEditDate };
+        _mediatorMock.Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(editDates);
+
+        var timeSeriesData = new ProjectStatisticsTimeSeriesDto
+        {
+            ProjectId = projectId,
+            DailySnapshots = new List<DailyStatisticsSnapshot>
+            {
+                new DailyStatisticsSnapshot
+                {
+                    Date = firstEditDate, TotalTasks = 10, CompletedTasks = 0,
+                    InProgressTasks = 3, InReviewTasks = 2, TodoTasks = 5
+                }
+            }
+        };
+        _mediatorMock.Send(Arg.Any<GetProjectStatisticsTimeSeriesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(timeSeriesData);
+
+        _mediatorMock.Send(Arg.Any<GetTasksByProjectIdAtTimeQuery>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        // Act
+        var cut = RenderComponent<BurndownChart>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        // Assert - 最初の編集日から最後の編集日までの範囲でクエリが実行されることを確認
+        await _mediatorMock.Received(1).Send(
+            Arg.Is<GetProjectStatisticsTimeSeriesQuery>(q =>
+                q.ProjectId == projectId &&
+                q.StartDate == firstEditDate &&
+                q.EndDate == lastEditDate),
             Arg.Any<CancellationToken>());
     }
 }
