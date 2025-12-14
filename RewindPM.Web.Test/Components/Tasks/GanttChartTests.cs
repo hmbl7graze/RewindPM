@@ -1055,6 +1055,263 @@ public class GanttChartTests : Bunit.TestContext
         Assert.DoesNotContain("animating", scheduledBars[1].ClassName);
     }
 
+    // ========== リワインド解除後のリサイズハンドル再初期化のテスト ==========
+
+    [Fact(DisplayName = "IsReadOnlyがtrueからfalseに変更されたとき、リサイズハンドルが表示される")]
+    public async Task GanttChart_DisplaysResizeHandles_WhenIsReadOnlyChangesFromTrueToFalse()
+    {
+        // Arrange - 最初は読み取り専用モードで作成
+        var tasks = CreateTestTasks();
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.IsReadOnly, true));
+
+        // 読み取り専用モードでリサイズハンドルがないことを確認
+        var scheduledBarsReadOnly = cut.FindAll(".gantt-bar-scheduled");
+        foreach (var bar in scheduledBarsReadOnly)
+        {
+            Assert.Null(bar.QuerySelector(".gantt-resize-handle-left"));
+            Assert.Null(bar.QuerySelector(".gantt-resize-handle-right"));
+        }
+
+        // Act - IsReadOnlyをfalseに変更
+        await cut.InvokeAsync(() => cut.SetParametersAndRender(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.IsReadOnly, false)));
+
+        // Assert - リサイズハンドルが表示されることを確認
+        var scheduledBarsEditable = cut.FindAll(".gantt-bar-scheduled");
+        Assert.True(scheduledBarsEditable.Count > 0);
+
+        foreach (var bar in scheduledBarsEditable)
+        {
+            var leftHandle = bar.QuerySelector(".gantt-resize-handle-left");
+            var rightHandle = bar.QuerySelector(".gantt-resize-handle-right");
+            Assert.NotNull(leftHandle);
+            Assert.NotNull(rightHandle);
+        }
+    }
+
+    [Fact(DisplayName = "IsReadOnlyがfalseからtrueに変更されたとき、リサイズハンドルが非表示になる")]
+    public async Task GanttChart_HidesResizeHandles_WhenIsReadOnlyChangesFromFalseToTrue()
+    {
+        // Arrange - 最初は編集可能モードで作成
+        var tasks = CreateTestTasks();
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.IsReadOnly, false));
+
+        // 編集可能モードでリサイズハンドルがあることを確認
+        var scheduledBarsEditable = cut.FindAll(".gantt-bar-scheduled");
+        foreach (var bar in scheduledBarsEditable)
+        {
+            Assert.NotNull(bar.QuerySelector(".gantt-resize-handle-left"));
+            Assert.NotNull(bar.QuerySelector(".gantt-resize-handle-right"));
+        }
+
+        // Act - IsReadOnlyをtrueに変更
+        await cut.InvokeAsync(() => cut.SetParametersAndRender(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.IsReadOnly, true)));
+
+        // Assert - リサイズハンドルが非表示になることを確認
+        var scheduledBarsReadOnly = cut.FindAll(".gantt-bar-scheduled");
+        Assert.True(scheduledBarsReadOnly.Count > 0);
+
+        foreach (var bar in scheduledBarsReadOnly)
+        {
+            var leftHandle = bar.QuerySelector(".gantt-resize-handle-left");
+            var rightHandle = bar.QuerySelector(".gantt-resize-handle-right");
+            Assert.Null(leftHandle);
+            Assert.Null(rightHandle);
+        }
+    }
+
+    [Fact(DisplayName = "パラメータ変更後もOnBarResizedが正しく動作する")]
+    public async Task GanttChart_OnBarResizedWorksCorrectly_AfterParameterChange()
+    {
+        // Arrange - 最初は読み取り専用モードで作成
+        var tasks = CreateTestTasks();
+        var taskId = tasks[0].Id;
+
+        (Guid taskId, string barType, DateTimeOffset newStartDate, DateTimeOffset newEndDate)? resizeData = null;
+        var onBarResize = EventCallback.Factory.Create<(Guid, string, DateTimeOffset, DateTimeOffset)>(
+            this,
+            (data) => resizeData = data
+        );
+
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.IsReadOnly, true)
+            .Add(p => p.OnBarResize, onBarResize));
+
+        // Act - IsReadOnlyをfalseに変更
+        await cut.InvokeAsync(() => cut.SetParametersAndRender(parameters => parameters
+            .Add(p => p.Tasks, tasks)
+            .Add(p => p.IsReadOnly, false)
+            .Add(p => p.OnBarResize, onBarResize)));
+
+        // OnBarResizedを呼び出してコールバックが動作することを確認
+        await cut.Instance.OnBarResized(taskId.ToString(), "scheduled", 0, 2);
+
+        // Assert
+        Assert.NotNull(resizeData);
+        Assert.Equal(taskId, resizeData.Value.taskId);
+        Assert.Equal("scheduled", resizeData.Value.barType);
+    }
+
+    [Fact(DisplayName = "タスクリストが更新されてもリサイズハンドルが正しく表示される")]
+    public async Task GanttChart_DisplaysResizeHandlesCorrectly_WhenTasksUpdated()
+    {
+        // Arrange - 最初のタスクリスト
+        var initialTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero),
+                EstimatedHours = 20,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, initialTasks)
+            .Add(p => p.IsReadOnly, false));
+
+        // Act - タスクリストを更新(新しいタスクを追加)
+        var updatedTasks = new List<TaskDto>(initialTasks)
+        {
+            new TaskDto
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 2",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 6, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 10, 0, 0, 0, TimeSpan.Zero),
+                EstimatedHours = 30,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        await cut.InvokeAsync(() => cut.SetParametersAndRender(parameters => parameters
+            .Add(p => p.Tasks, updatedTasks)
+            .Add(p => p.IsReadOnly, false)));
+
+        // Assert - バーが2つ存在することを確認
+        var scheduledBars = cut.FindAll(".gantt-bar-scheduled");
+        Assert.Equal(2, scheduledBars.Count);
+
+        // 最初のバー(変更なし)にはリサイズハンドルがあることを確認
+        // アニメーションされていないバーのみチェック
+        var nonAnimatingBars = scheduledBars.Where(b => !b.ClassList.Contains("animating")).ToList();
+        Assert.True(nonAnimatingBars.Count > 0, "少なくとも1つのアニメーションされていないバーが存在するべき");
+
+        foreach (var bar in nonAnimatingBars)
+        {
+            var leftHandle = bar.QuerySelector(".gantt-resize-handle-left");
+            var rightHandle = bar.QuerySelector(".gantt-resize-handle-right");
+            Assert.NotNull(leftHandle);
+            Assert.NotNull(rightHandle);
+        }
+
+        // 新しく追加されたバーにはanimatingクラスが付与されている
+        var animatingBars = scheduledBars.Where(b => b.ClassList.Contains("animating")).ToList();
+        Assert.True(animatingBars.Count > 0, "新規追加されたバーにはanimatingクラスが付与されるべき");
+    }
+
+    [Fact(DisplayName = "アニメーション中はリサイズハンドルが表示されない")]
+    public async Task GanttChart_DoesNotDisplayResizeHandles_WhenBarIsAnimating()
+    {
+        // Arrange - 最初のタスク
+        var taskId = Guid.NewGuid();
+        var initialTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = taskId,
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero),
+                EstimatedHours = 20,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, initialTasks)
+            .Add(p => p.IsReadOnly, false));
+
+        // Act - タスクの日付を変更(アニメーションが発生)
+        var updatedTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = taskId,
+                ProjectId = initialTasks[0].ProjectId,
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 2, 0, 0, 0, TimeSpan.Zero), // 変更
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 8, 0, 0, 0, TimeSpan.Zero),   // 変更
+                EstimatedHours = 20,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        await cut.InvokeAsync(() => cut.SetParametersAndRender(parameters => parameters
+            .Add(p => p.Tasks, updatedTasks)
+            .Add(p => p.IsReadOnly, false)));
+
+        // Assert - アニメーション中のバーにはリサイズハンドルがないことを確認
+        var scheduledBars = cut.FindAll(".gantt-bar-scheduled");
+        Assert.Single(scheduledBars);
+
+        var animatingBar = scheduledBars.FirstOrDefault(b => b.ClassList.Contains("animating"));
+        if (animatingBar != null)
+        {
+            // animatingクラスがある場合、リサイズハンドルは表示されない
+            var leftHandle = animatingBar.QuerySelector(".gantt-resize-handle-left");
+            var rightHandle = animatingBar.QuerySelector(".gantt-resize-handle-right");
+            Assert.Null(leftHandle);
+            Assert.Null(rightHandle);
+        }
+    }
+
     private List<TaskDto> CreateTestTasks()
     {
         return new List<TaskDto>

@@ -21,12 +21,24 @@ window.ganttScrollSync = {
             const leftHandle = bar.querySelector('.gantt-resize-handle-left');
             const rightHandle = bar.querySelector('.gantt-resize-handle-right');
 
-            if (leftHandle) {
+            // イベントリスナーの重複登録を防ぐため、data属性でチェック
+            // Blazorの再レンダリング時は新しいDOM要素が作成されるため、data属性もリセットされる
+            if (leftHandle && !leftHandle.dataset.listenerAttached) {
                 leftHandle.addEventListener('mousedown', (e) => this.startResize(e, bar, 'left'));
+                leftHandle.dataset.listenerAttached = 'true';
             }
-            if (rightHandle) {
+            if (rightHandle && !rightHandle.dataset.listenerAttached) {
                 rightHandle.addEventListener('mousedown', (e) => this.startResize(e, bar, 'right'));
+                rightHandle.dataset.listenerAttached = 'true';
             }
+        });
+    },
+
+    reinitializeResizeHandles: function () {
+        // 再レンダリング後にリサイズハンドルを再初期化
+        // ブラウザのレンダリングサイクルが完了するまで待機
+        requestAnimationFrame(() => {
+            this.initializeResizeHandles();
         });
     },
 
