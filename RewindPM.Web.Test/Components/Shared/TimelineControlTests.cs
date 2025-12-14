@@ -313,11 +313,11 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_SliderVisible_WhenEditDatesExist()
     {
         // Arrange
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10),
-            new DateTime(2025, 1, 5)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
         };
 
         // Act
@@ -328,7 +328,7 @@ public class TimelineControlTests : Bunit.TestContext
         // Assert
         var sliderContainer = cut.FindAll(".timeline-slider-container");
         Assert.NotEmpty(sliderContainer);
-        
+
         var slider = cut.Find("input.timeline-slider");
         Assert.NotNull(slider);
     }
@@ -337,7 +337,7 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_SliderHidden_WhenNoEditDates()
     {
         // Arrange
-        var editDates = new List<DateTime>();
+        var editDates = new List<DateTimeOffset>();
 
         // Act
         var cut = RenderComponent<TimelineControl>(parameters => parameters
@@ -353,11 +353,11 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_SliderMaxValue_EqualsEditDatesCount()
     {
         // Arrange
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10),
-            new DateTime(2025, 1, 5)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
         };
 
         // Act
@@ -375,11 +375,11 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_SliderValue_IsMaxValue_WhenAtLatest()
     {
         // Arrange
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10),
-            new DateTime(2025, 1, 5)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
         };
 
         // Act
@@ -397,13 +397,13 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_SliderValue_IsCorrect_WhenViewingPast()
     {
         // Arrange
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15), // index 0
-            new DateTime(2025, 1, 10), // index 1
-            new DateTime(2025, 1, 5)   // index 2
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero), // index 0
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero), // index 1
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)   // index 2
         };
-        var currentDate = new DateTime(2025, 1, 10);
+        var currentDate = new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero);
 
         // Act
         var cut = RenderComponent<TimelineControl>(parameters => parameters
@@ -421,9 +421,9 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_Slider_HasAriaLabel()
     {
         // Arrange
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero)
         };
 
         // Act
@@ -442,11 +442,11 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_SliderTicks_CountMatchesEditDates()
     {
         // Arrange
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10),
-            new DateTime(2025, 1, 5)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
         };
 
         // Act
@@ -463,13 +463,13 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_ActiveTick_HasActiveClass()
     {
         // Arrange
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10),
-            new DateTime(2025, 1, 5)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
         };
-        var currentDate = new DateTime(2025, 1, 10);
+        var currentDate = new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero);
 
         // Act
         var cut = RenderComponent<TimelineControl>(parameters => parameters
@@ -485,11 +485,11 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_SliderLabels_AreDisplayed()
     {
         // Arrange
-        var editDates = new List<DateTime>
+        var editDates = new List<DateTimeOffset>
         {
-            new DateTime(2025, 1, 15),
-            new DateTime(2025, 1, 10),
-            new DateTime(2025, 1, 5)
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
         };
 
         // Act
@@ -500,10 +500,10 @@ public class TimelineControlTests : Bunit.TestContext
         // Assert
         var labels = cut.FindAll(".slider-label");
         Assert.True(labels.Count >= 2); // 最古と最新は最低限表示される
-        
+
         var startLabel = cut.Find(".slider-label-start");
         Assert.Equal("最古", startLabel.TextContent);
-        
+
         var endLabel = cut.Find(".slider-label-end");
         Assert.Equal("最新", endLabel.TextContent);
     }
