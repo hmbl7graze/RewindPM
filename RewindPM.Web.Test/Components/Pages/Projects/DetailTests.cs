@@ -171,14 +171,14 @@ public class DetailTests : Bunit.TestContext
 
         // Assert
         var backLink = cut.Find(".back-link");
-        Assert.Contains("Back to Projects", backLink.TextContent);
+        Assert.Contains("プロジェクト一覧に戻る", backLink.TextContent);
 
         var title = cut.Find(".project-title");
         Assert.Contains("Test Project", title.TextContent.Trim());
 
         var buttons = cut.FindAll("button, a.btn, a.btn-icon");
         Assert.Contains(buttons, b => b.TextContent.Contains("Info"));
-        Assert.Contains(buttons, b => b.TextContent.Contains("Add Task"));
+        Assert.Contains(buttons, b => b.TextContent.Contains("新規タスク"));
     }
 
     [Fact(DisplayName = "プロジェクト情報が正しく表示される")]
@@ -219,7 +219,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // デフォルトはKanbanなので、Ganttビューに切り替える
-        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("ガントチャート"));
         ganttTab.Click();
 
         // Assert
@@ -245,7 +245,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // デフォルトはKanbanなので、Ganttビューに切り替える
-        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("ガントチャート"));
         ganttTab.Click();
 
         // Assert - Gantt chart rows
@@ -255,7 +255,7 @@ public class DetailTests : Bunit.TestContext
         // Task 1の検証
         var task1 = ganttRows[0];
         Assert.Contains("Task 1", task1.TextContent);
-        Assert.Contains("TODO", task1.TextContent);
+        Assert.Contains("未着手", task1.TextContent);
 
         // Task 2の検証
         var task2 = ganttRows[1];
@@ -281,7 +281,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // デフォルトはKanbanなので、Ganttビューに切り替える
-        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("ガントチャート"));
         ganttTab.Click();
 
         // Assert - Gantt chart status badges
@@ -290,7 +290,7 @@ public class DetailTests : Bunit.TestContext
         Assert.Contains(statusBadges, b => b.ClassList.Contains("gantt-status-inprogress"));
     }
 
-    [Fact(DisplayName = "Add Taskボタンクリック時にタスク作成モーダルが開く")]
+    [Fact(DisplayName = "新規タスクボタンクリック時にタスク作成モーダルが開く")]
     public void Detail_OpensTaskCreateModal_WhenAddTaskButtonClicked()
     {
         // Arrange
@@ -306,7 +306,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Act
-        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("Add Task"));
+        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("新規タスク"));
         addTaskButton.Click();
 
         // Assert - モーダルが表示されているか確認
@@ -331,7 +331,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // デフォルトはKanbanなので、Ganttビューに切り替える
-        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("ガントチャート"));
         ganttTab.Click();
 
         // Act - Click on Gantt task name cell
@@ -456,9 +456,9 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
-        // Retrospectiveモードを有効化
-        var retrospectiveButton = cut.FindAll("button").First(b => b.TextContent.Contains("Retrospective"));
-        retrospectiveButton.Click();
+        // Rewindモードを有効化
+        var RewindButton = cut.FindAll("button").First(b => b.TextContent.Contains("Rewind"));
+        RewindButton.Click();
 
         // Assert - TimelineControlが表示されている
         var timelineControl = cut.Find(".timeline-toolbar");
@@ -489,7 +489,7 @@ public class DetailTests : Bunit.TestContext
         Assert.Empty(banners);
     }
 
-    [Fact(DisplayName = "初期表示時（最新）はAdd Taskボタンが有効化されていること")]
+    [Fact(DisplayName = "初期表示時（最新）は新規タスクボタンが有効化されていること")]
     public void Detail_AddTaskButtonEnabled_Initially()
     {
         // Arrange
@@ -508,8 +508,8 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
-        // Assert - Add Taskボタンが有効
-        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("Add Task"));
+        // Assert - 新規タスクボタンが有効
+        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("新規タスク"));
         Assert.False(addTaskButton.HasAttribute("disabled"));
     }
 
@@ -642,7 +642,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Assert - Kanbanタブがアクティブ
-        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Kanban"));
+        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("カンバン"));
         Assert.Contains("active", kanbanTab.ClassName);
 
         // Kanbanボードが表示されている
@@ -675,7 +675,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Assert - Kanbanタブがアクティブ
-        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Kanban"));
+        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("カンバン"));
         Assert.Contains("active", kanbanTab.ClassName);
 
         // Kanbanボードが表示されている
@@ -707,7 +707,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Assert - Statisticsタブがアクティブ
-        var statisticsTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Statistics"));
+        var statisticsTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("統計"));
         Assert.Contains("active", statisticsTab.ClassName);
 
         // Statisticsダッシュボードが表示されている（レンダリング完了を待つ）
@@ -742,7 +742,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Assert - デフォルトのKanbanタブがアクティブ
-        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Kanban"));
+        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("カンバン"));
         Assert.Contains("active", kanbanTab.ClassName);
 
         // Kanbanボードが表示されている
@@ -770,7 +770,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Act - Kanbanタブをクリック
-        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Kanban"));
+        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("カンバン"));
         kanbanTab.Click();
 
         // Assert - Kanbanボードが表示されている（レンダリング完了を待つ）
@@ -781,7 +781,7 @@ public class DetailTests : Bunit.TestContext
         });
 
         // Kanbanタブがアクティブ
-        var updatedKanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Kanban"));
+        var updatedKanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("カンバン"));
         Assert.Contains("active", updatedKanbanTab.ClassName);
     }
 
@@ -804,7 +804,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Act - Statisticsタブをクリック
-        var statisticsTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Statistics"));
+        var statisticsTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("統計"));
         statisticsTab.Click();
 
         // Assert - Statisticsダッシュボードが表示されている（レンダリング完了を待つ）
@@ -815,7 +815,7 @@ public class DetailTests : Bunit.TestContext
         }, timeout: TimeSpan.FromSeconds(5));
 
         // Statisticsタブがアクティブ
-        var updatedStatisticsTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Statistics"));
+        var updatedStatisticsTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("統計"));
         Assert.Contains("active", updatedStatisticsTab.ClassName);
     }
 
@@ -839,7 +839,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Act - Kanbanタブをクリック
-        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Kanban"));
+        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("カンバン"));
         kanbanTab.Click();
 
         // Kanbanボードが表示されるのを待つ
@@ -850,7 +850,7 @@ public class DetailTests : Bunit.TestContext
         });
 
         // 再度Ganttタブをクリック
-        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("ガントチャート"));
         ganttTab.Click();
 
         // Assert - Ganttチャートが表示されている（レンダリング完了を待つ）
@@ -861,7 +861,7 @@ public class DetailTests : Bunit.TestContext
         });
 
         // Ganttタブがアクティブ
-        var updatedGanttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        var updatedGanttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("ガントチャート"));
         Assert.Contains("active", updatedGanttTab.ClassName);
     }
 
@@ -883,7 +883,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Act - モーダルを開く
-        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("Add Task"));
+        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("新規タスク"));
         addTaskButton.Click();
 
         // モーダルが表示されていることを確認
@@ -891,7 +891,7 @@ public class DetailTests : Bunit.TestContext
         Assert.NotEmpty(modalBeforeToggle);
 
         // ビューを切り替える（Gantt → Kanban）
-        var kanbanButton = cut.FindAll("button").First(b => b.TextContent.Contains("Kanban") && b.ClassList.Contains("view-tab"));
+        var kanbanButton = cut.FindAll("button").First(b => b.TextContent.Contains("カンバン") && b.ClassList.Contains("view-tab"));
         kanbanButton.Click();
 
         // Assert - モーダルが閉じられていることを確認
@@ -916,7 +916,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // デフォルトはKanbanなので、Ganttビューに切り替える
-        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("ガントチャート"));
         ganttTab.Click();
 
         // Act - タスクをクリックしてモーダルを開く
@@ -928,7 +928,7 @@ public class DetailTests : Bunit.TestContext
         Assert.NotEmpty(modalBeforeToggle);
 
         // ビューを切り替える（Gantt → Statistics）
-        var statisticsButton = cut.FindAll("button").First(b => b.TextContent.Contains("Statistics") && b.ClassList.Contains("view-tab"));
+        var statisticsButton = cut.FindAll("button").First(b => b.TextContent.Contains("統計") && b.ClassList.Contains("view-tab"));
         statisticsButton.Click();
 
         // Assert - モーダルが閉じられていることを確認
@@ -952,25 +952,25 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Act - モーダルを開く
-        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("Add Task"));
+        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("新規タスク"));
         addTaskButton.Click();
 
         // Gantt → Kanban
-        var kanbanButton = cut.FindAll("button").First(b => b.TextContent.Contains("Kanban") && b.ClassList.Contains("view-tab"));
+        var kanbanButton = cut.FindAll("button").First(b => b.TextContent.Contains("カンバン") && b.ClassList.Contains("view-tab"));
         kanbanButton.Click();
 
         var modalAfterKanban = cut.FindAll(".modal-overlay");
         Assert.Empty(modalAfterKanban);
 
         // Kanban → Statistics
-        var statisticsButton = cut.FindAll("button").First(b => b.TextContent.Contains("Statistics") && b.ClassList.Contains("view-tab"));
+        var statisticsButton = cut.FindAll("button").First(b => b.TextContent.Contains("統計") && b.ClassList.Contains("view-tab"));
         statisticsButton.Click();
 
         var modalAfterStatistics = cut.FindAll(".modal-overlay");
         Assert.Empty(modalAfterStatistics);
 
         // Statistics → Gantt
-        var ganttButton = cut.FindAll("button").First(b => b.TextContent.Contains("Gantt") && b.ClassList.Contains("view-tab"));
+        var ganttButton = cut.FindAll("button").First(b => b.TextContent.Contains("ガント") && b.ClassList.Contains("view-tab"));
         ganttButton.Click();
 
         var modalAfterGantt = cut.FindAll(".modal-overlay");
@@ -1057,7 +1057,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Act - 1回目: モーダルを開く
-        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("Add Task"));
+        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("新規タスク"));
         addTaskButton.Click();
 
         // モーダルが表示されていることを確認
@@ -1073,7 +1073,7 @@ public class DetailTests : Bunit.TestContext
         Assert.Empty(modalAfterClose);
 
         // Act - 2回目: 再度モーダルを開く
-        addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("Add Task"));
+        addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("新規タスク"));
         addTaskButton.Click();
 
         // Assert - モーダルが再度表示されていることを確認
@@ -1138,7 +1138,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // デフォルトはKanbanなので、Ganttビューに切り替える
-        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("Gantt Chart"));
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("ガントチャート"));
         ganttTab.Click();
 
         // Act - 1回目: タスクをクリックしてモーダルを開く

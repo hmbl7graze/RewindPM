@@ -402,11 +402,11 @@
     {
         return status switch
         {
-            TaskStatus.Todo => "TODO",
+            TaskStatus.Todo => "未着手",
             TaskStatus.InProgress => "進行中",
             TaskStatus.InReview => "レビュー中",
             TaskStatus.Done => "完了",
-            _ => "TODO"
+            _ => "未着手"
         };
     }
 

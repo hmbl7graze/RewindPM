@@ -33,7 +33,7 @@ else
     <!-- ヘッダー部 -->
     <div class="project-detail-header">
         <div class="header-left">
-            <a href="/projects" class="back-link">← Back to Projects</a>
+            <a href="/projects" class="back-link">← プロジェクト一覧に戻る</a>
         </div>
         <div class="header-center">
             <h1 class="project-title">
@@ -44,8 +44,8 @@ else
             <button class="btn btn-outline-secondary" @onclick="ShowInfoModal">
                 Info
             </button>
-            <button class="btn btn-primary" @onclick="ToggleRetrospectiveMode">
-                Retrospective
+            <button class="btn btn-primary" @onclick="ToggleRewindMode">
+                Rewind
             </button>
         </div>
     </div>
@@ -53,9 +53,9 @@ else
 
 
     <!-- タイムラインコントロール(リワインド機能) - 振り返りモード時のみ表示 -->
-    @if (_isRetrospectiveMode)
+    @if (_isRewindMode)
     {
-        <div class="retrospective-panel">
+        <div class="rewind-panel">
             <TimelineControl
                 CurrentDate="_currentViewDate"
                 EditDates="_editDates"
@@ -67,12 +67,12 @@ else
     <div class="tasks-section">
         <div class="view-header">
             <div class="view-tabs">
-                <button class="view-tab @(_viewType == "Kanban" ? "active" : "")" @onclick='() => ToggleView("Kanban")'>Kanban</button>
-                <button class="view-tab @(_viewType == "Gantt" ? "active" : "")" @onclick='() => ToggleView("Gantt")'>Gantt Chart</button>
-                <button class="view-tab @(_viewType == "Statistics" ? "active" : "")" @onclick='() => ToggleView("Statistics")'>Statistics</button>
+                <button class="view-tab @(_viewType == "Kanban" ? "active" : "")" @onclick='() => ToggleView("Kanban")'>カンバン</button>
+                <button class="view-tab @(_viewType == "Gantt" ? "active" : "")" @onclick='() => ToggleView("Gantt")'>ガントチャート</button>
+                <button class="view-tab @(_viewType == "Statistics" ? "active" : "")" @onclick='() => ToggleView("Statistics")'>統計</button>
             </div>
             <div class="view-actions">
-                <button class="btn btn-success" @onclick="ShowCreateTaskModal" disabled="@_isViewingPast">Add Task</button>
+                <button class="btn btn-success" @onclick="ShowCreateTaskModal" disabled="@_isViewingPast">+ 新規タスク</button>
             </div>
         </div>
 
@@ -96,7 +96,7 @@ else
             }
             else if (_viewType == "Statistics")
             {
-                <ProjectStatisticsDashboard ProjectId="@Id" AsOfDate="@(_isRetrospectiveMode ? _currentViewDate : null)" />
+                <ProjectStatisticsDashboard ProjectId="@Id" AsOfDate="@(_isRewindMode ? _currentViewDate : null)" />
             }
             else
             {
@@ -168,7 +168,7 @@ else
     private DateTimeOffset? _currentViewDate = null; // null = 最新
     private List<DateTimeOffset> _editDates = new();
     private bool _isViewingPast => _currentViewDate.HasValue;
-    private bool _isRetrospectiveMode = false;
+    private bool _isRewindMode = false;
 
     // ビュー切り替え用の状態
     private Guid? _previousId = null; // 前回のIdパラメータ値
@@ -479,9 +479,9 @@ else
         await Mediator.Send(command);
     }
 
-    private async Task ToggleRetrospectiveMode()
+    private async Task ToggleRewindMode()
     {
-        _isRetrospectiveMode = !_isRetrospectiveMode;
+        _isRewindMode = !_isRewindMode;
         
         if (ShouldReturnToLatestState())
         {
@@ -491,7 +491,7 @@ else
 
     private bool ShouldReturnToLatestState()
     {
-        return !_isRetrospectiveMode && _isViewingPast;
+        return !_isRewindMode && _isViewingPast;
     }
 
     private async Task ReturnToLatestState()

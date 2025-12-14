@@ -65,12 +65,12 @@
                     <h5>予定</h5>
                     <div class="d-flex gap-2">
                         <div class="mb-2 flex-fill">
-                            <label class="form-label small text-muted">開始日</label>
+                            <label class="form-label small text-muted">予定開始日</label>
                             <input type="date" class="form-control form-control-sm @(scheduledDateError != null ? "is-invalid" : "")"
                                    @bind="scheduledStartDate" disabled="@IsReadOnly" />
                         </div>
                         <div class="mb-2 flex-fill">
-                            <label class="form-label small text-muted">終了日</label>
+                            <label class="form-label small text-muted">予定終了日</label>
                             <input type="date" class="form-control form-control-sm @(scheduledDateError != null ? "is-invalid" : "")"
                                    @bind="scheduledEndDate" disabled="@IsReadOnly" />
                         </div>
@@ -95,12 +95,12 @@
                     <h5>実績</h5>
                     <div class="d-flex gap-2">
                         <div class="mb-2 flex-fill">
-                            <label class="form-label small text-muted">実績開始</label>
+                            <label class="form-label small text-muted">実績開始日</label>
                             <input type="date" class="form-control form-control-sm @(actualDateError != null ? "is-invalid" : "")"
                                    @bind="actualStartDate" disabled="@IsReadOnly" />
                         </div>
                         <div class="mb-2 flex-fill">
-                            <label class="form-label small text-muted">実績終了</label>
+                            <label class="form-label small text-muted">実績終了日</label>
                             <input type="date" class="form-control form-control-sm @(actualDateError != null ? "is-invalid" : "")"
                                    @bind="actualEndDate" disabled="@IsReadOnly" />
                         </div>

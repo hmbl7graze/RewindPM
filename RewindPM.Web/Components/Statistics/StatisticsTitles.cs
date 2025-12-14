@@ -36,7 +36,7 @@ public static class StatisticsTitles
         "全タスクの実績工数の合計";
 
     public const string HoursOverrun =
-        "工数差分 = 実績工数 - 予定工数\nプラス=超過、マイナス=節約";
+        "工数差分 = 実績工数 - 予定工数";
 
     public const string RemainingEstimatedHours =
         "残予定工数 = 未完了タスクの(予定工数 - 実績工数)合計\nマイナスは0に丸める";
@@ -59,14 +59,14 @@ public static class StatisticsTitles
         "見積もり精度率 = (正確な見積り数 / 完了済みタスク数) × 100\n誤差±10%以内または±1日以内であれば正確とする";
 
     public const string AccurateEstimateTasks =
-        "見積もりが正確だったタスクの数（誤差±10%以内または±1日以内）";
+        "見積もりが正確だったタスクの数\n誤差±10%以内または±1日以内であれば正確とする";
 
     public const string OverEstimateTasks =
-        "実績より予定が多かったタスクの数（過大見積もり）";
+        "実績より予定が多かったタスクの数";
 
     public const string UnderEstimateTasks =
-        "実績より予定が少なかったタスクの数（過小見積もり）";
+        "実績より予定が少なかったタスクの数";
 
     public const string AverageEstimateErrorDays =
-        "平均誤差 = 作業期間見積もりの誤差平均\n単位は日";
+        "平均誤差 = 作業期間見積もりの誤差平均";
 }

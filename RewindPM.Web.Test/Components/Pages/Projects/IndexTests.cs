@@ -137,7 +137,7 @@ public class IndexTests : Bunit.TestContext
         Assert.Equal("RewindPM", title.TextContent);
 
         var newButton = cut.Find("button");
-        Assert.Contains("New Project", newButton.TextContent);
+        Assert.Contains("新規プロジェクト", newButton.TextContent);
     }
 
     [Fact(DisplayName = "新規プロジェクトボタンクリック時にモーダルが開く")]
