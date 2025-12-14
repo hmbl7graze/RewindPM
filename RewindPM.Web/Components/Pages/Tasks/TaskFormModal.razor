@@ -478,9 +478,9 @@
         await IsVisibleChanged.InvokeAsync(false);
     }
 
-    private async Task HandleModalVisibilityChanged(bool isVisible)
+    private void HandleModalVisibilityChanged(bool isVisible)
     {
         IsVisible = isVisible;
-        await IsVisibleChanged.InvokeAsync(isVisible);
+        _ = IsVisibleChanged.InvokeAsync(isVisible);
     }
 }
