@@ -275,9 +275,10 @@
                 await JSRuntime.InvokeVoidAsync("ganttScrollSync.initialize", dotNetRef);
                 scriptsInitialized = true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // JavaScript初期化エラーをサイレントに処理
+                // JavaScript初期化エラーをログに記録
+                Console.Error.WriteLine($"ガントチャートの初期化エラー: {ex.Message}");
             }
         }
         else
@@ -287,9 +288,10 @@
                 // 再レンダリング後にリサイズハンドルを再初期化
                 await JSRuntime.InvokeVoidAsync("ganttScrollSync.reinitializeResizeHandles");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // JavaScript再初期化エラーをサイレントに処理
+                // JavaScript再初期化エラーをログに記録
+                Console.Error.WriteLine($"リサイズハンドルの再初期化エラー: {ex.Message}");
             }
         }
     }
