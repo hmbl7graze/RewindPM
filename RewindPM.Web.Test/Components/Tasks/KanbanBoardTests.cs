@@ -207,4 +207,240 @@ public class KanbanBoardTests : Bunit.TestContext
         // Assert
         Assert.False(statusChanged, "Status change should not occur in ReadOnly mode");
     }
+
+    // ========== アニメーション機能のテスト ==========
+
+    [Fact(DisplayName = "初回ロード時はアニメーションクラスが付与されない")]
+    public void KanbanBoard_DoesNotApplyAnimationClass_OnInitialLoad()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+
+        // Act
+        var cut = RenderComponent<KanbanBoard>(parameters => parameters
+            .Add(p => p.Tasks, tasks));
+
+        // Assert
+        var taskCards = cut.FindAll(".task-card");
+        
+        // 初回ロード時はfading-outクラスが付与されない
+        foreach (var card in taskCards)
+        {
+            Assert.DoesNotContain("fading-out", card.ClassName);
+        }
+    }
+
+    [Fact(DisplayName = "タスクが削除されたときにfading-outクラスが付与される")]
+    public async Task KanbanBoard_AppliesFadingOutClass_WhenTaskIsRemoved()
+    {
+        // Arrange
+        var task1Id = Guid.NewGuid();
+        var task2Id = Guid.NewGuid();
+        var initialTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = task1Id,
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = DateTimeOffset.Now.Date,
+                ScheduledEndDate = DateTimeOffset.Now.Date.AddDays(1),
+                EstimatedHours = 5,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            },
+            new TaskDto
+            {
+                Id = task2Id,
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 2",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = DateTimeOffset.Now.Date,
+                ScheduledEndDate = DateTimeOffset.Now.Date.AddDays(1),
+                EstimatedHours = 8,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        var cut = RenderComponent<KanbanBoard>(parameters => parameters
+            .Add(p => p.Tasks, initialTasks));
+
+        // Act - タスクを1つ削除
+        var updatedTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = task2Id,
+                ProjectId = initialTasks[1].ProjectId,
+                Title = "Task 2",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = DateTimeOffset.Now.Date,
+                ScheduledEndDate = DateTimeOffset.Now.Date.AddDays(1),
+                EstimatedHours = 8,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        await cut.InvokeAsync(() => cut.SetParametersAndRender(parameters => parameters
+            .Add(p => p.Tasks, updatedTasks)));
+
+        // Assert
+        var taskCards = cut.FindAll(".task-card");
+        // フェードアウトアニメーション中は2つのカードが表示される（１つはfading-out）
+        Assert.Equal(2, taskCards.Count);
+
+        // 削除されたタスク（task1）がfading-outクラスを持つ
+        var fadingOutCards = taskCards.Where(c => c.ClassName?.Contains("fading-out") ?? false).ToList();
+        Assert.Single(fadingOutCards);
+    }
+
+    [Fact(DisplayName = "タスクのステータスが変更されたときにfading-outクラスが付与される")]
+    public async Task KanbanBoard_AppliesFadingOutClass_WhenTaskStatusChanges()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var initialTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = taskId,
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = DateTimeOffset.Now.Date,
+                ScheduledEndDate = DateTimeOffset.Now.Date.AddDays(1),
+                EstimatedHours = 5,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        var cut = RenderComponent<KanbanBoard>(parameters => parameters
+            .Add(p => p.Tasks, initialTasks));
+
+        // Act - タスクのステータスを変更
+        var updatedTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = taskId,
+                ProjectId = initialTasks[0].ProjectId,
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.InProgress, // ステータス変更
+                ScheduledStartDate = DateTimeOffset.Now.Date,
+                ScheduledEndDate = DateTimeOffset.Now.Date.AddDays(1),
+                EstimatedHours = 5,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = DateTimeOffset.Now,
+                CreatedBy = "test-user",
+                UpdatedBy = "test-user"
+            }
+        };
+
+        await cut.InvokeAsync(() => cut.SetParametersAndRender(parameters => parameters
+            .Add(p => p.Tasks, updatedTasks)));
+
+        // Assert
+        var taskCards = cut.FindAll(".task-card");
+        
+        // ステータス変更時は古いステータスのカードがfading-outになる
+        var fadingOutCards = taskCards.Where(c => c.ClassName?.Contains("fading-out") ?? false).ToList();
+        Assert.Single(fadingOutCards);
+    }
+
+    [Fact(DisplayName = "新しいタスクが追加されたときはfading-outクラスが付与されない")]
+    public async Task KanbanBoard_DoesNotApplyFadingOutClass_WhenTaskIsAdded()
+    {
+        // Arrange
+        var task1Id = Guid.NewGuid();
+        var initialTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = task1Id,
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = DateTimeOffset.Now.Date,
+                ScheduledEndDate = DateTimeOffset.Now.Date.AddDays(1),
+                EstimatedHours = 5,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        var cut = RenderComponent<KanbanBoard>(parameters => parameters
+            .Add(p => p.Tasks, initialTasks));
+
+        // Act - 新しいタスクを追加
+        var updatedTasks = new List<TaskDto>(initialTasks)
+        {
+            new TaskDto
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 2",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = DateTimeOffset.Now.Date,
+                ScheduledEndDate = DateTimeOffset.Now.Date.AddDays(1),
+                EstimatedHours = 8,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        await cut.InvokeAsync(() => cut.SetParametersAndRender(parameters => parameters
+            .Add(p => p.Tasks, updatedTasks)));
+
+        // Assert
+        var taskCards = cut.FindAll(".task-card");
+        Assert.Equal(2, taskCards.Count);
+
+        // 新規追加なのでfading-outクラスは付与されない
+        var fadingOutCards = taskCards.Where(c => c.ClassName?.Contains("fading-out") ?? false).ToList();
+        Assert.Empty(fadingOutCards);
+    }
 }

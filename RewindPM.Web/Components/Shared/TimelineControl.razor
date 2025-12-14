@@ -42,6 +42,34 @@
     }
 </div>
 
+@* スライドバーコントロール *@
+@if (EditDates != null && EditDates.Count > 0)
+{
+    <div class="timeline-slider-container">
+        <div class="timeline-slider-labels">
+            <span class="slider-label slider-label-start">最古</span>
+            <span class="slider-label slider-label-center">@GetCenterDateLabel()</span>
+            <span class="slider-label slider-label-end">最新</span>
+        </div>
+        <input
+            type="range"
+            class="timeline-slider"
+            min="0"
+            max="@MaxSliderValue"
+            value="@CurrentSliderValue"
+            @onchange="HandleSliderChange"
+            aria-label="日付スライダー"
+            title="@GetSliderTooltip()" />
+        <div class="timeline-slider-ticks">
+            @for (int i = 0; i <= MaxSliderValue; i++)
+            {
+                <div class="slider-tick @(i == CurrentSliderValue ? "active" : "")" 
+                     style="left: @(GetTickPosition(i))%"></div>
+            }
+        </div>
+    </div>
+}
+
 @code {
     /// <summary>
     /// 現在表示中の日付（nullの場合は最新）
@@ -67,43 +95,60 @@
     private bool IsViewingPast => CurrentDate.HasValue;
 
     /// <summary>
+    /// スライドバーの最大値（0が最古、MaxSliderValueが最新）
+    /// </summary>
+    private int MaxSliderValue => EditDates?.Count ?? 0;
+
+    /// <summary>
+    /// 現在のスライドバーの値
+    /// </summary>
+    private int CurrentSliderValue
+    {
+        get
+        {
+            if (!CurrentDate.HasValue)
+                return MaxSliderValue; // 最新（右端）
+
+            // EditDatesリストでのインデックスを検索（降順リストなので反転）
+            var index = EditDates?.FindIndex(d => d.Date == CurrentDate.Value.Date) ?? -1;
+            if (index >= 0)
+            {
+                // 反転: 0番目（最新の編集日）→MaxSliderValue-1、最後（最古）→0
+                return MaxSliderValue - 1 - index;
+            }
+            return MaxSliderValue; // 見つからない場合は最新
+        }
+    }
+
+    private const string LiveStateLabel = "最新の状態";
+    private const string DateFormat = "yyyy/MM/dd";
+    private const string ShortDateFormat = "MM/dd";
+
+    /// <summary>
     /// 前の編集日へ移動可能かどうか
     /// </summary>
     private bool CanMoveToPrevious
     {
         get
         {
-            if (EditDates == null || EditDates.Count == 0)
+            if (!HasEditDates)
                 return false;
 
-            if (!CurrentDate.HasValue)
-            {
-                // 最新表示中の場合、編集日があれば移動可能
+            if (IsViewingLatest)
                 return EditDates.Count > 0;
-            }
 
-            // 現在の日付より古い日付が存在するか確認
-            return EditDates.Any(d => d < CurrentDate.Value);
+            return HasOlderDates();
         }
     }
 
     /// <summary>
     /// 次の編集日へ移動可能かどうか
     /// </summary>
-    private bool CanMoveToNext
-    {
-        get
-        {
-            // If viewing past, we can always move "next" at least to the Live state
-            // unless we are already at Live state (CurrentDate is null)
-            if (!CurrentDate.HasValue)
-                return false;
+    private bool CanMoveToNext => IsViewingPast;
 
-            // If we are viewing a past date, we can definitely move "next".
-            // Even if there are no newer EditDates, the "Next" step is "Live".
-            return true;
-        }
-    }
+    private bool HasEditDates => EditDates != null && EditDates.Count > 0;
+    private bool IsViewingLatest => !CurrentDate.HasValue;
+    private bool HasOlderDates() => EditDates.Any(d => d < CurrentDate!.Value);
 
     /// <summary>
     /// 前の編集日（より古い日付）へ移動
@@ -136,9 +181,6 @@
     }
 
     /// <summary>
-    /// 次の編集日（より新しい日付）へ移動
-    /// </summary>
-    /// <summary>
     /// 次の編集日（より新しい日付）へ移動。最新の編集日より後は「最新状態」に戻る。
     /// </summary>
     private async Task MoveToNext()
@@ -146,7 +188,6 @@
         if (!CanMoveToNext)
             return;
 
-        // 現在の日付より新しい日付のうち、最も古いものを取得
         var newDate = EditDates
             .Where(d => d > CurrentDate!.Value)
             .OrderBy(d => d)
@@ -170,5 +211,97 @@
     private async Task MoveToLatest()
     {
         await OnDateChanged.InvokeAsync(null);
+    }
+
+    /// <summary>
+    /// スライドバーの変更完了イベント（マウスアップ時）
+    /// </summary>
+    private async Task HandleSliderChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var value))
+        {
+            await MoveToSliderValue(value);
+        }
+    }
+
+    /// <summary>
+    /// スライダー値に対応する日付へ移動
+    /// </summary>
+    private async Task MoveToSliderValue(int sliderValue)
+    {
+        if (sliderValue == MaxSliderValue)
+        {
+            // 最新状態（右端）
+            await OnDateChanged.InvokeAsync(null);
+        }
+        else if (sliderValue >= 0 && sliderValue < MaxSliderValue)
+        {
+            // 反転してインデックスを計算: sliderValue 0（左端）→最後のインデックス
+            var index = MaxSliderValue - 1 - sliderValue;
+            if (index >= 0 && index < EditDates.Count)
+            {
+                var targetDate = EditDates[index];
+                await OnDateChanged.InvokeAsync(targetDate);
+            }
+        }
+    }
+
+    /// <summary>
+    /// スライダーの目盛り位置を計算
+    /// </summary>
+    private double GetTickPosition(int index)
+    {
+        if (MaxSliderValue == 0)
+            return 0;
+        return (double)index / MaxSliderValue * 100;
+    }
+
+    /// <summary>
+    /// スライダーのツールチップテキスト
+    /// </summary>
+    private string GetSliderTooltip()
+    {
+        if (CurrentSliderValue == MaxSliderValue)
+            return LiveStateLabel;
+
+        if (TryGetEditDateAtSliderValue(CurrentSliderValue, out var date))
+        {
+            return date.ToString(DateFormat);
+        }
+
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// スライダー中央のラベルを取得
+    /// </summary>
+    private string GetCenterDateLabel()
+    {
+        if (!HasEditDates)
+            return string.Empty;
+
+        var middleIndex = EditDates.Count / 2;
+        return IsValidEditDateIndex(middleIndex) 
+            ? EditDates[middleIndex].ToString(ShortDateFormat) 
+            : string.Empty;
+    }
+
+    private bool TryGetEditDateAtSliderValue(int sliderValue, out DateTimeOffset date)
+    {
+        date = default;
+        if (sliderValue < 0 || sliderValue >= MaxSliderValue)
+            return false;
+
+        var index = MaxSliderValue - 1 - sliderValue;
+        if (!IsValidEditDateIndex(index))
+            return false;
+
+        date = EditDates[index];
+        return true;
+    }
+
+    private bool IsValidEditDateIndex(int index)
+    {
+        return index >= 0 && index < EditDates?.Count;
     }
 }

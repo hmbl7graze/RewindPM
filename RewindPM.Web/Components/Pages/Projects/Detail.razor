@@ -76,32 +76,45 @@ else
             </div>
         </div>
 
-        @if (_viewType == "Gantt")
-        {
-            @if (isLoadingTasks)
+        <div class="view-container">
+            @if (_viewType == "Gantt")
             {
-                <p><em>タスクを読み込み中...</em></p>
+                @if (isLoadingTasks)
+                {
+                    <div class="loading-overlay">
+                        <p><em>タスクを読み込み中...</em></p>
+                    </div>
+                }
+                else
+                {
+                    <GanttChart Tasks="@(tasks ?? new List<TaskDto>())"
+                                OnTaskClick="ShowTaskDetailModal"
+                                OnBarResize="HandleBarResize"
+                                ViewDate="_currentViewDate"
+                                IsReadOnly="_isViewingPast" />
+                }
+            }
+            else if (_viewType == "Statistics")
+            {
+                <ProjectStatisticsDashboard ProjectId="@Id" AsOfDate="@(_isRetrospectiveMode ? _currentViewDate : null)" />
             }
             else
             {
-                <GanttChart Tasks="@(tasks ?? new List<TaskDto>())"
-                            OnTaskClick="ShowTaskDetailModal"
-                            OnBarResize="HandleBarResize"
-                            ViewDate="_currentViewDate"
-                            IsReadOnly="_isViewingPast" />
+                @if (isLoadingTasks)
+                {
+                    <div class="loading-overlay">
+                        <p><em>タスクを読み込み中...</em></p>
+                    </div>
+                }
+                else
+                {
+                    <KanbanBoard Tasks="@(tasks ?? new List<TaskDto>())"
+                                 OnTaskClick="ShowTaskDetailModal"
+                                 OnTaskStatusChanged="HandleTaskStatusChanged"
+                                 IsReadOnly="_isViewingPast" />
+                }
             }
-        }
-        else if (_viewType == "Statistics")
-        {
-            <ProjectStatisticsDashboard ProjectId="@Id" AsOfDate="@(_isRetrospectiveMode ? _currentViewDate : null)" />
-        }
-        else
-        {
-            <KanbanBoard Tasks="@(tasks ?? new List<TaskDto>())"
-                         OnTaskClick="ShowTaskDetailModal"
-                         OnTaskStatusChanged="HandleTaskStatusChanged"
-                         IsReadOnly="_isViewingPast" />
-        }
+        </div>
     </div>
 
     @if (!string.IsNullOrEmpty(errorMessage))
@@ -128,11 +141,19 @@ else
 }
 
 @code {
+    private const string DefaultUserId = "system";
+    private const string GanttViewType = "Gantt";
+    private const string KanbanViewType = "Kanban";
+    private const string StatisticsViewType = "Statistics";
+
     [Parameter]
     public Guid Id { get; set; }
 
+    // データ状態
     private ProjectDto? project;
     private List<TaskDto>? tasks;
+
+    // UI状態
     private bool isLoading = true;
     private bool isLoadingTasks = true;
     private string? errorMessage;
@@ -140,14 +161,16 @@ else
     private bool showInfoModal = false;
     private TaskDto? selectedTask = null;
 
+    // ビュー状態
+    private string _viewType = GanttViewType;
+
     // リワインド機能用の状態
     private DateTimeOffset? _currentViewDate = null; // null = 最新
     private List<DateTimeOffset> _editDates = new();
     private bool _isViewingPast => _currentViewDate.HasValue;
     private bool _isRetrospectiveMode = false;
-    
+
     // ビュー切り替え用の状態
-    private string _viewType = "Kanban";
     private Guid? _previousId = null; // 前回のIdパラメータ値
     private string? _previousTabQuery = null; // 前回のtabクエリパラメータ値
 
@@ -162,36 +185,56 @@ else
         // URLクエリパラメータを更新
         var uri = Navigation.GetUriWithQueryParameter("tab", viewType.ToLower());
         Navigation.NavigateTo(uri, false);
-        
+
         // 前回のクエリパラメータを更新（OnParametersSetでの二重設定を防ぐ）
         _previousTabQuery = viewType.ToLower();
     }
 
     private async Task HandleTaskStatusChanged((TaskDto task, TaskStatus newStatus) changeData)
     {
-        if (_isViewingPast) return;
+        if (_isViewingPast)
+            return;
 
         try
         {
-            var command = new ChangeTaskStatusCommand(
-                TaskId: changeData.task.Id,
-                NewStatus: changeData.newStatus,
-                ChangedBy: GetCurrentUserId() // 認証サービスから取得
-            );
-
-            await Mediator.Send(command);
-            
-            // タスク一覧を再読み込み
-            await LoadTasks();
-            // 編集日一覧も更新
-            await LoadEditDates();
-            StateHasChanged();
+            await UpdateTaskStatus(changeData);
+            await ReloadTaskData();
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Failed to update task status for task {TaskId}", changeData.task.Id);
-            errorMessage = "ステータスの更新に失敗しました。もう一度お試しください。";
+            LogAndDisplayError(ex, "タスクのステータス更新に失敗しました", changeData.task.Id);
         }
+    }
+
+    private async Task UpdateTaskStatus((TaskDto task, TaskStatus newStatus) changeData)
+    {
+        var command = new ChangeTaskStatusCommand(
+            TaskId: changeData.task.Id,
+            NewStatus: changeData.newStatus,
+            ChangedBy: DefaultUserId
+        );
+
+        await Mediator.Send(command);
+    }
+
+    private async Task ReloadTaskData()
+    {
+        await LoadTasks();
+        await LoadEditDates();
+        StateHasChanged();
+    }
+
+    private void LogAndDisplayError(Exception ex, string message, Guid? taskId = null)
+    {
+        if (taskId.HasValue)
+        {
+            Logger.LogError(ex, "{Message} for task {TaskId}", message, taskId.Value);
+        }
+        else
+        {
+            Logger.LogError(ex, message);
+        }
+        errorMessage = "操作に失敗しました。もう一度お試しください。";
     }
 
     protected override void OnParametersSet()
@@ -199,10 +242,10 @@ else
         // URLクエリパラメータからタブの状態を読み取る
         var uri = new Uri(Navigation.Uri);
         var queryParams = QueryHelpers.ParseQuery(uri.Query);
-        
+
         // StringValuesから最初の値を明示的に取得（複数値の場合の予期しない動作を防ぐ）
-        var currentTabQuery = queryParams.TryGetValue("tab", out var tabValue) 
-            ? tabValue.FirstOrDefault()?.ToLower() 
+        var currentTabQuery = queryParams.TryGetValue("tab", out var tabValue)
+            ? tabValue.FirstOrDefault()?.ToLower()
             : null;
 
         // Idパラメータが変更された場合、または tabクエリパラメータが変更された場合のみタブ状態を更新
@@ -272,34 +315,42 @@ else
         try
         {
             isLoadingTasks = true;
-
-            if (_isViewingPast)
-            {
-                // 過去時点のタスク一覧を取得
-                var query = new GetTasksByProjectIdAtTimeQuery(Id, _currentViewDate!.Value);
-                tasks = await Mediator.Send(query);
-            }
-            else
-            {
-                // 最新のタスク一覧を取得
-                var query = new GetTasksByProjectIdQuery(Id);
-                tasks = await Mediator.Send(query);
-            }
+            StateHasChanged(); // ローディング表示を即座に反映
+            tasks = _isViewingPast 
+                ? await LoadTasksAtTime(_currentViewDate!.Value)
+                : await LoadLatestTasks();
         }
         catch (Exception ex)
         {
-            errorMessage = $"タスクの読み込みに失敗しました: {ex.Message}";
-            tasks = new List<TaskDto>();
+            HandleTaskLoadError(ex);
         }
         finally
         {
             isLoadingTasks = false;
+            StateHasChanged(); // ローディング解除を確実に反映
         }
+    }
+
+    private async Task<List<TaskDto>> LoadTasksAtTime(DateTimeOffset date)
+    {
+        var query = new GetTasksByProjectIdAtTimeQuery(Id, date);
+        return await Mediator.Send(query);
+    }
+
+    private async Task<List<TaskDto>> LoadLatestTasks()
+    {
+        var query = new GetTasksByProjectIdQuery(Id);
+        return await Mediator.Send(query);
+    }
+
+    private void HandleTaskLoadError(Exception ex)
+    {
+        errorMessage = $"タスクの読み込みに失敗しました: {ex.Message}";
+        tasks = new List<TaskDto>();
     }
 
     private void ShowCreateTaskModal()
     {
-        // 過去表示中は新規作成不可
         if (_isViewingPast)
         {
             errorMessage = "過去の状態を表示中のため、タスクを作成できません。";
@@ -312,21 +363,14 @@ else
 
     private void ShowTaskDetailModal(TaskDto task)
     {
-        // 過去表示中は読み取り専用で表示（今後、読み取り専用モーダルを実装する場合はここで分岐）
-        // 現状は過去表示中でも詳細を確認できるようにする
         selectedTask = task;
         showTaskModal = true;
     }
 
     private async Task HandleTaskModalSuccess()
     {
-        showTaskModal = false;
-        selectedTask = null;
-        // タスク一覧を再読み込み
-        await LoadTasks();
-        // 編集日一覧も更新（新しい編集日が追加された可能性があるため）
-        await LoadEditDates();
-        StateHasChanged();
+        CloseTaskModal();
+        await ReloadTaskData();
     }
 
     private void HandleTaskModalVisibleChanged(bool isVisible)
@@ -335,6 +379,11 @@ else
     }
 
     private void HandleTaskModalCancel()
+    {
+        CloseTaskModal();
+    }
+
+    private void CloseTaskModal()
     {
         showTaskModal = false;
         selectedTask = null;
@@ -369,7 +418,6 @@ else
 
     private async Task HandleBarResize((Guid taskId, string barType, DateTimeOffset newStartDate, DateTimeOffset newEndDate) resizeData)
     {
-        // 過去表示中は編集不可
         if (_isViewingPast)
         {
             errorMessage = "過去の状態を表示中のため、編集できません。";
@@ -378,66 +426,77 @@ else
 
         try
         {
-            var task = tasks?.FirstOrDefault(t => t.Id == resizeData.taskId);
+            var task = FindTaskById(resizeData.taskId);
             if (task == null) return;
 
-            if (resizeData.barType == "scheduled")
-            {
-                // 予定期間を更新
-                var command = new ChangeTaskScheduleCommand(
-                    TaskId: task.Id,
-                    ScheduledStartDate: resizeData.newStartDate,
-                    ScheduledEndDate: resizeData.newEndDate,
-                    EstimatedHours: task.EstimatedHours ?? 0,
-                    ChangedBy: "current-user" // TODO: 実際のユーザーIDを使用
-                );
-
-                await Mediator.Send(command);
-            }
-            else if (resizeData.barType == "actual")
-            {
-                // 実績期間を更新
-                var command = new ChangeTaskActualPeriodCommand(
-                    TaskId: task.Id,
-                    ActualStartDate: resizeData.newStartDate,
-                    ActualEndDate: resizeData.newEndDate,
-                    ActualHours: task.ActualHours,
-                    ChangedBy: "current-user" // TODO: 実際のユーザーIDを使用
-                );
-
-                await Mediator.Send(command);
-            }
-
-            // タスク一覧を再読み込み
-            await LoadTasks();
-            // 編集日一覧も更新（新しい編集日が追加された可能性があるため）
-            await LoadEditDates();
-            StateHasChanged();
+            await UpdateTaskPeriod(task, resizeData);
+            await ReloadTaskData();
         }
         catch (Exception ex)
         {
-            errorMessage = $"タスクの期間更新に失敗しました: {ex.Message}";
+            LogAndDisplayError(ex, "タスクの期間更新に失敗しました", resizeData.taskId);
         }
+    }
+
+    private TaskDto? FindTaskById(Guid taskId)
+    {
+        return tasks?.FirstOrDefault(t => t.Id == taskId);
+    }
+
+    private async Task UpdateTaskPeriod(TaskDto task, (Guid taskId, string barType, DateTimeOffset newStartDate, DateTimeOffset newEndDate) resizeData)
+    {
+        if (resizeData.barType == "scheduled")
+        {
+            await UpdateScheduledPeriod(task, resizeData.newStartDate, resizeData.newEndDate);
+        }
+        else if (resizeData.barType == "actual")
+        {
+            await UpdateActualPeriod(task, resizeData.newStartDate, resizeData.newEndDate);
+        }
+    }
+
+    private async Task UpdateScheduledPeriod(TaskDto task, DateTimeOffset newStartDate, DateTimeOffset newEndDate)
+    {
+        var command = new ChangeTaskScheduleCommand(
+            TaskId: task.Id,
+            ScheduledStartDate: newStartDate,
+            ScheduledEndDate: newEndDate,
+            EstimatedHours: task.EstimatedHours ?? 0,
+            ChangedBy: DefaultUserId
+        );
+        await Mediator.Send(command);
+    }
+
+    private async Task UpdateActualPeriod(TaskDto task, DateTimeOffset newStartDate, DateTimeOffset newEndDate)
+    {
+        var command = new ChangeTaskActualPeriodCommand(
+            TaskId: task.Id,
+            ActualStartDate: newStartDate,
+            ActualEndDate: newEndDate,
+            ActualHours: task.ActualHours,
+            ChangedBy: DefaultUserId
+        );
+        await Mediator.Send(command);
     }
 
     private async Task ToggleRetrospectiveMode()
     {
         _isRetrospectiveMode = !_isRetrospectiveMode;
         
-        // 振り返りモードを終了する際は、最新状態に戻す
-        if (!_isRetrospectiveMode && _isViewingPast)
+        if (ShouldReturnToLatestState())
         {
-            _currentViewDate = null;
-            await LoadTasks();
+            await ReturnToLatestState();
         }
     }
 
-    /// <summary>
-    /// 現在のユーザーIDを取得（未実装）
-    /// </summary>
-    private string GetCurrentUserId()
+    private bool ShouldReturnToLatestState()
     {
-        // TODO: 認証サービスから実際のユーザーIDを取得する
-        return "admin";
+        return !_isRetrospectiveMode && _isViewingPast;
+    }
+
+    private async Task ReturnToLatestState()
+    {
+        _currentViewDate = null;
+        await LoadTasks();
     }
 }

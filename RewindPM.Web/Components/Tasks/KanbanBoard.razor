@@ -1,6 +1,7 @@
 @using RewindPM.Application.Read.DTOs
 @using RewindPM.Domain.ValueObjects
 @using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus
+@using RewindPM.Web.Components.Shared
 
 <div class="kanban-board">
     @foreach (var status in _statuses)
@@ -12,12 +13,12 @@
              @ondrop="() => HandleDrop(status)">
             <div class="column-header">
                 <h3>@GetStatusLabel(status)</h3>
-                <span class="task-count">@GetTasksByStatus(status).Count()</span>
+                <span class="task-count">@GetTaskCountByStatus(status)</span>
             </div>
             <div class="task-list">
-                @foreach (var task in GetTasksByStatus(status))
+                @foreach (var task in GetVisibleTasksByStatus(status))
                 {
-                    <div class="task-card"
+                    <div class="task-card @GetTaskAnimationClass(task)"
                          draggable="@(IsReadOnly ? "false" : "true")"
                          tabindex="0"
                          role="button"
@@ -57,6 +58,9 @@
     public EventCallback<(TaskDto task, TaskStatus newStatus)> OnTaskStatusChanged { get; set; }
 
     private TaskDto? _draggedTask;
+    private List<TaskDto> _previousTasks = new();
+    private readonly HashSet<Guid> _fadingOutTasks = new();
+    private List<TaskDto> _displayTasks = new();
 
     private readonly List<TaskStatus> _statuses = new()
     {
@@ -66,9 +70,124 @@
         TaskStatus.Done
     };
 
-    private IEnumerable<TaskDto> GetTasksByStatus(TaskStatus status)
+    protected override async Task OnParametersSetAsync()
     {
-        return Tasks.Where(t => t.Status == status);
+        await base.OnParametersSetAsync();
+
+        if (IsInitialLoad())
+        {
+            InitializeDisplayTasks();
+            return;
+        }
+
+        if (!TasksAreEqual(_previousTasks, Tasks))
+        {
+            await HandleTasksChanged();
+        }
+    }
+
+    private bool IsInitialLoad() => _previousTasks.Count == 0;
+
+    private void InitializeDisplayTasks()
+    {
+        _displayTasks = Tasks.ToList();
+        _previousTasks = Tasks.ToList();
+    }
+
+    private async Task HandleTasksChanged()
+    {
+        var removedTasks = GetRemovedTasks();
+        var tasksChangedStatus = GetTasksWithChangedStatus();
+
+        if (removedTasks.Any() || tasksChangedStatus.Any())
+        {
+            await AnimateTaskRemoval(removedTasks.Concat(tasksChangedStatus).ToList());
+        }
+        else
+        {
+            UpdateDisplayTasks();
+        }
+
+        _previousTasks = Tasks.ToList();
+    }
+
+    private List<TaskDto> GetRemovedTasks()
+    {
+        return _previousTasks
+            .Where(pt => !Tasks.Any(t => t.Id == pt.Id))
+            .ToList();
+    }
+
+    private List<TaskDto> GetTasksWithChangedStatus()
+    {
+        return _previousTasks
+            .Where(pt => {
+                var currentTask = Tasks.FirstOrDefault(t => t.Id == pt.Id);
+                return currentTask != null && currentTask.Status != pt.Status;
+            })
+            .ToList();
+    }
+
+    private async Task AnimateTaskRemoval(List<TaskDto> removedTasks)
+    {
+        MarkTasksForFadeOut(removedTasks);
+        StateHasChanged();
+        await Task.Delay(AnimationConstants.FadeOutDurationMs);
+        CompleteTaskRemoval();
+    }
+
+    private void MarkTasksForFadeOut(List<TaskDto> tasks)
+    {
+        foreach (var task in tasks)
+        {
+            _fadingOutTasks.Add(task.Id);
+        }
+        _displayTasks = _previousTasks.ToList();
+    }
+
+    private void CompleteTaskRemoval()
+    {
+        _fadingOutTasks.Clear();
+        UpdateDisplayTasks();
+    }
+
+    private void UpdateDisplayTasks()
+    {
+        _displayTasks = Tasks.ToList();
+    }
+
+    /// <summary>
+    /// タスクリストの等価性を判定（IDとStatusのみを比較）
+    /// 他のプロパティ（Title、Descriptionなど）の変更は検出しません
+    /// </summary>
+    private bool TasksAreEqual(List<TaskDto> list1, List<TaskDto> list2)
+    {
+        if (list1.Count != list2.Count) return false;
+        
+        var tasks1 = list1.Select(CreateTaskSignature).OrderBy(t => t.Id).ToList();
+        var tasks2 = list2.Select(CreateTaskSignature).OrderBy(t => t.Id).ToList();
+        
+        return tasks1.SequenceEqual(tasks2);
+    }
+
+    private static (Guid Id, TaskStatus Status) CreateTaskSignature(TaskDto task)
+    {
+        return (task.Id, task.Status);
+    }
+
+    private int GetTaskCountByStatus(TaskStatus status)
+    {
+        return Tasks.Count(t => t.Status == status);
+    }
+
+    private IEnumerable<TaskDto> GetVisibleTasksByStatus(TaskStatus status)
+    {
+        return _displayTasks.Where(t => t.Status == status);
+    }
+
+    private string GetTaskAnimationClass(TaskDto task)
+    {
+        return _fadingOutTasks.Contains(task.Id) ? "fading-out" : "";
     }
 
     private string GetStatusLabel(TaskStatus status) => status switch

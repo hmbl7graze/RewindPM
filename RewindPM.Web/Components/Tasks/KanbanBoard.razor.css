@@ -113,3 +113,65 @@
     font-size: 0.7rem;
     font-weight: bold;
 }
+
+/* ========================================
+   カードのアニメーション
+   ======================================== */
+
+/* カード追加時のフェードイン */
+@keyframes cardFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* カード削除時のフェードアウト */
+@keyframes cardFadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+}
+
+.task-card {
+    animation: cardFadeIn 0.4s ease-out;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* フェードアウトアニメーションの適用 */
+.task-card.fading-out {
+    animation: cardFadeOut 0.4s ease-in forwards;
+}
+
+/* ホバー時の効果 */
+.task-card:hover {
+    transform: translateY(-2px);
+}
+
+/* ドラッグ時の効果 */
+.task-card:active {
+    transform: rotate(2deg) scale(1.02);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+/* アクセシビリティ: prefers-reduced-motion対応 */
+@media (prefers-reduced-motion: reduce) {
+    .task-card,
+    .task-card.fading-out {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    .task-card:hover,
+    .task-card:active {
+        transform: none !important;
+    }
+}

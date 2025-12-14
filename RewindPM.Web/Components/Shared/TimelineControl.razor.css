@@ -251,3 +251,255 @@
 .timeline-control.viewing-past {
     animation: highlight 1s ease-in-out;
 }
+
+/* ========================================
+   スライドバーコンテナ
+   ======================================== */
+.timeline-slider-container {
+    width: 100%;
+    padding: 1.5rem 0 1rem;
+    margin-top: 0.75rem;
+    position: relative;
+}
+
+.timeline-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    padding: 0 0.5rem;
+}
+
+.slider-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.slider-label-center {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* ========================================
+   スライドバー本体
+   ======================================== */
+.timeline-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    background: linear-gradient(to right, var(--color-slider-track) 0%, var(--color-slider-track) 100%);
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+}
+
+/* WebKit (Chrome, Safari, Edge) */
+.timeline-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    cursor: pointer;
+    border: 3px solid var(--bg-surface);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.timeline-slider::-webkit-slider-thumb:hover {
+    background: var(--color-accent-hover);
+    transform: scale(1.1);
+    box-shadow: 0 3px 10px rgba(9, 105, 218, 0.4);
+}
+
+.timeline-slider::-webkit-slider-thumb:active {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(9, 105, 218, 0.5);
+}
+
+/* Firefox */
+.timeline-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    cursor: pointer;
+    border: 3px solid var(--bg-surface);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+}
+
+.timeline-slider::-moz-range-thumb:hover {
+    background: var(--color-accent-hover);
+    transform: scale(1.1);
+    box-shadow: 0 3px 10px rgba(9, 105, 218, 0.4);
+}
+
+.timeline-slider::-moz-range-thumb:active {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(9, 105, 218, 0.5);
+}
+
+/* Firefox トラック */
+.timeline-slider::-moz-range-track {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--color-slider-track);
+}
+
+/* 過去表示モード時のスライダー */
+.timeline-toolbar.viewing-past ~ .timeline-slider-container .timeline-slider {
+    background: linear-gradient(to right, var(--color-past-track) 0%, var(--color-slider-track) 100%);
+}
+
+.timeline-toolbar.viewing-past ~ .timeline-slider-container .timeline-slider::-webkit-slider-thumb {
+    background: var(--color-past-mode);
+    border-color: var(--color-past-mode-light);
+}
+
+.timeline-toolbar.viewing-past ~ .timeline-slider-container .timeline-slider::-webkit-slider-thumb:hover {
+    background: var(--color-past-mode-hover);
+}
+
+.timeline-toolbar.viewing-past ~ .timeline-slider-container .timeline-slider::-moz-range-thumb {
+    background: var(--color-past-mode);
+    border-color: var(--color-past-mode-light);
+}
+
+.timeline-toolbar.viewing-past ~ .timeline-slider-container .timeline-slider::-moz-range-thumb:hover {
+    background: var(--color-past-mode-hover);
+}
+
+/* ========================================
+   目盛り（Ticks）
+   ======================================== */
+.timeline-slider-ticks {
+    position: absolute;
+    top: 3.5rem;
+    left: 0;
+    right: 0;
+    height: 12px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.slider-tick {
+    position: absolute;
+    width: 2px;
+    height: 12px;
+    background-color: var(--color-slider-track);
+    transform: translateX(-50%);
+    transition: all 0.2s ease;
+}
+
+.slider-tick.active {
+    height: 16px;
+    background-color: var(--color-accent);
+    width: 3px;
+}
+
+/* 最初と最後の目盛りを強調 */
+.slider-tick:first-child,
+.slider-tick:last-child {
+    height: 14px;
+    width: 2.5px;
+    background-color: var(--color-slider-tick);
+}
+
+/* 過去表示モード時の目盛り */
+.timeline-toolbar.viewing-past ~ .timeline-slider-container .slider-tick.active {
+    background-color: var(--color-past-mode);
+}
+
+/* ========================================
+   レスポンシブ対応
+   ======================================== */
+@media (max-width: 768px) {
+    .timeline-slider-container {
+        padding: 1rem 0 0.75rem;
+    }
+
+    .slider-label {
+        font-size: 0.7rem;
+    }
+
+    .timeline-slider {
+        height: 10px;
+    }
+
+    .timeline-slider::-webkit-slider-thumb {
+        width: 24px;
+        height: 24px;
+    }
+
+    .timeline-slider::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+    }
+
+    .slider-tick {
+        height: 10px;
+    }
+
+    .slider-tick.active {
+        height: 14px;
+    }
+}
+
+/* タッチデバイス用の拡大されたタップターゲット */
+@media (hover: none) and (pointer: coarse) {
+    .timeline-slider {
+        height: 12px;
+        margin: 0.5rem 0;
+    }
+
+    .timeline-slider::-webkit-slider-thumb {
+        width: 28px;
+        height: 28px;
+    }
+
+    .timeline-slider::-moz-range-thumb {
+        width: 28px;
+        height: 28px;
+    }
+}
+
+/* ========================================
+   アクセシビリティ: フォーカス表示
+   ======================================== */
+.timeline-slider:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 4px;
+    border-radius: 4px;
+}
+
+.timeline-slider:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 4px var(--color-accent-transparent),
+                0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.timeline-slider:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 4px var(--color-accent-transparent),
+                0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* ========================================
+   アクセシビリティ: prefers-reduced-motion対応
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+    .timeline-slider,
+    .timeline-slider::-webkit-slider-thumb,
+    .timeline-slider::-moz-range-thumb,
+    .slider-tick {
+        transition: none !important;
+    }
+
+    .timeline-slider::-webkit-slider-thumb:hover,
+    .timeline-slider::-moz-range-thumb:hover {
+        transform: none !important;
+    }
+}
