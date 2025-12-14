@@ -110,7 +110,8 @@ else
     }
 
     <!-- タスク作成・編集モーダル -->
-    <TaskFormModal @bind-IsVisible="showTaskModal"
+    <TaskFormModal IsVisible="showTaskModal"
+                   IsVisibleChanged="HandleTaskModalVisibleChanged"
                    ProjectId="@Id"
                    ExistingTask="@selectedTask"
                    OnSuccess="HandleTaskModalSuccess"
@@ -118,7 +119,8 @@ else
                    IsReadOnly="_isViewingPast" />
 
     <!-- プロジェクト情報モーダル -->
-    <ProjectInfoModal @bind-IsVisible="showInfoModal"
+    <ProjectInfoModal IsVisible="showInfoModal"
+                      IsVisibleChanged="HandleProjectInfoModalVisibleChanged"
                       ProjectId="@Id"
                       ProjectTitle="@project.Title"
                       ProjectDescription="@project.Description"
@@ -327,6 +329,11 @@ else
         StateHasChanged();
     }
 
+    private void HandleTaskModalVisibleChanged(bool isVisible)
+    {
+        showTaskModal = isVisible;
+    }
+
     private void HandleTaskModalCancel()
     {
         showTaskModal = false;
@@ -343,6 +350,11 @@ else
         // プロジェクト情報を再読み込み
         await LoadProject();
         StateHasChanged();
+    }
+
+    private void HandleProjectInfoModalVisibleChanged(bool isVisible)
+    {
+        showInfoModal = isVisible;
     }
 
     /// <summary>

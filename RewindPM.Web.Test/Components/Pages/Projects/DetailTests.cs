@@ -1018,5 +1018,128 @@ public class DetailTests : Bunit.TestContext
             Arg.Any<GetProjectByIdQuery>(),
             Arg.Any<CancellationToken>());
     }
+
+    // ========== モーダル再表示テスト ==========
+
+    [Fact(DisplayName = "タスクモーダルを閉じた後、再度開くことができる")]
+    public void Detail_CanReopenTaskModal_AfterClosing()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - 1回目: モーダルを開く
+        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("Add Task"));
+        addTaskButton.Click();
+
+        // モーダルが表示されていることを確認
+        var modalFirstOpen = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalFirstOpen);
+
+        // モーダルを閉じる
+        var closeButton = cut.FindAll("button").First(b => b.TextContent.Contains("キャンセル"));
+        closeButton.Click();
+
+        // モーダルが閉じられていることを確認
+        var modalAfterClose = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterClose);
+
+        // Act - 2回目: 再度モーダルを開く
+        addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("Add Task"));
+        addTaskButton.Click();
+
+        // Assert - モーダルが再度表示されていることを確認
+        var modalSecondOpen = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalSecondOpen);
+    }
+
+    [Fact(DisplayName = "プロジェクト情報モーダルを閉じた後、再度開くことができる")]
+    public void Detail_CanReopenProjectInfoModal_AfterClosing()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - 1回目: プロジェクト情報モーダルを開く
+        var infoButton = cut.FindAll("button").First(b => b.TextContent.Contains("Info"));
+        infoButton.Click();
+
+        // モーダルが表示されていることを確認
+        var modalFirstOpen = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalFirstOpen);
+
+        // モーダルを閉じる (×ボタンをクリック)
+        var closeButton = cut.Find(".modal-close-btn");
+        closeButton.Click();
+
+        // モーダルが閉じられていることを確認
+        var modalAfterClose = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterClose);
+
+        // Act - 2回目: 再度プロジェクト情報モーダルを開く
+        infoButton = cut.FindAll("button").First(b => b.TextContent.Contains("Info"));
+        infoButton.Click();
+
+        // Assert - モーダルが再度表示されていることを確認
+        var modalSecondOpen = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalSecondOpen);
+    }
+
+    [Fact(DisplayName = "タスク編集モーダルを閉じた後、再度開くことができる")]
+    public void Detail_CanReopenTaskEditModal_AfterClosing()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        var tasks = CreateTestTasks();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(tasks);
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - 1回目: タスクをクリックしてモーダルを開く
+        var taskNameCell = cut.Find(".gantt-task-name-cell");
+        taskNameCell.Click();
+
+        // モーダルが表示されていることを確認
+        var modalFirstOpen = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalFirstOpen);
+
+        // モーダルを閉じる
+        var closeButton = cut.FindAll("button").First(b => b.TextContent.Contains("キャンセル"));
+        closeButton.Click();
+
+        // モーダルが閉じられていることを確認
+        var modalAfterClose = cut.FindAll(".modal-overlay");
+        Assert.Empty(modalAfterClose);
+
+        // Act - 2回目: 再度タスクをクリックしてモーダルを開く
+        taskNameCell = cut.Find(".gantt-task-name-cell");
+        taskNameCell.Click();
+
+        // Assert - モーダルが再度表示されていることを確認
+        var modalSecondOpen = cut.FindAll(".modal-overlay");
+        Assert.NotEmpty(modalSecondOpen);
+    }
 }
 
