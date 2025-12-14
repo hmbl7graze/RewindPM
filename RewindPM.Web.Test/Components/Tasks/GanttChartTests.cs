@@ -668,6 +668,393 @@ public class GanttChartTests : Bunit.TestContext
         Assert.DoesNotContain("readonly-mode", ganttChart.ClassName);
     }
 
+    // ========== アニメーション機能のテスト ==========
+
+    [Fact(DisplayName = "初回ロード時はアニメーションクラスが付与されない")]
+    public void GanttChart_DoesNotApplyAnimationClass_OnInitialLoad()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks));
+
+        // Assert
+        var scheduledBars = cut.FindAll(".gantt-bar-scheduled");
+        var actualBars = cut.FindAll(".gantt-bar-actual");
+
+        // 初回ロード時はanimatingクラスが付与されない
+        foreach (var bar in scheduledBars)
+        {
+            Assert.DoesNotContain("animating", bar.ClassName);
+        }
+        foreach (var bar in actualBars)
+        {
+            Assert.DoesNotContain("animating", bar.ClassName);
+        }
+    }
+
+    [Fact(DisplayName = "バーが追加されたときにanimatingクラスが付与される")]
+    public async Task GanttChart_AppliesAnimatingClass_WhenBarIsAdded()
+    {
+        // Arrange
+        var initialTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero),
+                EstimatedHours = 20,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, initialTasks));
+
+        // Act - 新しいタスクを追加
+        var updatedTasks = new List<TaskDto>(initialTasks)
+        {
+            new TaskDto
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 2",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 6, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 10, 0, 0, 0, TimeSpan.Zero),
+                EstimatedHours = 30,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        await cut.InvokeAsync(() => cut.SetParametersAndRender(parameters => parameters
+            .Add(p => p.Tasks, updatedTasks)));
+
+        // Assert
+        var scheduledBars = cut.FindAll(".gantt-bar-scheduled");
+        Assert.Equal(2, scheduledBars.Count);
+
+        // 2番目のバー（新規追加）にanimatingクラスが付与されている
+        var newBar = scheduledBars[1];
+        Assert.Contains("animating", newBar.ClassName);
+    }
+
+    [Fact(DisplayName = "バーの日付が変更されたときにanimatingクラスが付与される")]
+    public async Task GanttChart_AppliesAnimatingClass_WhenBarDatesChange()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var initialTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = taskId,
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero),
+                EstimatedHours = 20,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, initialTasks));
+
+        // Act - タスクの予定日を変更
+        var updatedTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = taskId,
+                ProjectId = initialTasks[0].ProjectId,
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 2, 0, 0, 0, TimeSpan.Zero), // 変更
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 8, 0, 0, 0, TimeSpan.Zero),   // 変更
+                EstimatedHours = 20,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        await cut.InvokeAsync(() => cut.SetParametersAndRender(parameters => parameters
+            .Add(p => p.Tasks, updatedTasks)));
+
+        // Assert
+        var scheduledBars = cut.FindAll(".gantt-bar-scheduled");
+        Assert.Single(scheduledBars);
+
+        // 日付が変更されたバーにanimatingクラスが付与されている
+        Assert.Contains("animating", scheduledBars[0].ClassName);
+    }
+
+    [Fact(DisplayName = "変更のないバーにはアニメーションクラスが付与されない")]
+    public async Task GanttChart_DoesNotApplyAnimatingClass_WhenBarUnchanged()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var initialTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = taskId,
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero),
+                EstimatedHours = 20,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, initialTasks));
+
+        // Act - 日付は変更せずに他のプロパティを変更
+        var updatedTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = taskId,
+                ProjectId = initialTasks[0].ProjectId,
+                Title = "Task 1 Updated", // タイトル変更
+                Description = "Test Updated", // 説明変更
+                Status = TaskStatus.InProgress, // ステータス変更
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero), // 日付は同じ
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero),   // 日付は同じ
+                EstimatedHours = 30, // 見積もり変更
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = DateTimeOffset.Now,
+                CreatedBy = "test-user",
+                UpdatedBy = "test-user"
+            }
+        };
+
+        await cut.InvokeAsync(() => cut.SetParametersAndRender(parameters => parameters
+            .Add(p => p.Tasks, updatedTasks)));
+
+        // Assert
+        var scheduledBars = cut.FindAll(".gantt-bar-scheduled");
+        Assert.Single(scheduledBars);
+
+        // 日付が変更されていないのでanimatingクラスは付与されない
+        Assert.DoesNotContain("animating", scheduledBars[0].ClassName);
+    }
+
+    [Fact(DisplayName = "実績バーが追加されたときにanimatingクラスが付与される")]
+    public async Task GanttChart_AppliesAnimatingClass_WhenActualBarIsAdded()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var initialTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = taskId,
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero),
+                EstimatedHours = 20,
+                ActualStartDate = null, // 実績なし
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, initialTasks));
+
+        // Act - 実績期間を追加
+        var updatedTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = taskId,
+                ProjectId = initialTasks[0].ProjectId,
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.InProgress,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero),
+                EstimatedHours = 20,
+                ActualStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero), // 実績追加
+                ActualEndDate = new DateTimeOffset(2024, 1, 3, 0, 0, 0, TimeSpan.Zero),   // 実績追加
+                ActualHours = 15,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = DateTimeOffset.Now,
+                CreatedBy = "test-user",
+                UpdatedBy = "test-user"
+            }
+        };
+
+        await cut.InvokeAsync(() => cut.SetParametersAndRender(parameters => parameters
+            .Add(p => p.Tasks, updatedTasks)));
+
+        // Assert
+        var actualBars = cut.FindAll(".gantt-bar-actual");
+        Assert.Single(actualBars);
+
+        // 新規追加された実績バーにanimatingクラスが付与されている
+        Assert.Contains("animating", actualBars[0].ClassName);
+    }
+
+    [Fact(DisplayName = "複数のバーのうち変更されたバーのみにanimatingクラスが付与される")]
+    public async Task GanttChart_AppliesAnimatingClassOnlyToChangedBars()
+    {
+        // Arrange
+        var task1Id = Guid.NewGuid();
+        var task2Id = Guid.NewGuid();
+        var initialTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = task1Id,
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero),
+                EstimatedHours = 20,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            },
+            new TaskDto
+            {
+                Id = task2Id,
+                ProjectId = Guid.NewGuid(),
+                Title = "Task 2",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 6, 0, 0, 0, TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 10, 0, 0, 0, TimeSpan.Zero),
+                EstimatedHours = 30,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, initialTasks));
+
+        // Act - Task 1の日付のみ変更
+        var updatedTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = task1Id,
+                ProjectId = initialTasks[0].ProjectId,
+                Title = "Task 1",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 2, 0, 0, 0, TimeSpan.Zero), // 変更
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 6, 0, 0, 0, TimeSpan.Zero),   // 変更
+                EstimatedHours = 20,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = DateTimeOffset.Now,
+                CreatedBy = "test-user",
+                UpdatedBy = "test-user"
+            },
+            new TaskDto
+            {
+                Id = task2Id,
+                ProjectId = initialTasks[1].ProjectId,
+                Title = "Task 2",
+                Description = "Test",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(2024, 1, 6, 0, 0, 0, TimeSpan.Zero), // 変更なし
+                ScheduledEndDate = new DateTimeOffset(2024, 1, 10, 0, 0, 0, TimeSpan.Zero),  // 変更なし
+                EstimatedHours = 30,
+                ActualStartDate = null,
+                ActualEndDate = null,
+                ActualHours = null,
+                CreatedAt = DateTimeOffset.Now,
+                UpdatedAt = null,
+                CreatedBy = "test-user",
+                UpdatedBy = null
+            }
+        };
+
+        await cut.InvokeAsync(() => cut.SetParametersAndRender(parameters => parameters
+            .Add(p => p.Tasks, updatedTasks)));
+
+        // Assert
+        var scheduledBars = cut.FindAll(".gantt-bar-scheduled");
+        Assert.Equal(2, scheduledBars.Count);
+
+        // Task 1のバー（変更あり）にはanimatingクラスが付与されている
+        Assert.Contains("animating", scheduledBars[0].ClassName);
+
+        // Task 2のバー（変更なし）にはanimatingクラスが付与されていない
+        Assert.DoesNotContain("animating", scheduledBars[1].ClassName);
+    }
+
     private List<TaskDto> CreateTestTasks()
     {
         return new List<TaskDto>

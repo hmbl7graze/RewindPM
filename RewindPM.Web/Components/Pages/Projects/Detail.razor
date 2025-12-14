@@ -87,8 +87,7 @@ else
                 }
                 else
                 {
-                    <GanttChart @key="_ganttChartKey"
-                                Tasks="@(tasks ?? new List<TaskDto>())"
+                    <GanttChart Tasks="@(tasks ?? new List<TaskDto>())"
                                 OnTaskClick="ShowTaskDetailModal"
                                 OnBarResize="HandleBarResize"
                                 ViewDate="_currentViewDate"
@@ -162,7 +161,6 @@ else
 
     // ビュー状態
     private string _viewType = GanttViewType;
-    private int _ganttChartKey = 0;
 
     // リワインド機能用の状態
     private DateTimeOffset? _currentViewDate = null; // null = 最新
@@ -401,13 +399,6 @@ else
     {
         _currentViewDate = newDate;
         await LoadTasks();
-        RefreshGanttChart();
-    }
-
-    private void RefreshGanttChart()
-    {
-        _ganttChartKey++;
-        StateHasChanged();
     }
 
     private async Task HandleBarResize((Guid taskId, string barType, DateTimeOffset newStartDate, DateTimeOffset newEndDate) resizeData)

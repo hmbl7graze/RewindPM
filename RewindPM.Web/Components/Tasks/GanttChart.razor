@@ -63,37 +63,47 @@
                     <div class="gantt-timeline-area">
                         <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, minmax(40px, 1fr));">
                             @* Scheduled Bar *@
-                            @if (task.ScheduledStartDate.HasValue && task.ScheduledEndDate.HasValue)
+                            @if (ShouldDisplayBar(task.Id, "scheduled"))
                             {
-                                var gridColumn = GetGridColumn(task.ScheduledStartDate.Value, task.ScheduledEndDate.Value);
-                                <div class="gantt-bar gantt-bar-scheduled"
-                                     style="grid-column: @gridColumn;"
-                                     title="予定: @task.ScheduledStartDate.Value.ToString("yyyy/MM/dd") - @task.ScheduledEndDate.Value.ToString("yyyy/MM/dd")"
-                                     data-task-id="@task.Id"
-                                     data-bar-type="scheduled">
-                                    @if (!IsReadOnly)
-                                    {
-                                        <div class="gantt-resize-handle gantt-resize-handle-left"></div>
-                                        <div class="gantt-resize-handle gantt-resize-handle-right"></div>
-                                    }
-                                </div>
+                                var barState = GetDisplayBarState(task.Id, "scheduled");
+                                if (barState != null)
+                                {
+                                    var gridColumn = GetGridColumn(barState.StartDate, barState.EndDate);
+                                    var animationClass = GetBarAnimationClass(task.Id, "scheduled");
+                                    <div class="gantt-bar gantt-bar-scheduled @animationClass"
+                                         style="grid-column: @gridColumn;"
+                                         title="予定: @barState.StartDate.ToString("yyyy/MM/dd") - @barState.EndDate.ToString("yyyy/MM/dd")"
+                                         data-task-id="@task.Id"
+                                         data-bar-type="scheduled">
+                                        @if (!IsReadOnly && string.IsNullOrEmpty(animationClass))
+                                        {
+                                            <div class="gantt-resize-handle gantt-resize-handle-left"></div>
+                                            <div class="gantt-resize-handle gantt-resize-handle-right"></div>
+                                        }
+                                    </div>
+                                }
                             }
 
                             @* Actual Bar *@
-                            @if (task.ActualStartDate.HasValue && task.ActualEndDate.HasValue)
+                            @if (ShouldDisplayBar(task.Id, "actual"))
                             {
-                                var gridColumn = GetGridColumn(task.ActualStartDate.Value, task.ActualEndDate.Value);
-                                <div class="gantt-bar gantt-bar-actual"
-                                     style="grid-column: @gridColumn;"
-                                     title="実績: @task.ActualStartDate.Value.ToString("yyyy/MM/dd") - @task.ActualEndDate.Value.ToString("yyyy/MM/dd")"
-                                     data-task-id="@task.Id"
-                                     data-bar-type="actual">
-                                    @if (!IsReadOnly)
-                                    {
-                                        <div class="gantt-resize-handle gantt-resize-handle-left"></div>
-                                        <div class="gantt-resize-handle gantt-resize-handle-right"></div>
-                                    }
-                                </div>
+                                var barState = GetDisplayBarState(task.Id, "actual");
+                                if (barState != null)
+                                {
+                                    var gridColumn = GetGridColumn(barState.StartDate, barState.EndDate);
+                                    var animationClass = GetBarAnimationClass(task.Id, "actual");
+                                    <div class="gantt-bar gantt-bar-actual @animationClass"
+                                         style="grid-column: @gridColumn;"
+                                         title="実績: @barState.StartDate.ToString("yyyy/MM/dd") - @barState.EndDate.ToString("yyyy/MM/dd")"
+                                         data-task-id="@task.Id"
+                                         data-bar-type="actual">
+                                        @if (!IsReadOnly && string.IsNullOrEmpty(animationClass))
+                                        {
+                                            <div class="gantt-resize-handle gantt-resize-handle-left"></div>
+                                            <div class="gantt-resize-handle gantt-resize-handle-right"></div>
+                                        }
+                                    </div>
+                                }
                             }
                         </div>
                     </div>
@@ -126,9 +136,132 @@
     private DotNetObjectReference<GanttChart>? dotNetRef;
     private bool scriptsInitialized = false;
 
-    protected override void OnParametersSet()
+    // 前回のバー状態を保持（アニメーション判定用）
+    private Dictionary<string, BarState> previousBarStates = new();
+    private HashSet<string> barsToAnimate = new();
+    private HashSet<string> fadingOutBars = new();
+    private Dictionary<string, BarState> displayBarStates = new();
+    private const int FadeOutAnimationDurationMs = 400;
+
+    protected override async Task OnParametersSetAsync()
     {
+        await base.OnParametersSetAsync();
+
+        if (IsInitialLoad())
+        {
+            InitializeBarStates();
+            InitializeDisplayBarStates();
+        }
+        else
+        {
+            await HandleBarsChanged();
+        }
+
         CalculateTimeline();
+    }
+
+    private bool IsInitialLoad() => previousBarStates.Count == 0;
+
+    private void InitializeBarStates()
+    {
+        if (Tasks == null) return;
+
+        foreach (var task in Tasks)
+        {
+            if (task.ScheduledStartDate.HasValue && task.ScheduledEndDate.HasValue)
+            {
+                var key = GetBarKey(task.Id, "scheduled");
+                previousBarStates[key] = new BarState(task.ScheduledStartDate.Value, task.ScheduledEndDate.Value);
+            }
+
+            if (task.ActualStartDate.HasValue && task.ActualEndDate.HasValue)
+            {
+                var key = GetBarKey(task.Id, "actual");
+                previousBarStates[key] = new BarState(task.ActualStartDate.Value, task.ActualEndDate.Value);
+            }
+        }
+    }
+
+    private void InitializeDisplayBarStates()
+    {
+        displayBarStates = previousBarStates.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+    }
+
+    private async Task HandleBarsChanged()
+    {
+        var currentBarStates = GetCurrentBarStates();
+        var removedBars = GetRemovedBars(currentBarStates);
+
+        if (removedBars.Any())
+        {
+            await AnimateBarRemoval(removedBars);
+        }
+        else
+        {
+            DetectChanges();
+            UpdateDisplayBarStates();
+        }
+
+        previousBarStates = currentBarStates;
+    }
+
+    private Dictionary<string, BarState> GetCurrentBarStates()
+    {
+        var currentBarStates = new Dictionary<string, BarState>();
+        if (Tasks == null) return currentBarStates;
+
+        foreach (var task in Tasks)
+        {
+            if (task.ScheduledStartDate.HasValue && task.ScheduledEndDate.HasValue)
+            {
+                var key = GetBarKey(task.Id, "scheduled");
+                currentBarStates[key] = new BarState(task.ScheduledStartDate.Value, task.ScheduledEndDate.Value);
+            }
+
+            if (task.ActualStartDate.HasValue && task.ActualEndDate.HasValue)
+            {
+                var key = GetBarKey(task.Id, "actual");
+                currentBarStates[key] = new BarState(task.ActualStartDate.Value, task.ActualEndDate.Value);
+            }
+        }
+
+        return currentBarStates;
+    }
+
+    private List<string> GetRemovedBars(Dictionary<string, BarState> currentBarStates)
+    {
+        return previousBarStates.Keys
+            .Where(key => !currentBarStates.ContainsKey(key))
+            .ToList();
+    }
+
+    private async Task AnimateBarRemoval(List<string> removedBars)
+    {
+        // フェードアウト対象をマーク
+        foreach (var barKey in removedBars)
+        {
+            fadingOutBars.Add(barKey);
+        }
+
+        // 表示バーは前回の状態を維持（削除されるバーも表示し続ける）
+        displayBarStates = previousBarStates.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+        // 変更検出も実行（他のバーの変更を検出）
+        DetectChanges();
+
+        StateHasChanged();
+
+        // アニメーション期間待機
+        await Task.Delay(FadeOutAnimationDurationMs);
+
+        // フェードアウト完了後、実際に削除
+        fadingOutBars.Clear();
+        UpdateDisplayBarStates();
+    }
+
+    private void UpdateDisplayBarStates()
+    {
+        displayBarStates = GetCurrentBarStates();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -307,6 +440,105 @@
         return groups;
     }
 
+    private void DetectChanges()
+    {
+        if (Tasks == null) return;
+
+        var newBarsToAnimate = new HashSet<string>();
+        var currentBarStates = new Dictionary<string, BarState>();
+
+        foreach (var task in Tasks)
+        {
+            // Scheduled Bar
+            if (task.ScheduledStartDate.HasValue && task.ScheduledEndDate.HasValue)
+            {
+                var key = GetBarKey(task.Id, "scheduled");
+                var currentState = new BarState(task.ScheduledStartDate.Value, task.ScheduledEndDate.Value);
+                currentBarStates[key] = currentState;
+
+                if (previousBarStates.TryGetValue(key, out var previousState))
+                {
+                    // 前回の状態と比較して変更があればアニメーション対象に追加
+                    if (!previousState.Equals(currentState))
+                    {
+                        newBarsToAnimate.Add(key);
+                    }
+                }
+                else
+                {
+                    // 新規追加されたバーはアニメーション対象
+                    newBarsToAnimate.Add(key);
+                }
+            }
+
+            // Actual Bar
+            if (task.ActualStartDate.HasValue && task.ActualEndDate.HasValue)
+            {
+                var key = GetBarKey(task.Id, "actual");
+                var currentState = new BarState(task.ActualStartDate.Value, task.ActualEndDate.Value);
+                currentBarStates[key] = currentState;
+
+                if (previousBarStates.TryGetValue(key, out var previousState))
+                {
+                    // 前回の状態と比較して変更があればアニメーション対象に追加
+                    if (!previousState.Equals(currentState))
+                    {
+                        newBarsToAnimate.Add(key);
+                    }
+                }
+                else
+                {
+                    // 新規追加されたバーはアニメーション対象
+                    newBarsToAnimate.Add(key);
+                }
+            }
+        }
+
+        // 削除されたバーを検出（前回存在したが今回存在しないバー）
+        // 削除の場合はアニメーションしない（バーが消えるだけ）
+
+        // 状態を更新
+        previousBarStates = currentBarStates;
+        barsToAnimate = newBarsToAnimate;
+    }
+
+    private string GetBarKey(Guid taskId, string barType)
+    {
+        return $"{taskId}_{barType}";
+    }
+
+    private bool ShouldDisplayBar(Guid taskId, string barType)
+    {
+        var key = GetBarKey(taskId, barType);
+        return displayBarStates.ContainsKey(key);
+    }
+
+    private BarState? GetDisplayBarState(Guid taskId, string barType)
+    {
+        var key = GetBarKey(taskId, barType);
+        return displayBarStates.TryGetValue(key, out var state) ? state : null;
+    }
+
+    private string GetBarAnimationClass(Guid taskId, string barType)
+    {
+        var key = GetBarKey(taskId, barType);
+        if (fadingOutBars.Contains(key))
+        {
+            return "fading-out";
+        }
+        if (barsToAnimate.Contains(key))
+        {
+            return "animating";
+        }
+        return "";
+    }
+
+    private bool ShouldAnimateBar(Guid taskId, string barType, DateTimeOffset startDate, DateTimeOffset endDate)
+    {
+        var key = GetBarKey(taskId, barType);
+        return barsToAnimate.Contains(key);
+    }
+
     private class MonthGroup
     {
         public int Year { get; set; }
@@ -315,4 +547,6 @@
         public int EndColumn { get; set; }
         public int DayCount { get; set; }
     }
+
+    private record BarState(DateTimeOffset StartDate, DateTimeOffset EndDate);
 }

@@ -322,39 +322,41 @@
 }
 
 /* ========================================
-   ガントチャートバーのトランジション
+   変更されたバーのみのアニメーション
    ======================================== */
 
-/* バーの位置とサイズ変更にトランジションを適用 */
-.gantt-bar {
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: grid-column;
+/* 変更されたバーにのみ適用されるアニメーション */
+.gantt-bar.animating {
+    animation: barChange 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* バーが追加された時のフェードイン */
-@keyframes barFadeIn {
-    from {
-        opacity: 0;
-        transform: scaleX(0.8);
+/* バーの変更アニメーション（位置・サイズの変化を滑らかに） */
+@keyframes barChange {
+    0% {
+        opacity: 0.6;
+        transform: scaleX(0.95);
     }
-    to {
+    50% {
+        opacity: 0.8;
+    }
+    100% {
         opacity: 1;
         transform: scaleX(1);
     }
 }
 
-.gantt-bar {
-    animation: barFadeIn 0.3s ease-out;
+/* バーの削除時のフェードアウトアニメーション */
+.gantt-bar.fading-out {
+    animation: barFadeOut 0.4s ease-in forwards;
 }
 
-/* ホバー時の効果 */
-.gantt-bar:hover {
-    filter: brightness(1.1);
-    z-index: 10;
-    position: relative;
-}
-
-/* リードオンリーモード時はトランジションを高速化 */
-.gantt-chart.readonly-mode .gantt-bar {
-    transition-duration: 0.3s;
+@keyframes barFadeOut {
+    from {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+    to {
+        opacity: 0;
+        transform: scaleX(0.9);
+    }
 }
