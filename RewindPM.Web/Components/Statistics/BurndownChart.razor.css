@@ -1,0 +1,17 @@
+.burndown-chart h4 {
+    margin: 0 0 1rem 0;
+    color: var(--neutral-foreground-rest);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.chart-loading,
+.chart-error {
+    padding: 2rem;
+    text-align: center;
+    color: var(--neutral-foreground-hint);
+}
+
+.chart-error {
+    color: #ef4444;
+}
