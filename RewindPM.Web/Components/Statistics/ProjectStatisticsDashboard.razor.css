@@ -329,6 +329,22 @@
     visibility: visible;
 }
 
+/* グラフセクション */
+.charts-section {
+    margin-top: 2.5rem;
+}
+
+.chart-row {
+    margin-bottom: 2rem;
+}
+
+.chart-container {
+    background-color: var(--neutral-layer-2);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 @media (max-width: 768px) {
     .statistics-grid {
         grid-template-columns: 1fr;
