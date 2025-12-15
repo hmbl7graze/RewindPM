@@ -19,6 +19,7 @@ else if (_actualData != null && _actualData.Any())
         <h4>Burndown Chart</h4>
         <ApexChart TItem="ChartDataPoint"
                    Title="残タスク数の推移"
+                   XAxisType="XAxisType.Datetime"
                    Height="400">
 
             @* 理想線（予定） *@
@@ -26,8 +27,9 @@ else if (_actualData != null && _actualData.Any())
                              Items="_idealData"
                              Name="理想線"
                              SeriesType="SeriesType.Line"
-                             XValue="@(e => e.X)"
+                             XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
+                             OrderBy="e=>e.X"
                              Color="#adb5bd" />
 
             @* 実績線 *@
@@ -35,8 +37,9 @@ else if (_actualData != null && _actualData.Any())
                              Items="_actualData"
                              Name="実績"
                              SeriesType="SeriesType.Line"
-                             XValue="@(e => e.X)"
+                             XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
+                             OrderBy="e=>e.X"
                              Color="#007bff" />
         </ApexChart>
     </div>
@@ -102,7 +105,7 @@ else
                 _actualData = snapshots
                     .Select(s => new ChartDataPoint
                     {
-                        X = s.Date.ToString("M/d"),
+                        X = s.Date,
                         Y = s.RemainingTasks
                     })
                     .ToList();
@@ -129,7 +132,7 @@ else
 
                             return new ChartDataPoint
                             {
-                                X = s.Date.ToString("M/d"),
+                                X = s.Date,
                                 Y = idealRemaining
                             };
                         })
@@ -141,7 +144,7 @@ else
                     _idealData = snapshots
                         .Select(s => new ChartDataPoint
                         {
-                            X = s.Date.ToString("M/d"),
+                            X = s.Date,
                             Y = 0
                         })
                         .ToList();
@@ -167,7 +170,7 @@ else
 
     private class ChartDataPoint
     {
-        public string X { get; set; } = string.Empty;
+        public DateTimeOffset X { get; set; } = DateTimeOffset.MinValue;
         public int Y { get; set; }
     }
 }

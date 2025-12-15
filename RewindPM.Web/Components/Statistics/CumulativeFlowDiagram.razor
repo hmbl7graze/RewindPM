@@ -18,13 +18,14 @@ else if (_chartData != null && _chartData.Any())
         <h4>Cumulative Flow Diagram</h4>
         <ApexChart TItem="ChartDataPoint"
                    Title="タスクステータスの推移"
+                   XAxisType="XAxisType.Datetime"
                    Height="400">
 
             <ApexPointSeries TItem="ChartDataPoint"
                              Items="_completedData"
                              Name="完了"
                              SeriesType="SeriesType.Area"
-                             XValue="@(e => e.X)"
+                             XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
                              Color="#28a745" />
 
@@ -32,7 +33,7 @@ else if (_chartData != null && _chartData.Any())
                              Items="_inReviewData"
                              Name="レビュー中"
                              SeriesType="SeriesType.Area"
-                             XValue="@(e => e.X)"
+                             XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
                              Color="#ffc107" />
 
@@ -40,7 +41,7 @@ else if (_chartData != null && _chartData.Any())
                              Items="_inProgressData"
                              Name="進行中"
                              SeriesType="SeriesType.Area"
-                             XValue="@(e => e.X)"
+                             XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
                              Color="#007bff" />
 
@@ -48,7 +49,7 @@ else if (_chartData != null && _chartData.Any())
                              Items="_todoData"
                              Name="未着手"
                              SeriesType="SeriesType.Area"
-                             XValue="@(e => e.X)"
+                             XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
                              Color="#6c757d" />
         </ApexChart>
@@ -123,12 +124,11 @@ else
                 {
                     // 累積フローダイアグラムでは、各ステータスの値を積み重ねて表示
                     // 下から順に: 完了 → レビュー中 → 進行中 → 未着手
-                    var dateLabel = snapshot.Date.ToString("M/d");
                     
-                    _completedData.Add(new ChartDataPoint { X = dateLabel, Y = snapshot.CompletedTasks });
-                    _inReviewData.Add(new ChartDataPoint { X = dateLabel, Y = snapshot.InReviewTasks });
-                    _inProgressData.Add(new ChartDataPoint { X = dateLabel, Y = snapshot.InProgressTasks });
-                    _todoData.Add(new ChartDataPoint { X = dateLabel, Y = snapshot.TodoTasks });
+                    _completedData.Add(new ChartDataPoint { X = snapshot.Date, Y = snapshot.CompletedTasks });
+                    _inReviewData.Add(new ChartDataPoint { X = snapshot.Date, Y = snapshot.InReviewTasks });
+                    _inProgressData.Add(new ChartDataPoint { X = snapshot.Date, Y = snapshot.InProgressTasks });
+                    _todoData.Add(new ChartDataPoint { X = snapshot.Date, Y = snapshot.TodoTasks });
                 }
             }
             else
@@ -149,7 +149,7 @@ else
 
     private class ChartDataPoint
     {
-        public string X { get; set; } = string.Empty;
+        public DateTimeOffset X { get; set; } = DateTimeOffset.MinValue;
         public int Y { get; set; }
     }
 }
