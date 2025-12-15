@@ -89,7 +89,7 @@ public class CumulativeFlowDiagramTests : Bunit.TestContext
             .GetValue(cut.Instance)!.Equals(true), timeout: TimeSpan.FromSeconds(5));
 
         var chartDiv = cut.Find(".cumulative-flow-diagram");
-        Assert.Contains("Cumulative Flow Diagram", chartDiv.TextContent);
+        Assert.Contains("累積フローダイアグラム", chartDiv.TextContent);
     }
 
     [Fact(DisplayName = "CumulativeFlowDiagram: AsOfDateが指定されている場合はその日付までのデータを取得")]

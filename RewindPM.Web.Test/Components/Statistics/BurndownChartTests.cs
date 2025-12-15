@@ -91,7 +91,7 @@ public class BurndownChartTests : Bunit.TestContext
             .GetValue(cut.Instance)!.Equals(true), timeout: TimeSpan.FromSeconds(5));
 
         var chartDiv = cut.Find(".burndown-chart");
-        Assert.Contains("Burndown Chart", chartDiv.TextContent);
+        Assert.Contains("バーンダウンチャート", chartDiv.TextContent);
     }
 
     [Fact(DisplayName = "BurndownChart: AsOfDateが指定されている場合はその日付までのデータを取得")]
