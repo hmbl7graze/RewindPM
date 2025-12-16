@@ -25,12 +25,24 @@
             <button class="gantt-zoom-btn gantt-zoom-fit" @onclick="FitToScreen" title="全体を表示">
                 全体を表示
             </button>
-            <button class="gantt-zoom-btn" @onclick="ZoomOut" disabled="@(!CanZoomOut)" title="縮小">
-                −
-            </button>
-            <button class="gantt-zoom-btn" @onclick="ZoomIn" disabled="@(!CanZoomIn)" title="拡大">
-                +
-            </button>
+            <div class="gantt-zoom-group">
+                <span class="gantt-zoom-label">横:</span>
+                <button class="gantt-zoom-btn" @onclick="ZoomOutHorizontal" disabled="@(!CanZoomOutHorizontal)" title="横方向縮小">
+                    −
+                </button>
+                <button class="gantt-zoom-btn" @onclick="ZoomInHorizontal" disabled="@(!CanZoomInHorizontal)" title="横方向拡大">
+                    +
+                </button>
+            </div>
+            <div class="gantt-zoom-group">
+                <span class="gantt-zoom-label">縦:</span>
+                <button class="gantt-zoom-btn" @onclick="ZoomOutVertical" disabled="@(!CanZoomOutVertical)" title="縦方向縮小">
+                    −
+                </button>
+                <button class="gantt-zoom-btn" @onclick="ZoomInVertical" disabled="@(!CanZoomInVertical)" title="縦方向拡大">
+                    +
+                </button>
+            </div>
         </div>
 
         <div class="gantt-scroll-container">
@@ -71,13 +83,13 @@
             @foreach (var (task, index) in Tasks.Select((t, i) => (t, i)))
             {
                 <div class="gantt-row gantt-task-row">
-                    <div class="gantt-cell gantt-sticky-left gantt-task-name-cell" title="@task.Title" @onclick="() => HandleTaskClick(task)">
+                    <div class="gantt-cell gantt-sticky-left gantt-task-name-cell" style="@GetRowHeightStyle()" title="@task.Title" @onclick="() => HandleTaskClick(task)">
                         <span class="gantt-task-title">@task.Title</span>
                         <span class="gantt-task-status gantt-status-@GetStatusClass(task.Status)">
                             @GetStatusLabel(task.Status)
                         </span>
                     </div>
-                    <div class="gantt-timeline-area">
+                    <div class="gantt-timeline-area" style="@GetRowHeightStyle()">
                         <div class="gantt-timeline-grid" style="grid-template-columns: @GetGridTemplateColumns();">
                             @* Scheduled Bar *@
                             @if (ShouldDisplayBar(task.Id, "scheduled"))
@@ -88,7 +100,7 @@
                                     var gridColumn = GetGridColumn(barState.StartDate, barState.EndDate);
                                     var animationClass = GetBarAnimationClass(task.Id, "scheduled");
                                     <div class="gantt-bar gantt-bar-scheduled @animationClass"
-                                         style="grid-column: @gridColumn;"
+                                         style="grid-column: @gridColumn; @GetBarMarginStyle("scheduled")"
                                          title="予定: @barState.StartDate.ToString("yyyy/MM/dd") - @barState.EndDate.ToString("yyyy/MM/dd")"
                                          data-task-id="@task.Id"
                                          data-bar-type="scheduled">
@@ -110,7 +122,7 @@
                                     var gridColumn = GetGridColumn(barState.StartDate, barState.EndDate);
                                     var animationClass = GetBarAnimationClass(task.Id, "actual");
                                     <div class="gantt-bar gantt-bar-actual @animationClass"
-                                         style="grid-column: @gridColumn;"
+                                         style="grid-column: @gridColumn; @GetBarMarginStyle("actual")"
                                          title="実績: @barState.StartDate.ToString("yyyy/MM/dd") - @barState.EndDate.ToString("yyyy/MM/dd")"
                                          data-task-id="@task.Id"
                                          data-bar-type="actual">
@@ -154,11 +166,15 @@
     private int TotalDays { get; set; }
 
     // ズーム機能関連
-    private double zoomScale = 1.0; // 100%
-    private double baseColumnWidth = 40.0; // 基準セル幅
+    private double horizontalZoomScale = 1.0; // 横方向ズーム 100%
+    private double verticalZoomScale = 1.0; // 縦方向ズーム 100%
+    private double baseColumnWidth = 40.0; // 基準セル幅（横方向）
+    private double baseRowHeight = 48.0; // 基準行高さ（縦方向）
     private double availableTimelineWidth = 0;
+    private double availableTimelineHeight = 0;
     private static readonly double[] ZoomLevels = { 1.0, 1.5, 2.0, 3.0, 4.0 };
-    private int currentZoomLevelIndex = 0; // 初期値は1.0 (100%, 全体表示)
+    private int horizontalZoomLevelIndex = 0; // 横方向ズームレベル (初期値: 100%)
+    private int verticalZoomLevelIndex = 0; // 縦方向ズームレベル (初期値: 100%)
 
     private DotNetObjectReference<GanttChart>? dotNetRef;
     private bool scriptsInitialized = false;
@@ -300,9 +316,11 @@
                 // Only initialize resize handles and pass dotnet ref for callbacks
                 await JSRuntime.InvokeVoidAsync("ganttScrollSync.initialize", dotNetRef);
 
-                // 画面幅を取得して基準セル幅を計算
+                // 画面の幅と高さを取得して基準セル幅・行高さを計算
                 availableTimelineWidth = await JSRuntime.InvokeAsync<double>("ganttZoom.getAvailableWidth");
+                availableTimelineHeight = await JSRuntime.InvokeAsync<double>("ganttZoom.getAvailableHeight");
                 CalculateBaseColumnWidth();
+                CalculateBaseRowHeight();
 
                 scriptsInitialized = true;
                 StateHasChanged();
@@ -394,8 +412,9 @@
         TimelineEnd = allDates.Max().Date;
         TotalDays = (int)(TimelineEnd.Value - TimelineStart.Value).TotalDays + 1;
 
-        // タイムライン変更時に基準セル幅を再計算
+        // タイムライン変更時に基準セル幅・行高さを再計算
         CalculateBaseColumnWidth();
+        CalculateBaseRowHeight();
     }
 
     private string GetGridColumn(DateTimeOffset startDate, DateTimeOffset endDate)
@@ -622,6 +641,18 @@
         baseColumnWidth = availableTimelineWidth / TotalDays;
     }
 
+    private void CalculateBaseRowHeight()
+    {
+        var taskCount = Tasks?.Count ?? 0;
+        if (taskCount == 0 || availableTimelineHeight == 0)
+        {
+            baseRowHeight = 48; // フォールバック
+            return;
+        }
+
+        baseRowHeight = availableTimelineHeight / taskCount;
+    }
+
     private string GetGridTemplateColumns()
     {
         var cellWidth = GetActualCellWidth();
@@ -630,48 +661,112 @@
 
     private double GetActualCellWidth()
     {
-        var width = baseColumnWidth * zoomScale;
+        var width = baseColumnWidth * horizontalZoomScale;
         // 最小8px、最大120pxに制限
         return Math.Max(8, Math.Min(120, width));
     }
 
-    private bool CanZoomIn => currentZoomLevelIndex < ZoomLevels.Length - 1;
-    private bool CanZoomOut => currentZoomLevelIndex > 0;
-
-    private async Task ZoomIn()
+    private double GetActualRowHeight()
     {
-        if (CanZoomIn)
+        var height = baseRowHeight * verticalZoomScale;
+        // 最小24px、最大60pxに制限
+        return Math.Max(24, Math.Min(60, height));
+    }
+
+    private string GetRowHeightStyle()
+    {
+        var rowHeight = GetActualRowHeight();
+        return $"height: {rowHeight}px;";
+    }
+
+    private string GetBarMarginStyle(string barType)
+    {
+        var rowHeight = GetActualRowHeight();
+        var barHeight = 12.0; // バーの高さは固定
+        var gap = 2.0; // バー間のギャップ
+        var verticalMargin = (rowHeight - barHeight - barHeight - gap) / 2;
+
+        if (barType == "scheduled")
         {
-            currentZoomLevelIndex++;
-            await ApplyZoomLevel();
+            // 上側のバー
+            return $"margin-top: {verticalMargin}px; margin-bottom: {gap}px;";
+        }
+        else // actual
+        {
+            // 下側のバー
+            return $"margin-top: {gap}px; margin-bottom: {verticalMargin}px;";
         }
     }
 
-    private async Task ZoomOut()
+    // 横方向ズーム
+    private bool CanZoomInHorizontal => horizontalZoomLevelIndex < ZoomLevels.Length - 1;
+    private bool CanZoomOutHorizontal => horizontalZoomLevelIndex > 0;
+
+    private async Task ZoomInHorizontal()
     {
-        if (CanZoomOut)
+        if (CanZoomInHorizontal)
         {
-            currentZoomLevelIndex--;
-            await ApplyZoomLevel();
+            horizontalZoomLevelIndex++;
+            await ApplyHorizontalZoomLevel();
         }
     }
 
-    private async Task FitToScreen()
+    private async Task ZoomOutHorizontal()
     {
-        currentZoomLevelIndex = 0; // 100%（全体表示）にリセット
-        await ApplyZoomLevel();
+        if (CanZoomOutHorizontal)
+        {
+            horizontalZoomLevelIndex--;
+            await ApplyHorizontalZoomLevel();
+        }
     }
 
-    private async Task ApplyZoomLevel()
+    private async Task ApplyHorizontalZoomLevel()
     {
-        zoomScale = ZoomLevels[currentZoomLevelIndex];
+        horizontalZoomScale = ZoomLevels[horizontalZoomLevelIndex];
 
         if (OnZoomChanged.HasDelegate)
         {
-            await OnZoomChanged.InvokeAsync(zoomScale);
+            await OnZoomChanged.InvokeAsync(horizontalZoomScale);
         }
 
         StateHasChanged();
+    }
+
+    // 縦方向ズーム
+    private bool CanZoomInVertical => verticalZoomLevelIndex < ZoomLevels.Length - 1;
+    private bool CanZoomOutVertical => verticalZoomLevelIndex > 0;
+
+    private async Task ZoomInVertical()
+    {
+        if (CanZoomInVertical)
+        {
+            verticalZoomLevelIndex++;
+            await ApplyVerticalZoomLevel();
+        }
+    }
+
+    private async Task ZoomOutVertical()
+    {
+        if (CanZoomOutVertical)
+        {
+            verticalZoomLevelIndex--;
+            await ApplyVerticalZoomLevel();
+        }
+    }
+
+    private async Task ApplyVerticalZoomLevel()
+    {
+        verticalZoomScale = ZoomLevels[verticalZoomLevelIndex];
+        StateHasChanged();
+    }
+
+    // 全体表示
+    private async Task FitToScreen()
+    {
+        horizontalZoomLevelIndex = 0; // 100%（全体表示）にリセット
+        verticalZoomLevelIndex = 0; // 100%（全体表示）にリセット
+        await ApplyHorizontalZoomLevel();
+        await ApplyVerticalZoomLevel();
     }
 
     private bool ShouldDisplayDateLabel(int dayIndex)
