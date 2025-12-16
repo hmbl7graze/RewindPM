@@ -503,13 +503,81 @@ public class TimelineControlTests : Bunit.TestContext
         var labels = cut.FindAll(".slider-label");
         Assert.True(labels.Count >= 2); // 最低2つのラベル（最古と最新）が表示される
 
-        // すべてのラベルが日付形式（MM/dd）または現在の日付であることを確認
-        foreach (var label in labels)
+        // すべてのラベルが日付形式（MM/dd）であることを確認
+        Assert.All(labels, label =>
         {
-            var text = label.TextContent;
-            // MM/dd形式（例: "01/05"）または現在の日付を想定
-            Assert.Matches(@"^\d{2}/\d{2}$", text);
-        }
+            // MM/dd形式（例: "01/05"）
+            Assert.Matches(@"^\d{2}/\d{2}$", label.TextContent);
+        });
+    }
+
+    [Fact(DisplayName = "編集日が多い場合、ラベル数が最大7個に制限される")]
+    public void TimelineControl_SliderLabels_LimitedToMaximum()
+    {
+        // Arrange - 20個の編集日を作成
+        var editDates = Enumerable.Range(1, 20)
+            .Select(i => new DateTimeOffset(new DateTime(2025, 1, i), TimeSpan.Zero))
+            .OrderByDescending(d => d)
+            .ToList();
+
+        // Act
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates));
+
+        // Assert
+        var labels = cut.FindAll(".slider-label");
+        Assert.True(labels.Count <= 7, $"ラベル数が7個を超えています: {labels.Count}個");
+    }
+
+    [Fact(DisplayName = "最初と最後のラベルが常に表示される")]
+    public void TimelineControl_SliderLabels_FirstAndLastAlwaysDisplayed()
+    {
+        // Arrange - 15個の編集日を作成
+        var editDates = Enumerable.Range(1, 15)
+            .Select(i => new DateTimeOffset(new DateTime(2025, 1, i), TimeSpan.Zero))
+            .OrderByDescending(d => d)
+            .ToList();
+
+        // Act
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates));
+
+        // Assert
+        var labels = cut.FindAll(".slider-label");
+        Assert.NotEmpty(labels);
+
+        var firstLabel = labels.First();
+        var lastLabel = labels.Last();
+
+        // 最初のラベルは最古の日付（01/01）
+        Assert.Equal("01/01", firstLabel.TextContent);
+
+        // 最後のラベルは最新の日付（01/15）
+        Assert.Equal("01/15", lastLabel.TextContent);
+    }
+
+    [Fact(DisplayName = "編集日が少ない場合、すべての日付がラベルとして表示される")]
+    public void TimelineControl_SliderLabels_AllDatesDisplayedWhenFew()
+    {
+        // Arrange - 3個の編集日を作成
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(new DateTime(2025, 1, 3), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 2), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 1), TimeSpan.Zero)
+        };
+
+        // Act
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates));
+
+        // Assert
+        var labels = cut.FindAll(".slider-label");
+        // 編集日3個 + 最新状態1個 = 4個のラベル
+        Assert.Equal(4, labels.Count);
     }
 
     #endregion

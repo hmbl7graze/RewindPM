@@ -160,6 +160,10 @@
     transform: translateX(-50%);
     white-space: nowrap;
     user-select: none;
+    max-width: 20%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 3;
 }
 
 /* ========================================
@@ -300,6 +304,7 @@
 /* ========================================
    レスポンシブ対応
    ======================================== */
+/* タブレット以下（小画面ではさらに縮小される） */
 @media (max-width: 1024px) {
     .slider-label {
         font-size: 0.7rem;

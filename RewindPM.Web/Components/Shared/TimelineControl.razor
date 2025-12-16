@@ -68,18 +68,17 @@
     </div>
 }
 
-@code {
-    [Inject]
-    private ILogger<TimelineControl> Logger { get; set; } = default!;
+@inject ILogger<TimelineControl> Logger
 
+@code {
     /// <summary>
-    /// 現在表示中の日付(nullの場合は最新)
+    /// 現在表示中の日付（nullの場合は最新）
     /// </summary>
     [Parameter]
     public DateTimeOffset? CurrentDate { get; set; }
 
     /// <summary>
-    /// 編集日一覧(降順:新しい順)
+    /// 編集日一覧（降順：新しい順）
     /// </summary>
     [Parameter]
     public List<DateTimeOffset> EditDates { get; set; } = new();
@@ -124,6 +123,7 @@
     private const string LiveStateLabel = "最新の状態";
     private const string DateFormat = "yyyy/MM/dd";
     private const string ShortDateFormat = "MM/dd";
+    private const int MaxSliderLabels = 7;
 
     /// <summary>
     /// 前の編集日へ移動可能かどうか
@@ -283,11 +283,16 @@
         if (!HasEditDates)
             return labels;
 
-        const int maxLabels = 7; // 最大ラベル数
         var totalPositions = MaxSliderValue + 1;
 
         // 表示する間隔を計算
-        int interval = totalPositions <= maxLabels ? 1 : (int)Math.Ceiling((double)MaxSliderValue / (maxLabels - 1));
+        int interval = 1;
+
+        if (totalPositions > MaxSliderLabels)
+        {
+            // 生成されるラベル数がMaxSliderLabels以下になる最小のintervalを求める
+            interval = (int)Math.Ceiling((double)MaxSliderValue / (MaxSliderLabels - 1));
+        }
 
         // 等間隔にラベルを配置
         for (int i = 0; i <= MaxSliderValue; i += interval)
@@ -298,7 +303,7 @@
             if (i == MaxSliderValue)
             {
                 // 最新状態（最新の編集日を表示）
-                text = EditDates.First().ToString(ShortDateFormat);
+                text = EditDates!.First().ToString(ShortDateFormat);
             }
             else if (TryGetEditDateAtSliderValue(i, out var date))
             {
@@ -310,7 +315,6 @@
                 // ここに到達するのは想定外。
                 // GetTickPosition は 0〜MaxSliderValue の連続値を前提としており、
                 // sliderValue < MaxSliderValue の範囲では必ず有効な編集日が存在する設計である。
-                // デバッグ時に異常を検知できるようにしつつ、本番動作は従来どおりラベルをスキップする。
                 Logger.LogWarning(
                     "TryGetEditDateAtSliderValue が想定外に false を返しました。sliderValue={SliderValue}, MaxSliderValue={MaxSliderValue}, EditDatesCount={EditDatesCount}",
                     i, MaxSliderValue, EditDates?.Count);
@@ -320,11 +324,11 @@
             labels.Add(new SliderLabel(position, text, i));
         }
 
-        // 最後の位置（MaxSliderValue）が含まれていない場合は追加
+        // 最後の位置（MaxSliderValue）がループで含まれていない場合は追加
         if (MaxSliderValue % interval != 0)
         {
             var position = GetTickPosition(MaxSliderValue);
-            var text = EditDates.First().ToString(ShortDateFormat);
+            var text = EditDates!.First().ToString(ShortDateFormat);
             labels.Add(new SliderLabel(position, text, MaxSliderValue));
         }
 
