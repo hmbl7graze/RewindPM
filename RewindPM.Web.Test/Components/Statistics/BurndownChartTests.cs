@@ -436,4 +436,100 @@ public class BurndownChartTests : Bunit.TestContext
                 q.EndDate == lastEditDate),
             Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "BurndownChart: 編集日一覧がnullまたは空の場合30日前からのフォールバック期間を使用")]
+    public async Task BurndownChart_WithNullOrEmptyEditDates_UsesFallbackPeriod()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+
+        // 編集日一覧がnullを返すモック
+        _mediatorMock.Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<List<DateTimeOffset>?>(null));
+
+        var timeSeriesData = new ProjectStatisticsTimeSeriesDto
+        {
+            ProjectId = projectId,
+            DailySnapshots = new List<DailyStatisticsSnapshot>
+            {
+                new DailyStatisticsSnapshot
+                {
+                    Date = DateTimeOffset.UtcNow.AddDays(-15),
+                    TotalTasks = 5,
+                    CompletedTasks = 2,
+                    InProgressTasks = 2,
+                    InReviewTasks = 1,
+                    TodoTasks = 0
+                }
+            }
+        };
+        _mediatorMock.Send(Arg.Any<GetProjectStatisticsTimeSeriesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(timeSeriesData);
+
+        _mediatorMock.Send(Arg.Any<GetTasksByProjectIdAtTimeQuery>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        // Act
+        RenderComponent<BurndownChart>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        // Assert - 30日前からのフォールバック期間でクエリが実行されることを確認
+        await _mediatorMock.Received(1).Send(
+            Arg.Is<GetProjectStatisticsTimeSeriesQuery>(q =>
+                q.ProjectId == projectId &&
+                (q.EndDate - q.StartDate).Days == 30),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "BurndownChart: タスクが空の場合は理想線を表示しない")]
+    public async Task BurndownChart_WithNoTasks_DoesNotShowIdealLine()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var startDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        // 編集日一覧
+        var editDates = new List<DateTimeOffset> { startDate, startDate.AddDays(5) };
+        _mediatorMock.Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(editDates);
+
+        // 時系列データ（実績データは存在）
+        var timeSeriesData = new ProjectStatisticsTimeSeriesDto
+        {
+            ProjectId = projectId,
+            DailySnapshots = new List<DailyStatisticsSnapshot>
+            {
+                new DailyStatisticsSnapshot
+                {
+                    Date = startDate, TotalTasks = 0, CompletedTasks = 0,
+                    InProgressTasks = 0, InReviewTasks = 0, TodoTasks = 0
+                }
+            }
+        };
+        _mediatorMock.Send(Arg.Any<GetProjectStatisticsTimeSeriesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(timeSeriesData);
+
+        // タスク一覧が空
+        _mediatorMock.Send(Arg.Any<GetTasksByProjectIdAtTimeQuery>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        // Act
+        var cut = RenderComponent<BurndownChart>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        cut.WaitForState(() => !cut.Instance.GetType()
+            .GetField("_isLoading", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .GetValue(cut.Instance)!.Equals(true), timeout: TimeSpan.FromSeconds(5));
+
+        // Assert - チャートは表示されるが、理想線データはnullであることを確認
+        var chartDiv = cut.Find(".burndown-chart");
+        Assert.NotNull(chartDiv);
+
+        // 理想線データがnullであることを確認（リフレクションで内部状態を確認）
+        var idealDataField = cut.Instance.GetType()
+            .GetField("_idealData", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var idealData = idealDataField?.GetValue(cut.Instance);
+        Assert.Null(idealData);
+    }
 }
+

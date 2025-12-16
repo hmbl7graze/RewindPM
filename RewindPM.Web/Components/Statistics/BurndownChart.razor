@@ -145,7 +145,7 @@ else
                             // この日付までに予定終了日を迎えるべきタスク数（完了予定）
                             var shouldBeCompleted = tasksAtStart.Count(t =>
                                 t.ScheduledEndDate.HasValue &&
-                                t.ScheduledEndDate.Value.Date <= s.Date.Date);
+                                t.ScheduledEndDate.Value.Date <= s.Date.DateTime.Date);
 
                             // 理想的な残タスク数
                             var idealRemaining = totalTasks - shouldBeCompleted;
@@ -160,14 +160,8 @@ else
                 }
                 else
                 {
-                    // タスクがない場合は0のまま
-                    _idealData = snapshots
-                        .Select(s => new ChartDataPoint
-                        {
-                            X = s.Date,
-                            Y = 0
-                        })
-                        .ToList();
+                    // タスクがない場合は理想線を表示しない
+                    _idealData = null;
                 }
             }
             else
@@ -190,7 +184,7 @@ else
 
     private class ChartDataPoint
     {
-        public DateTimeOffset X { get; set; } = DateTimeOffset.MinValue;
-        public int Y { get; set; }
+        public required DateTimeOffset X { get; set; }
+        public required int Y { get; set; }
     }
 }

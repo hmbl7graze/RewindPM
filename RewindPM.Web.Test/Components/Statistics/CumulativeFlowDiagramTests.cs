@@ -331,4 +331,45 @@ public class CumulativeFlowDiagramTests : Bunit.TestContext
                 q.EndDate == lastEditDate),
             Arg.Any<CancellationToken>());
     }
+
+    [Fact(DisplayName = "CumulativeFlowDiagram: 編集日一覧がnullまたは空の場合30日前からのフォールバック期間を使用")]
+    public async Task CumulativeFlowDiagram_WithNullOrEmptyEditDates_UsesFallbackPeriod()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+
+        // 編集日一覧がnullを返すモック
+        _mediatorMock.Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<List<DateTimeOffset>?>(null));
+
+        var timeSeriesData = new ProjectStatisticsTimeSeriesDto
+        {
+            ProjectId = projectId,
+            DailySnapshots = new List<DailyStatisticsSnapshot>
+            {
+                new DailyStatisticsSnapshot
+                {
+                    Date = DateTimeOffset.UtcNow.AddDays(-15),
+                    TotalTasks = 10,
+                    CompletedTasks = 3,
+                    InProgressTasks = 4,
+                    InReviewTasks = 2,
+                    TodoTasks = 1
+                }
+            }
+        };
+        _mediatorMock.Send(Arg.Any<GetProjectStatisticsTimeSeriesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(timeSeriesData);
+
+        // Act
+        RenderComponent<CumulativeFlowDiagram>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        // Assert - 30日前からのフォールバック期間でクエリが実行されることを確認
+        await _mediatorMock.Received(1).Send(
+            Arg.Is<GetProjectStatisticsTimeSeriesQuery>(q =>
+                q.ProjectId == projectId &&
+                (q.EndDate - q.StartDate).Days == 30),
+            Arg.Any<CancellationToken>());
+    }
 }
