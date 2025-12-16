@@ -56,8 +56,7 @@
             max="@MaxSliderValue"
             value="@CurrentSliderValue"
             @onchange="HandleSliderChange"
-            aria-label="日付スライダー"
-            title="@GetSliderTooltip()" />
+            aria-label="日付スライダー" />
         <div class="timeline-slider-ticks">
             @for (int i = 0; i <= MaxSliderValue; i++)
             {
@@ -255,22 +254,6 @@
     }
 
     /// <summary>
-    /// スライダーのツールチップテキスト
-    /// </summary>
-    private string GetSliderTooltip()
-    {
-        if (CurrentSliderValue == MaxSliderValue)
-            return LiveStateLabel;
-
-        if (TryGetEditDateAtSliderValue(CurrentSliderValue, out var date))
-        {
-            return date.ToString(DateFormat);
-        }
-
-        return string.Empty;
-    }
-
-    /// <summary>
     /// スライダー中央のラベルを取得
     /// </summary>
     private string GetCenterDateLabel()
@@ -282,20 +265,6 @@
         return IsValidEditDateIndex(middleIndex) 
             ? EditDates[middleIndex].ToString(ShortDateFormat) 
             : string.Empty;
-    }
-
-    private bool TryGetEditDateAtSliderValue(int sliderValue, out DateTimeOffset date)
-    {
-        date = default;
-        if (sliderValue < 0 || sliderValue >= MaxSliderValue)
-            return false;
-
-        var index = MaxSliderValue - 1 - sliderValue;
-        if (!IsValidEditDateIndex(index))
-            return false;
-
-        date = EditDates[index];
-        return true;
     }
 
     private bool IsValidEditDateIndex(int index)
