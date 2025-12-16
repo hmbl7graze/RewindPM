@@ -338,6 +338,9 @@
     /// <summary>
     /// スライダーラベルの情報
     /// </summary>
+    /// <remarks>
+    /// SliderValueは将来的にラベルクリックで対応するスライダー位置へ移動する機能を追加する際に使用するため保持しています。
+    /// </remarks>
     private record SliderLabel(double Position, string Text, int SliderValue);
 
     private bool TryGetEditDateAtSliderValue(int sliderValue, out DateTimeOffset date)
