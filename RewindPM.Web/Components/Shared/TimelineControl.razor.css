@@ -1,13 +1,16 @@
+/* ========================================
+   ツールバーコンテナ
+   ======================================== */
 .timeline-toolbar {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 8px;
     padding: 8px 12px;
     background-color: transparent;
-    /* Seamless blend */
     border-radius: 6px;
     transition: all 0.3s ease;
+    position: relative;
 }
 
 .timeline-toolbar.viewing-past {
@@ -15,7 +18,9 @@
     border: 1px solid #ffc107;
 }
 
-/* Icons / Buttons */
+/* ========================================
+   ナビゲーションボタン（前へ/次へ）
+   ======================================== */
 .timeline-btn {
     display: inline-flex;
     align-items: center;
@@ -49,7 +54,9 @@
     border-color: #d0d7de;
 }
 
-/* Reset Button (Latest) */
+/* ========================================
+   リセットボタン（最新に戻る）
+   ======================================== */
 .timeline-btn-reset {
     width: auto;
     padding: 0 12px;
@@ -59,7 +66,12 @@
     /* Warning/Action color */
     border-color: #ce3a12;
     background-color: #fff;
-    margin-left: 8px;
+    position: absolute;
+    right: 12px;
+}
+
+.timeline-btn-reset.btn-hidden {
+    visibility: hidden;
 }
 
 .timeline-btn-reset:hover {
@@ -67,12 +79,16 @@
     color: #fff;
 }
 
-/* Info Area */
+/* ========================================
+   日付情報エリア
+   ======================================== */
 .timeline-info {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     min-width: 140px;
+    text-align: center;
 }
 
 .timeline-date {
@@ -99,7 +115,9 @@
     /* Green */
 }
 
-/* Responsive */
+/* ========================================
+   レスポンシブ対応
+   ======================================== */
 @media (max-width: 500px) {
     .timeline-toolbar {
         flex-wrap: wrap;
@@ -110,146 +128,11 @@
         flex-basis: 100%;
         margin-bottom: 8px;
     }
-}
 
-.timeline-control.viewing-past {
-    background-color: #fff8e1;
-    border-color: #ffc107;
-    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15);
-}
-
-.timeline-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem 1rem;
-    border: 1px solid #d0d7de;
-    border-radius: 6px;
-    background-color: white;
-    color: #1f2328;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-width: 2.5rem;
-}
-
-.timeline-button:hover:not(:disabled) {
-    background-color: #f6f8fa;
-    border-color: #1f2328;
-}
-
-.timeline-button:active:not(:disabled) {
-    background-color: #eaedef;
-}
-
-.timeline-button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    background-color: #f6f8fa;
-}
-
-.timeline-button:focus-visible {
-    outline: 2px solid #0969da;
-    outline-offset: 2px;
-}
-
-.timeline-button-prev,
-.timeline-button-next {
-    font-size: 1.2rem;
-    padding: 0.5rem 0.75rem;
-}
-
-.timeline-button-today {
-    margin-left: auto;
-    background-color: #0969da;
-    color: white;
-    border-color: #0969da;
-}
-
-.timeline-button-today:hover {
-    background-color: #0860ca;
-    border-color: #0860ca;
-}
-
-.timeline-button-today:active {
-    background-color: #0757ba;
-}
-
-.timeline-date-display {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex: 1;
-    text-align: center;
-}
-
-.timeline-date {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #1f2328;
-    margin-bottom: 0.25rem;
-}
-
-.timeline-status {
-    font-size: 0.875rem;
-    color: #656d76;
-}
-
-.timeline-control.viewing-past .timeline-date {
-    color: #f57c00;
-}
-
-.timeline-control.viewing-past .timeline-status {
-    color: #e65100;
-    font-weight: 500;
-}
-
-/* レスポンシブ対応 */
-@media (max-width: 768px) {
-    .timeline-control {
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        padding: 1rem;
+    .timeline-btn-reset {
+        position: static;
+        margin-top: 8px;
     }
-
-    .timeline-date-display {
-        order: -1;
-        flex-basis: 100%;
-        margin-bottom: 0.5rem;
-    }
-
-    .timeline-button-today {
-        margin-left: 0;
-        flex: 1;
-    }
-
-    .timeline-date {
-        font-size: 1rem;
-    }
-
-    .timeline-status {
-        font-size: 0.8125rem;
-    }
-}
-
-/* アニメーション */
-@keyframes highlight {
-    0% {
-        background-color: #fff8e1;
-    }
-
-    50% {
-        background-color: #ffecb3;
-    }
-
-    100% {
-        background-color: #fff8e1;
-    }
-}
-
-.timeline-control.viewing-past {
-    animation: highlight 1s ease-in-out;
 }
 
 /* ========================================
