@@ -30,16 +30,13 @@
         ▶
     </button>
 
-    @if (IsViewingPast)
-    {
-        <button
-            class="timeline-btn timeline-btn-reset"
-            @onclick="MoveToLatest"
-            title="最新状態に戻る"
-            type="button">
-            最新に戻る
-        </button>
-    }
+    <button
+        class="timeline-btn timeline-btn-reset @(!IsViewingPast ? "btn-hidden" : "")"
+        @onclick="MoveToLatest"
+        title="最新状態に戻る"
+        type="button">
+        最新に戻る
+    </button>
 </div>
 
 @* スライドバーコントロール *@

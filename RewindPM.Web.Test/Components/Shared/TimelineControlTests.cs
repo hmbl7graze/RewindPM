@@ -160,7 +160,7 @@ public class TimelineControlTests : Bunit.TestContext
         Assert.Equal(new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero), capturedDate.Value);
     }
 
-    [Fact(DisplayName = "最新に戻るボタンは過去表示時のみ表示される")]
+    [Fact(DisplayName = "最新に戻るボタンは常に存在し、過去表示時のみ可視化される")]
     public void TimelineControl_TodayButtonVisible_OnlyWhenViewingPast()
     {
         // Arrange - 過去表示
@@ -168,18 +168,20 @@ public class TimelineControlTests : Bunit.TestContext
             .Add(p => p.CurrentDate, new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero))
             .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
 
-        // Assert - 過去表示時はボタンが存在
-        var todayButtons = cutPast.FindAll(".timeline-btn-reset");
-        Assert.Single(todayButtons);
+        // Assert - 過去表示時はボタンが存在し、btn-hiddenクラスを持たない
+        var todayButton = cutPast.Find(".timeline-btn-reset");
+        Assert.NotNull(todayButton);
+        Assert.DoesNotContain("btn-hidden", todayButton.ClassName);
 
         // Arrange - 最新表示
         var cutLatest = RenderComponent<TimelineControl>(parameters => parameters
             .Add(p => p.CurrentDate, null)
             .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
 
-        // Assert - 最新表示時はボタンが存在しない
-        var todayButtonsLatest = cutLatest.FindAll(".timeline-btn-reset");
-        Assert.Empty(todayButtonsLatest);
+        // Assert - 最新表示時はボタンが存在するが、btn-hiddenクラスを持つ
+        var todayButtonLatest = cutLatest.Find(".timeline-btn-reset");
+        Assert.NotNull(todayButtonLatest);
+        Assert.Contains("btn-hidden", todayButtonLatest.ClassName);
     }
 
     [Fact(DisplayName = "最新に戻るボタンクリック時にnullが渡される")]
