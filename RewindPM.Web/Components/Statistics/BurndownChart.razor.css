@@ -1,3 +1,7 @@
+.burndown-chart {
+    position: relative;
+}
+
 .burndown-chart h4 {
     margin: 0 0 1rem 0;
     color: var(--neutral-foreground-rest);
