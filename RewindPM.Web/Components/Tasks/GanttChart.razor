@@ -20,32 +20,31 @@
     }
     else
     {
-        @* Zoom Toolbar *@
-        <div class="gantt-zoom-toolbar">
-            <button class="gantt-zoom-btn gantt-zoom-fit" @onclick="FitToScreen" title="全体を表示">
-                全体を表示
-            </button>
-            <div class="gantt-zoom-group">
-                <span class="gantt-zoom-label">横:</span>
-                <button class="gantt-zoom-btn" @onclick="ZoomOutHorizontal" disabled="@(!CanZoomOutHorizontal)" title="横方向縮小">
-                    −
-                </button>
-                <button class="gantt-zoom-btn" @onclick="ZoomInHorizontal" disabled="@(!CanZoomInHorizontal)" title="横方向拡大">
-                    +
-                </button>
-            </div>
-            <div class="gantt-zoom-group">
-                <span class="gantt-zoom-label">縦:</span>
-                <button class="gantt-zoom-btn" @onclick="ZoomOutVertical" disabled="@(!CanZoomOutVertical)" title="縦方向縮小">
-                    −
-                </button>
-                <button class="gantt-zoom-btn" @onclick="ZoomInVertical" disabled="@(!CanZoomInVertical)" title="縦方向拡大">
-                    +
-                </button>
-            </div>
-        </div>
-
         <div class="gantt-scroll-container">
+            @* Zoom Toolbar - Floating at top-right *@
+            <div class="gantt-zoom-toolbar">
+                <button class="gantt-zoom-btn gantt-zoom-fit" @onclick="FitToScreen" title="全体を表示">
+                    全体を表示
+                </button>
+                <div class="gantt-zoom-group">
+                    <span class="gantt-zoom-label">横:</span>
+                    <button class="gantt-zoom-btn" @onclick="ZoomOutHorizontal" disabled="@(!CanZoomOutHorizontal)" title="横方向縮小">
+                        −
+                    </button>
+                    <button class="gantt-zoom-btn" @onclick="ZoomInHorizontal" disabled="@(!CanZoomInHorizontal)" title="横方向拡大">
+                        +
+                    </button>
+                </div>
+                <div class="gantt-zoom-group">
+                    <span class="gantt-zoom-label">縦:</span>
+                    <button class="gantt-zoom-btn" @onclick="ZoomOutVertical" disabled="@(!CanZoomOutVertical)" title="縦方向縮小">
+                        −
+                    </button>
+                    <button class="gantt-zoom-btn" @onclick="ZoomInVertical" disabled="@(!CanZoomInVertical)" title="縦方向拡大">
+                        +
+                    </button>
+                </div>
+            </div>
             @* Header Row *@
             <div class="gantt-row gantt-header-row">
                 <div class="gantt-cell gantt-sticky-left gantt-header-corner">タスク名</div>
@@ -321,6 +320,9 @@
                 availableTimelineHeight = await JSRuntime.InvokeAsync<double>("ganttZoom.getAvailableHeight");
                 CalculateBaseColumnWidth();
                 CalculateBaseRowHeight();
+
+                // ツールバーのドラッグ機能を初期化
+                await JSRuntime.InvokeVoidAsync("ganttZoom.initializeDraggableToolbar");
 
                 scriptsInitialized = true;
                 StateHasChanged();
