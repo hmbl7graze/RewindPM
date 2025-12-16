@@ -96,7 +96,7 @@ else
             }
             else if (_viewType == "Statistics")
             {
-                <ProjectStatisticsDashboard @key="@(_isRewindMode ? _currentViewDate?.ToString() : "latest")" ProjectId="@Id" AsOfDate="@(_isRewindMode ? _currentViewDate : null)" />
+                <ProjectStatisticsDashboard @key="@(_currentViewDate?.ToString() ?? "latest")" ProjectId="@Id" AsOfDate="@(_isRewindMode ? _currentViewDate : null)" />
             }
             else
             {
