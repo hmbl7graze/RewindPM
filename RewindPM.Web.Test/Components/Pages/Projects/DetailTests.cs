@@ -177,7 +177,7 @@ public class DetailTests : Bunit.TestContext
         Assert.Contains("Test Project", title.TextContent.Trim());
 
         var buttons = cut.FindAll("button, a.btn, a.btn-icon");
-        Assert.Contains(buttons, b => b.TextContent.Contains("Info"));
+        Assert.Contains(buttons, b => b.TextContent.Contains("情報"));
         Assert.Contains(buttons, b => b.TextContent.Contains("新規タスク"));
     }
 
@@ -457,7 +457,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Rewindモードを有効化
-        var RewindButton = cut.FindAll("button").First(b => b.TextContent.Contains("Rewind"));
+        var RewindButton = cut.FindAll("button").First(b => b.TextContent.Contains("過去に戻る"));
         RewindButton.Click();
 
         // Assert - TimelineControlが表示されている
@@ -996,7 +996,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Act
-        var infoButton = cut.FindAll("button").First(b => b.TextContent.Contains("Info"));
+        var infoButton = cut.FindAll("button").First(b => b.TextContent.Contains("情報"));
         infoButton.Click();
 
         // Assert
@@ -1097,7 +1097,7 @@ public class DetailTests : Bunit.TestContext
             .Add(p => p.Id, _testProjectId));
 
         // Act - 1回目: プロジェクト情報モーダルを開く
-        var infoButton = cut.FindAll("button").First(b => b.TextContent.Contains("Info"));
+        var infoButton = cut.FindAll("button").First(b => b.TextContent.Contains("情報"));
         infoButton.Click();
 
         // モーダルが表示されていることを確認
@@ -1113,7 +1113,7 @@ public class DetailTests : Bunit.TestContext
         Assert.Empty(modalAfterClose);
 
         // Act - 2回目: 再度プロジェクト情報モーダルを開く
-        infoButton = cut.FindAll("button").First(b => b.TextContent.Contains("Info"));
+        infoButton = cut.FindAll("button").First(b => b.TextContent.Contains("情報"));
         infoButton.Click();
 
         // Assert - モーダルが再度表示されていることを確認
