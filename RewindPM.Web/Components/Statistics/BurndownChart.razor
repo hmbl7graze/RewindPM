@@ -30,7 +30,7 @@ else if (_actualData != null && _actualData.Any())
                              SeriesType="SeriesType.Line"
                              XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
-                             OrderBy="e=>e.X"
+                             OrderBy="e => e.X"
                              Color="#adb5bd" />
 
             @* 実績線 *@
@@ -40,7 +40,7 @@ else if (_actualData != null && _actualData.Any())
                              SeriesType="SeriesType.Line"
                              XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
-                             OrderBy="e=>e.X"
+                             OrderBy="e => e.X"
                              Color="#007bff" />
         </ApexChart>
     </div>
@@ -105,7 +105,7 @@ else
                 // 最初の編集日から開始
                 startDate = editDates.First();
                 // リワインド時はAsOfDate、通常時は最後の編集日または現在日時
-                endDate = AsOfDate ?? (editDates.Any() ? editDates.Last() : DateTimeOffset.UtcNow);
+                endDate = AsOfDate ?? editDates.Last();
             }
             else
             {

@@ -132,7 +132,7 @@ public class BurndownChartTests : Bunit.TestContext
             .Returns(new List<TaskDto>());
 
         // Act
-        var cut = RenderComponent<BurndownChart>(parameters => parameters
+        RenderComponent<BurndownChart>(parameters => parameters
             .Add(p => p.ProjectId, projectId)
             .Add(p => p.AsOfDate, asOfDate));
 
@@ -425,7 +425,7 @@ public class BurndownChartTests : Bunit.TestContext
             .Returns([]);
 
         // Act
-        var cut = RenderComponent<BurndownChart>(parameters => parameters
+        RenderComponent<BurndownChart>(parameters => parameters
             .Add(p => p.ProjectId, projectId));
 
         // Assert - 最初の編集日から最後の編集日までの範囲でクエリが実行されることを確認

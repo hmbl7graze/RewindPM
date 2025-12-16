@@ -126,7 +126,7 @@ public class CumulativeFlowDiagramTests : Bunit.TestContext
             .Returns(timeSeriesData);
 
         // Act
-        var cut = RenderComponent<CumulativeFlowDiagram>(parameters => parameters
+        RenderComponent<CumulativeFlowDiagram>(parameters => parameters
             .Add(p => p.ProjectId, projectId)
             .Add(p => p.AsOfDate, asOfDate));
 
@@ -320,7 +320,7 @@ public class CumulativeFlowDiagramTests : Bunit.TestContext
             .Returns(timeSeriesData);
 
         // Act
-        var cut = RenderComponent<CumulativeFlowDiagram>(parameters => parameters
+        RenderComponent<CumulativeFlowDiagram>(parameters => parameters
             .Add(p => p.ProjectId, projectId));
 
         // Assert - 最初の編集日から最後の編集日までの範囲でクエリが実行されることを確認
