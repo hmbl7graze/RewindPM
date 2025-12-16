@@ -483,8 +483,8 @@ public class TimelineControlTests : Bunit.TestContext
         Assert.Single(activeTicks); // 1つだけactiveのはず
     }
 
-    [Fact(DisplayName = "スライドバーラベルが表示される")]
-    public void TimelineControl_SliderLabels_AreDisplayed()
+    [Fact(DisplayName = "スライドバーラベルが日付形式で表示される")]
+    public void TimelineControl_SliderLabels_DisplayDatesInCorrectFormat()
     {
         // Arrange
         var editDates = new List<DateTimeOffset>
@@ -501,13 +501,15 @@ public class TimelineControlTests : Bunit.TestContext
 
         // Assert
         var labels = cut.FindAll(".slider-label");
-        Assert.True(labels.Count >= 2); // 最古と最新は最低限表示される
+        Assert.True(labels.Count >= 2); // 最低2つのラベル（最古と最新）が表示される
 
-        var startLabel = cut.Find(".slider-label-start");
-        Assert.Equal("最古", startLabel.TextContent);
-
-        var endLabel = cut.Find(".slider-label-end");
-        Assert.Equal("最新", endLabel.TextContent);
+        // すべてのラベルが日付形式（MM/dd）または現在の日付であることを確認
+        foreach (var label in labels)
+        {
+            var text = label.TextContent;
+            // MM/dd形式（例: "01/05"）または現在の日付を想定
+            Assert.Matches(@"^\d{2}/\d{2}$", text);
+        }
     }
 
     #endregion
