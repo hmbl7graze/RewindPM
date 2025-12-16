@@ -4,6 +4,7 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using RewindPM.Application.Read.DTOs;
 using RewindPM.Application.Read.Queries.Statistics;
+using RewindPM.Application.Read.Queries.Projects;
 using RewindPM.Web.Components.Statistics;
 
 namespace RewindPM.Web.Test.Components.Statistics;
@@ -88,7 +89,7 @@ public class CumulativeFlowDiagramTests : Bunit.TestContext
             .GetValue(cut.Instance)!.Equals(true), timeout: TimeSpan.FromSeconds(5));
 
         var chartDiv = cut.Find(".cumulative-flow-diagram");
-        Assert.Contains("Cumulative Flow Diagram", chartDiv.TextContent);
+        Assert.Contains("累積フローダイアグラム", chartDiv.TextContent);
     }
 
     [Fact(DisplayName = "CumulativeFlowDiagram: AsOfDateが指定されている場合はその日付までのデータを取得")]
@@ -97,6 +98,12 @@ public class CumulativeFlowDiagramTests : Bunit.TestContext
         // Arrange
         var projectId = Guid.NewGuid();
         var asOfDate = new DateTimeOffset(2024, 2, 15, 0, 0, 0, TimeSpan.Zero);
+        var firstEditDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        // 編集日一覧を返すモック
+        var editDates = new List<DateTimeOffset> { firstEditDate, asOfDate.AddDays(-5), asOfDate };
+        _mediatorMock.Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(editDates);
 
         var timeSeriesData = new ProjectStatisticsTimeSeriesDto
         {
@@ -119,16 +126,16 @@ public class CumulativeFlowDiagramTests : Bunit.TestContext
             .Returns(timeSeriesData);
 
         // Act
-        var cut = RenderComponent<CumulativeFlowDiagram>(parameters => parameters
+        RenderComponent<CumulativeFlowDiagram>(parameters => parameters
             .Add(p => p.ProjectId, projectId)
             .Add(p => p.AsOfDate, asOfDate));
 
-        // Assert
+        // Assert - プロジェクトの最初の編集日から開始されることを確認
         await _mediatorMock.Received(1).Send(
             Arg.Is<GetProjectStatisticsTimeSeriesQuery>(q =>
                 q.ProjectId == projectId &&
                 q.EndDate == asOfDate &&
-                q.StartDate == asOfDate.AddDays(-30)),
+                q.StartDate == firstEditDate),
             Arg.Any<CancellationToken>());
     }
 
@@ -264,7 +271,7 @@ public class CumulativeFlowDiagramTests : Bunit.TestContext
         // Arrange
         var projectId = Guid.NewGuid();
         var tcs = new TaskCompletionSource<ProjectStatisticsTimeSeriesDto?>();
-        
+
         _mediatorMock.Send(Arg.Any<GetProjectStatisticsTimeSeriesQuery>(), Arg.Any<CancellationToken>())
             .Returns(tcs.Task);
 
@@ -278,5 +285,91 @@ public class CumulativeFlowDiagramTests : Bunit.TestContext
 
         // Cleanup
         tcs.SetResult(null);
+    }
+
+    [Fact(DisplayName = "CumulativeFlowDiagram: プロジェクトの全期間でグラフを表示")]
+    public async Task CumulativeFlowDiagram_UsesProjectFullPeriod_NotFixed30Days()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var firstEditDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var lastEditDate = new DateTimeOffset(2024, 3, 1, 0, 0, 0, TimeSpan.Zero); // 60日間
+
+        // 編集日一覧（60日間のプロジェクト）
+        var editDates = new List<DateTimeOffset> { firstEditDate, firstEditDate.AddDays(30), lastEditDate };
+        _mediatorMock.Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(editDates);
+
+        var timeSeriesData = new ProjectStatisticsTimeSeriesDto
+        {
+            ProjectId = projectId,
+            DailySnapshots = new List<DailyStatisticsSnapshot>
+            {
+                new DailyStatisticsSnapshot
+                {
+                    Date = firstEditDate,
+                    TotalTasks = 10,
+                    CompletedTasks = 0,
+                    InProgressTasks = 3,
+                    InReviewTasks = 2,
+                    TodoTasks = 5
+                }
+            }
+        };
+        _mediatorMock.Send(Arg.Any<GetProjectStatisticsTimeSeriesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(timeSeriesData);
+
+        // Act
+        RenderComponent<CumulativeFlowDiagram>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        // Assert - 最初の編集日から最後の編集日までの範囲でクエリが実行されることを確認
+        await _mediatorMock.Received(1).Send(
+            Arg.Is<GetProjectStatisticsTimeSeriesQuery>(q =>
+                q.ProjectId == projectId &&
+                q.StartDate == firstEditDate &&
+                q.EndDate == lastEditDate),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "CumulativeFlowDiagram: 編集日一覧がnullまたは空の場合30日前からのフォールバック期間を使用")]
+    public async Task CumulativeFlowDiagram_WithNullOrEmptyEditDates_UsesFallbackPeriod()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+
+        // 編集日一覧がnullを返すモック
+        _mediatorMock.Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<List<DateTimeOffset>?>(null));
+
+        var timeSeriesData = new ProjectStatisticsTimeSeriesDto
+        {
+            ProjectId = projectId,
+            DailySnapshots = new List<DailyStatisticsSnapshot>
+            {
+                new DailyStatisticsSnapshot
+                {
+                    Date = DateTimeOffset.UtcNow.AddDays(-15),
+                    TotalTasks = 10,
+                    CompletedTasks = 3,
+                    InProgressTasks = 4,
+                    InReviewTasks = 2,
+                    TodoTasks = 1
+                }
+            }
+        };
+        _mediatorMock.Send(Arg.Any<GetProjectStatisticsTimeSeriesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(timeSeriesData);
+
+        // Act
+        RenderComponent<CumulativeFlowDiagram>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        // Assert - 30日前からのフォールバック期間でクエリが実行されることを確認
+        await _mediatorMock.Received(1).Send(
+            Arg.Is<GetProjectStatisticsTimeSeriesQuery>(q =>
+                q.ProjectId == projectId &&
+                (q.EndDate - q.StartDate).Days == 30),
+            Arg.Any<CancellationToken>());
     }
 }

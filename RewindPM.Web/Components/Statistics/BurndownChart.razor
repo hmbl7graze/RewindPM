@@ -1,5 +1,7 @@
 @using MediatR
 @using RewindPM.Application.Read.Queries.Statistics
+@using RewindPM.Application.Read.Queries.Projects
+@using RewindPM.Application.Read.Queries.Tasks
 @using RewindPM.Application.Read.DTOs
 
 @inject IMediator Mediator
@@ -14,9 +16,11 @@
 else if (_actualData != null && _actualData.Any())
 {
     <div class="burndown-chart">
-        <h4>Burndown Chart</h4>
+        <h4>バーンダウンチャート</h4>
         <ApexChart TItem="ChartDataPoint"
                    Title="残タスク数の推移"
+                   XAxisType="XAxisType.Datetime"
+                   Options="options"
                    Height="400">
 
             @* 理想線（予定） *@
@@ -24,7 +28,7 @@ else if (_actualData != null && _actualData.Any())
                              Items="_idealData"
                              Name="理想線"
                              SeriesType="SeriesType.Line"
-                             XValue="@(e => e.X)"
+                             XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
                              OrderBy="e => e.X"
                              Color="#adb5bd" />
@@ -34,7 +38,7 @@ else if (_actualData != null && _actualData.Any())
                              Items="_actualData"
                              Name="実績"
                              SeriesType="SeriesType.Line"
-                             XValue="@(e => e.X)"
+                             XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
                              OrderBy="e => e.X"
                              Color="#007bff" />
@@ -58,7 +62,26 @@ else
     private List<ChartDataPoint>? _actualData;
     private List<ChartDataPoint>? _idealData;
     private bool _isLoading = true;
+    private ApexChartOptions<ChartDataPoint> options = new();
 
+    protected override void OnInitialized()
+    {
+        options = new ApexChartOptions<ChartDataPoint>
+            {
+                Chart = new Chart
+                {
+                    Toolbar = new Toolbar
+                    {
+                        Show = false
+                    }
+                },
+                Legend = new Legend
+                {
+                    Position = LegendPosition.Right
+                }
+            };
+    }
+    
     protected override async Task OnParametersSetAsync()
     {
         await LoadChartDataAsync();
@@ -70,11 +93,26 @@ else
 
         try
         {
-            // 終了日を設定（AsOfDateがあればそれを使用、なければ現在日時）
-            var endDate = AsOfDate ?? DateTimeOffset.UtcNow;
+            // プロジェクトの編集日一覧を取得してグラフの範囲を決定
+            var editDatesQuery = new GetProjectEditDatesQuery(ProjectId, Ascending: true);
+            var editDates = await Mediator.Send(editDatesQuery);
 
-            // 開始日を計算（終了日の30日前）
-            var startDate = endDate.AddDays(-30);
+            DateTimeOffset startDate;
+            DateTimeOffset endDate;
+
+            if (editDates != null && editDates.Any())
+            {
+                // 最初の編集日から開始
+                startDate = editDates.First();
+                // リワインド時はAsOfDate、通常時は最後の編集日または現在日時
+                endDate = AsOfDate ?? editDates.Last();
+            }
+            else
+            {
+                // フォールバック: 編集履歴がない場合は30日前から
+                endDate = AsOfDate ?? DateTimeOffset.UtcNow;
+                startDate = endDate.AddDays(-30);
+            }
 
             var query = new GetProjectStatisticsTimeSeriesQuery(ProjectId, startDate, endDate);
             var timeSeriesData = await Mediator.Send(query);
@@ -87,37 +125,43 @@ else
                 _actualData = snapshots
                     .Select(s => new ChartDataPoint
                     {
-                        X = s.Date.ToString("M/d"),
+                        X = s.Date,
                         Y = s.RemainingTasks
                     })
                     .ToList();
 
-                // 理想線データを作成
-                // 開始時の残タスク数から終了時（0タスク）まで線形に減少
-                var startingTasks = snapshots.First().TotalTasks;
-                var totalDays = snapshots.Count;
+                // 理想線データを作成：開始時点でのタスクの予定終了日に基づいて計算
+                // 開始時点でのタスク一覧を取得
+                var tasksQuery = new GetTasksByProjectIdAtTimeQuery(ProjectId, startDate);
+                var tasksAtStart = await Mediator.Send(tasksQuery);
 
-                // totalDaysが1の場合はゼロ除算を避けるため、理想線は開始タスク数のまま
-                if (totalDays <= 1)
+                if (tasksAtStart != null && tasksAtStart.Any())
                 {
+                    var totalTasks = tasksAtStart.Count;
+
                     _idealData = snapshots
-                        .Select(s => new ChartDataPoint
+                        .Select(s =>
                         {
-                            X = s.Date.ToString("M/d"),
-                            Y = startingTasks
+                            // この日付までに予定終了日を迎えるべきタスク数（完了予定）
+                            var shouldBeCompleted = tasksAtStart.Count(t =>
+                                t.ScheduledEndDate.HasValue &&
+                                t.ScheduledEndDate.Value.Date <= s.Date.DateTime.Date);
+
+                            // 理想的な残タスク数
+                            var idealRemaining = totalTasks - shouldBeCompleted;
+
+                            return new ChartDataPoint
+                            {
+                                X = s.Date,
+                                Y = idealRemaining
+                            };
                         })
                         .ToList();
                 }
                 else
                 {
-                    _idealData = snapshots
-                        .Select((s, index) => new ChartDataPoint
-                        {
-                            X = s.Date.ToString("M/d"),
-                            // 線形に減少する理想線
-                            Y = Math.Max(0, startingTasks - (int)Math.Round((double)startingTasks * index / (totalDays - 1)))
-                        })
-                        .ToList();
+                    // タスクがない場合は理想線を表示しない
+                    _idealData = null;
                 }
             }
             else
@@ -140,7 +184,7 @@ else
 
     private class ChartDataPoint
     {
-        public string X { get; set; } = string.Empty;
-        public int Y { get; set; }
+        public required DateTimeOffset X { get; set; }
+        public required int Y { get; set; }
     }
 }
