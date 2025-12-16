@@ -1165,5 +1165,98 @@ public class DetailTests : Bunit.TestContext
         var modalSecondOpen = cut.FindAll(".modal-overlay");
         Assert.NotEmpty(modalSecondOpen);
     }
+
+    [Fact(DisplayName = "リワインドモードで日付を変更すると統計ダッシュボードが再レンダリングされる")]
+    public void Detail_ReRendersStatisticsDashboard_WhenDateChangesInRewindMode()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(DateTime.UtcNow.Date.AddDays(-2), TimeSpan.Zero),
+            new DateTimeOffset(DateTime.UtcNow.Date.AddDays(-1), TimeSpan.Zero)
+        };
+
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(editDates);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Rewindモードを有効化
+        var rewindButton = cut.FindAll("button").First(b => b.TextContent.Contains("過去に戻る"));
+        rewindButton.Click();
+
+        // Statisticsタブに切り替え
+        var statisticsTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("統計"));
+        statisticsTab.Click();
+
+        // 初回レンダリング時のコンポーネントを確認
+        cut.WaitForAssertion(() =>
+        {
+            var statisticsDashboard = cut.Find(".statistics-dashboard");
+            Assert.NotNull(statisticsDashboard);
+        }, timeout: TimeSpan.FromSeconds(5));
+
+        // Act - タイムラインで日付を変更
+        var prevButton = cut.FindAll("button.timeline-btn-prev").First();
+        prevButton.Click();
+
+        // Assert - 統計ダッシュボードが再レンダリングされることを確認
+        // （日付変更によりコンポーネントの@keyが変わり、新しいインスタンスが作成される）
+        cut.WaitForAssertion(() =>
+        {
+            var statisticsDashboard = cut.Find(".statistics-dashboard");
+            Assert.NotNull(statisticsDashboard);
+        }, timeout: TimeSpan.FromSeconds(5));
+
+        // GetProjectStatisticsDetailQueryが複数回呼ばれることを確認（初回+日付変更後）
+        // 最低2回は呼ばれている
+        _mediatorMock.Received(2)
+            .Send(Arg.Any<GetProjectStatisticsDetailQuery>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "リワインドモードでない場合、統計ダッシュボードのキーは常に'latest'である")]
+    public void Detail_StatisticsDashboardKey_IsLatest_WhenNotInRewindMode()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DateTimeOffset>());
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+
+        // Statisticsタブを表示
+        var navMan = Services.GetRequiredService<NavigationManager>();
+        navMan.NavigateTo($"/projects/{_testProjectId}?tab=statistics");
+
+        // Act
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Assert - 統計ダッシュボードが表示される
+        cut.WaitForAssertion(() =>
+        {
+            var statisticsDashboard = cut.Find(".statistics-dashboard");
+            Assert.NotNull(statisticsDashboard);
+        }, timeout: TimeSpan.FromSeconds(5));
+
+        // リワインドモードではないので、キーは "latest" となる
+        // これにより、通常モードでは不要な再レンダリングが発生しないことを確認
+        _mediatorMock.Received(1)
+            .Send(Arg.Any<GetProjectStatisticsDetailQuery>(), Arg.Any<CancellationToken>());
+    }
 }
 
