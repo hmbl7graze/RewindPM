@@ -44,10 +44,10 @@
 {
     <div class="timeline-slider-container">
         <div class="timeline-slider-labels">
-            @* TODO: 日付で表現する *@
-            <span class="slider-label slider-label-start">最古</span>
-            <span class="slider-label slider-label-center">@GetCenterDateLabel()</span>
-            <span class="slider-label slider-label-end">最新</span>
+            @foreach (var label in GetSliderLabels())
+            {
+                <span class="slider-label" style="left: @(label.Position)%">@label.Text</span>
+            }
         </div>
         <input
             type="range"
@@ -60,12 +60,14 @@
         <div class="timeline-slider-ticks">
             @for (int i = 0; i <= MaxSliderValue; i++)
             {
-                <div class="slider-tick @(i == CurrentSliderValue ? "active" : "")" 
+                <div class="slider-tick @(i == CurrentSliderValue ? "active" : "")"
                      style="left: @(GetTickPosition(i))%"></div>
             }
         </div>
     </div>
 }
+
+@inject ILogger<TimelineControl> Logger
 
 @code {
     /// <summary>
@@ -120,6 +122,7 @@
     private const string LiveStateLabel = "最新の状態";
     private const string DateFormat = "yyyy/MM/dd";
     private const string ShortDateFormat = "MM/dd";
+    private const int MaxSliderLabels = 7;
 
     /// <summary>
     /// 前の編集日へ移動可能かどうか
@@ -254,17 +257,87 @@
     }
 
     /// <summary>
-    /// スライダー中央のラベルを取得
+    /// スライドバーに表示するラベルのリストを生成
     /// </summary>
-    private string GetCenterDateLabel()
+    private List<SliderLabel> GetSliderLabels()
     {
-        if (!HasEditDates)
-            return string.Empty;
+        var labels = new List<SliderLabel>();
 
-        var middleIndex = EditDates.Count / 2;
-        return IsValidEditDateIndex(middleIndex) 
-            ? EditDates[middleIndex].ToString(ShortDateFormat) 
-            : string.Empty;
+        if (!HasEditDates)
+            return labels;
+
+        var totalPositions = MaxSliderValue + 1;
+
+        // 表示する間隔を計算
+        int interval = 1;
+
+        if (totalPositions > MaxSliderLabels)
+        {
+            // 生成されるラベル数がMaxSliderLabels以下になる最小のintervalを求める
+            interval = (int)Math.Ceiling((double)MaxSliderValue / (MaxSliderLabels - 1));
+        }
+
+        // 等間隔にラベルを配置
+        for (int i = 0; i <= MaxSliderValue; i += interval)
+        {
+            var position = GetTickPosition(i);
+            string text;
+
+            if (i == MaxSliderValue)
+            {
+                // 最新状態（最新の編集日を表示）
+                text = EditDates!.First().ToString(ShortDateFormat);
+            }
+            else if (TryGetEditDateAtSliderValue(i, out var date))
+            {
+                // 編集日
+                text = date.ToString(ShortDateFormat);
+            }
+            else
+            {
+                // ここに到達するのは想定外。
+                // GetTickPosition は 0〜MaxSliderValue の連続値を前提としており、
+                // sliderValue < MaxSliderValue の範囲では必ず有効な編集日が存在する設計である。
+                Logger.LogWarning(
+                    "TryGetEditDateAtSliderValue が想定外に false を返しました。sliderValue={SliderValue}, MaxSliderValue={MaxSliderValue}, EditDatesCount={EditDatesCount}",
+                    i, MaxSliderValue, EditDates?.Count);
+                continue; // 想定外だが、UI の破綻を避けるため当該位置のラベルは描画しない
+            }
+
+            labels.Add(new SliderLabel(position, text, i));
+        }
+
+        // 最後の位置（MaxSliderValue）がループで含まれていない場合は追加
+        if (MaxSliderValue % interval != 0)
+        {
+            var position = GetTickPosition(MaxSliderValue);
+            var text = EditDates!.First().ToString(ShortDateFormat);
+            labels.Add(new SliderLabel(position, text, MaxSliderValue));
+        }
+
+        return labels;
+    }
+
+    /// <summary>
+    /// スライダーラベルの情報
+    /// </summary>
+    /// <remarks>
+    /// SliderValueは将来的にラベルクリックで対応するスライダー位置へ移動する機能を追加する際に使用するため保持しています。
+    /// </remarks>
+    private record SliderLabel(double Position, string Text, int SliderValue);
+
+    private bool TryGetEditDateAtSliderValue(int sliderValue, out DateTimeOffset date)
+    {
+        date = default;
+        if (sliderValue < 0 || sliderValue >= MaxSliderValue)
+            return false;
+
+        var index = MaxSliderValue - 1 - sliderValue;
+        if (!IsValidEditDateIndex(index))
+            return false;
+
+        date = EditDates[index];
+        return true;
     }
 
     private bool IsValidEditDateIndex(int index)

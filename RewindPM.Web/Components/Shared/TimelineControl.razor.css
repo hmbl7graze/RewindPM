@@ -146,21 +146,24 @@
 }
 
 .timeline-slider-labels {
-    display: flex;
-    justify-content: space-between;
+    position: relative;
+    height: 1.5rem;
     margin-bottom: 0.5rem;
     padding: 0 0.5rem;
 }
 
 .slider-label {
+    position: absolute;
     font-size: 0.75rem;
     font-weight: 500;
     color: var(--text-muted);
-}
-
-.slider-label-center {
-    color: var(--text-primary);
-    font-weight: 600;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    user-select: none;
+    max-width: 20%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 3;
 }
 
 /* ========================================
@@ -301,13 +304,20 @@
 /* ========================================
    レスポンシブ対応
    ======================================== */
+/* タブレット以下（小画面ではさらに縮小される） */
+@media (max-width: 1024px) {
+    .slider-label {
+        font-size: 0.7rem;
+    }
+}
+
 @media (max-width: 768px) {
     .timeline-slider-container {
         padding: 1rem 0 0.75rem;
     }
 
     .slider-label {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
     }
 
     .timeline-slider {
@@ -330,6 +340,24 @@
 
     .slider-tick.active {
         height: 14px;
+    }
+}
+
+@media (max-width: 640px) {
+    /* 小画面では奇数番目の中間ラベルを隠す */
+    .slider-label:not(:first-child):not(:last-child):nth-child(even) {
+        display: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .slider-label {
+        font-size: 0.6rem;
+    }
+
+    /* 極小画面では中間ラベルをすべて隠す（最初と最後のみ表示） */
+    .slider-label:not(:first-child):not(:last-child) {
+        display: none;
     }
 }
 
