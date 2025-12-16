@@ -19,6 +19,7 @@ else if (_chartData != null && _chartData.Any())
         <ApexChart TItem="ChartDataPoint"
                    Title="タスクステータスの推移"
                    XAxisType="XAxisType.Datetime"
+                   Options="options"
                    Height="400">
 
             <ApexPointSeries TItem="ChartDataPoint"
@@ -75,6 +76,25 @@ else
     private List<ChartDataPoint> _inReviewData = new();
     private List<ChartDataPoint> _todoData = new();
     private bool _isLoading = true;
+    private ApexChartOptions<ChartDataPoint> options = new();
+
+    protected override void OnInitialized()
+    {
+        options = new ApexChartOptions<ChartDataPoint>
+            {
+                Chart = new Chart
+                {
+                    Toolbar = new Toolbar
+                    {
+                        Show = false
+                    }
+                },
+                Legend = new Legend
+                {
+                    Position = LegendPosition.Right
+                }
+            };
+    }
 
     protected override async Task OnParametersSetAsync()
     {

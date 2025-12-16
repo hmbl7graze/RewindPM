@@ -20,6 +20,7 @@ else if (_actualData != null && _actualData.Any())
         <ApexChart TItem="ChartDataPoint"
                    Title="残タスク数の推移"
                    XAxisType="XAxisType.Datetime"
+                   Options="options"
                    Height="400">
 
             @* 理想線（予定） *@
@@ -61,7 +62,26 @@ else
     private List<ChartDataPoint>? _actualData;
     private List<ChartDataPoint>? _idealData;
     private bool _isLoading = true;
+    private ApexChartOptions<ChartDataPoint> options = new();
 
+    protected override void OnInitialized()
+    {
+        options = new ApexChartOptions<ChartDataPoint>
+            {
+                Chart = new Chart
+                {
+                    Toolbar = new Toolbar
+                    {
+                        Show = false
+                    }
+                },
+                Legend = new Legend
+                {
+                    Position = LegendPosition.Right
+                }
+            };
+    }
+    
     protected override async Task OnParametersSetAsync()
     {
         await LoadChartDataAsync();
