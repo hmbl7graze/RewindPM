@@ -56,8 +56,7 @@
             max="@MaxSliderValue"
             value="@CurrentSliderValue"
             @onchange="HandleSliderChange"
-            aria-label="日付スライダー"
-            title="@GetSliderTooltip()" />
+            aria-label="日付スライダー" />
         <div class="timeline-slider-ticks">
             @for (int i = 0; i <= MaxSliderValue; i++)
             {
@@ -255,22 +254,6 @@
         if (MaxSliderValue == 0)
             return 0;
         return (double)index / MaxSliderValue * 100;
-    }
-
-    /// <summary>
-    /// スライダーのツールチップテキスト
-    /// </summary>
-    private string GetSliderTooltip()
-    {
-        if (CurrentSliderValue == MaxSliderValue)
-            return LiveStateLabel;
-
-        if (TryGetEditDateAtSliderValue(CurrentSliderValue, out var date))
-        {
-            return date.ToString(DateFormat);
-        }
-
-        return string.Empty;
     }
 
     /// <summary>
