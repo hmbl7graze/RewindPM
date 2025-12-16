@@ -44,10 +44,10 @@
 {
     <div class="timeline-slider-container">
         <div class="timeline-slider-labels">
-            @* TODO: 日付で表現する *@
-            <span class="slider-label slider-label-start">最古</span>
-            <span class="slider-label slider-label-center">@GetCenterDateLabel()</span>
-            <span class="slider-label slider-label-end">最新</span>
+            @foreach (var label in GetSliderLabels())
+            {
+                <span class="slider-label" style="left: @(label.Position)%">@label.Text</span>
+            }
         </div>
         <input
             type="range"
@@ -61,7 +61,7 @@
         <div class="timeline-slider-ticks">
             @for (int i = 0; i <= MaxSliderValue; i++)
             {
-                <div class="slider-tick @(i == CurrentSliderValue ? "active" : "")" 
+                <div class="slider-tick @(i == CurrentSliderValue ? "active" : "")"
                      style="left: @(GetTickPosition(i))%"></div>
             }
         </div>
@@ -271,18 +271,60 @@
     }
 
     /// <summary>
-    /// スライダー中央のラベルを取得
+    /// スライドバーに表示するラベルのリストを生成
     /// </summary>
-    private string GetCenterDateLabel()
+    private List<SliderLabel> GetSliderLabels()
     {
-        if (!HasEditDates)
-            return string.Empty;
+        var labels = new List<SliderLabel>();
 
-        var middleIndex = EditDates.Count / 2;
-        return IsValidEditDateIndex(middleIndex) 
-            ? EditDates[middleIndex].ToString(ShortDateFormat) 
-            : string.Empty;
+        if (!HasEditDates)
+            return labels;
+
+        const int maxLabels = 7; // 最大ラベル数
+        var totalPositions = MaxSliderValue + 1;
+
+        // 表示する間隔を計算
+        int interval = totalPositions <= maxLabels ? 1 : (int)Math.Ceiling((double)MaxSliderValue / (maxLabels - 1));
+
+        // 等間隔にラベルを配置
+        for (int i = 0; i <= MaxSliderValue; i += interval)
+        {
+            var position = GetTickPosition(i);
+            string text;
+
+            if (i == MaxSliderValue)
+            {
+                // 最新状態（現在の日付を表示）
+                text = DateTimeOffset.Now.ToString(ShortDateFormat);
+            }
+            else if (TryGetEditDateAtSliderValue(i, out var date))
+            {
+                // 編集日
+                text = date.ToString(ShortDateFormat);
+            }
+            else
+            {
+                continue; // 無効な位置はスキップ
+            }
+
+            labels.Add(new SliderLabel(position, text, i));
+        }
+
+        // 最後の位置（MaxSliderValue）が含まれていない場合は追加
+        if (MaxSliderValue % interval != 0)
+        {
+            var position = GetTickPosition(MaxSliderValue);
+            var text = DateTimeOffset.Now.ToString(ShortDateFormat);
+            labels.Add(new SliderLabel(position, text, MaxSliderValue));
+        }
+
+        return labels;
     }
+
+    /// <summary>
+    /// スライダーラベルの情報
+    /// </summary>
+    private record SliderLabel(double Position, string Text, int SliderValue);
 
     private bool TryGetEditDateAtSliderValue(int sliderValue, out DateTimeOffset date)
     {
