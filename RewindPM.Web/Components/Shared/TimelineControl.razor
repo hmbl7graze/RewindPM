@@ -69,14 +69,17 @@
 }
 
 @code {
+    [Inject]
+    private ILogger<TimelineControl> Logger { get; set; } = default!;
+
     /// <summary>
-    /// 現在表示中の日付（nullの場合は最新）
+    /// 現在表示中の日付(nullの場合は最新)
     /// </summary>
     [Parameter]
     public DateTimeOffset? CurrentDate { get; set; }
 
     /// <summary>
-    /// 編集日一覧（降順：新しい順）
+    /// 編集日一覧(降順:新しい順)
     /// </summary>
     [Parameter]
     public List<DateTimeOffset> EditDates { get; set; } = new();
@@ -294,8 +297,8 @@
 
             if (i == MaxSliderValue)
             {
-                // 最新状態（現在の日付を表示）
-                text = DateTimeOffset.Now.ToString(ShortDateFormat);
+                // 最新状態（最新の編集日を表示）
+                text = EditDates.First().ToString(ShortDateFormat);
             }
             else if (TryGetEditDateAtSliderValue(i, out var date))
             {
@@ -304,7 +307,14 @@
             }
             else
             {
-                continue; // 無効な位置はスキップ
+                // ここに到達するのは想定外。
+                // GetTickPosition は 0〜MaxSliderValue の連続値を前提としており、
+                // sliderValue < MaxSliderValue の範囲では必ず有効な編集日が存在する設計である。
+                // デバッグ時に異常を検知できるようにしつつ、本番動作は従来どおりラベルをスキップする。
+                Logger.LogWarning(
+                    "TryGetEditDateAtSliderValue が想定外に false を返しました。sliderValue={SliderValue}, MaxSliderValue={MaxSliderValue}, EditDatesCount={EditDatesCount}",
+                    i, MaxSliderValue, EditDates?.Count);
+                continue; // 想定外だが、UI の破綻を避けるため当該位置のラベルは描画しない
             }
 
             labels.Add(new SliderLabel(position, text, i));
@@ -314,7 +324,7 @@
         if (MaxSliderValue % interval != 0)
         {
             var position = GetTickPosition(MaxSliderValue);
-            var text = DateTimeOffset.Now.ToString(ShortDateFormat);
+            var text = EditDates.First().ToString(ShortDateFormat);
             labels.Add(new SliderLabel(position, text, MaxSliderValue));
         }
 
