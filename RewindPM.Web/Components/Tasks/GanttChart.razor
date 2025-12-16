@@ -20,6 +20,19 @@
     }
     else
     {
+        @* Zoom Toolbar *@
+        <div class="gantt-zoom-toolbar">
+            <button class="gantt-zoom-btn gantt-zoom-fit" @onclick="FitToScreen" title="全体を表示">
+                全体を表示
+            </button>
+            <button class="gantt-zoom-btn" @onclick="ZoomOut" disabled="@(!CanZoomOut)" title="縮小">
+                −
+            </button>
+            <button class="gantt-zoom-btn" @onclick="ZoomIn" disabled="@(!CanZoomIn)" title="拡大">
+                +
+            </button>
+        </div>
+
         <div class="gantt-scroll-container">
             @* Header Row *@
             <div class="gantt-row gantt-header-row">
@@ -27,7 +40,7 @@
                 <div class="gantt-timeline-area">
                     @* Month Row *@
                     <div class="gantt-timeline-subrow">
-                        <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, minmax(40px, 1fr));">
+                        <div class="gantt-timeline-grid" style="grid-template-columns: @GetGridTemplateColumns();">
                             @foreach (var monthGroup in GetMonthGroups())
                             {
                                 <div class="gantt-month-cell" style="grid-column: @monthGroup.StartColumn / @monthGroup.EndColumn;">
@@ -38,12 +51,15 @@
                     </div>
                     @* Date Row *@
                     <div class="gantt-timeline-subrow">
-                        <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, minmax(40px, 1fr));">
+                        <div class="gantt-timeline-grid" style="grid-template-columns: @GetGridTemplateColumns();">
                             @for (int i = 0; i < TotalDays; i++)
                             {
                                 var date = TimelineStart.Value.AddDays(i);
                                 <div class="gantt-date-cell">
-                                    <div class="gantt-date-label">@date.Day</div>
+                                    @if (ShouldDisplayDateLabel(i))
+                                    {
+                                        <div class="gantt-date-label">@date.Day</div>
+                                    }
                                 </div>
                             }
                         </div>
@@ -62,7 +78,7 @@
                         </span>
                     </div>
                     <div class="gantt-timeline-area">
-                        <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, minmax(40px, 1fr));">
+                        <div class="gantt-timeline-grid" style="grid-template-columns: @GetGridTemplateColumns();">
                             @* Scheduled Bar *@
                             @if (ShouldDisplayBar(task.Id, "scheduled"))
                             {
@@ -130,9 +146,19 @@
     [Parameter]
     public bool IsReadOnly { get; set; } = false;
 
+    [Parameter]
+    public EventCallback<double> OnZoomChanged { get; set; }
+
     private DateTime? TimelineStart { get; set; }
     private DateTime? TimelineEnd { get; set; }
     private int TotalDays { get; set; }
+
+    // ズーム機能関連
+    private double zoomScale = 1.0; // 100%
+    private double baseColumnWidth = 40.0; // 基準セル幅
+    private double availableTimelineWidth = 0;
+    private static readonly double[] ZoomLevels = { 1.0, 1.5, 2.0, 3.0, 4.0 };
+    private int currentZoomLevelIndex = 0; // 初期値は1.0 (100%, 全体表示)
 
     private DotNetObjectReference<GanttChart>? dotNetRef;
     private bool scriptsInitialized = false;
@@ -273,7 +299,13 @@
                 dotNetRef = DotNetObjectReference.Create(this);
                 // Only initialize resize handles and pass dotnet ref for callbacks
                 await JSRuntime.InvokeVoidAsync("ganttScrollSync.initialize", dotNetRef);
+
+                // 画面幅を取得して基準セル幅を計算
+                availableTimelineWidth = await JSRuntime.InvokeAsync<double>("ganttZoom.getAvailableWidth");
+                CalculateBaseColumnWidth();
+
                 scriptsInitialized = true;
+                StateHasChanged();
             }
             catch (Exception ex)
             {
@@ -361,6 +393,9 @@
         TimelineStart = allDates.Min().Date;
         TimelineEnd = allDates.Max().Date;
         TotalDays = (int)(TimelineEnd.Value - TimelineStart.Value).TotalDays + 1;
+
+        // タイムライン変更時に基準セル幅を再計算
+        CalculateBaseColumnWidth();
     }
 
     private string GetGridColumn(DateTimeOffset startDate, DateTimeOffset endDate)
@@ -571,6 +606,106 @@
         {
             // UTC時刻でハッシュ化
             return HashCode.Combine(StartDate.UtcDateTime, EndDate.UtcDateTime);
+        }
+    }
+
+    // ========== ズーム機能 ==========
+
+    private void CalculateBaseColumnWidth()
+    {
+        if (TotalDays == 0 || availableTimelineWidth == 0)
+        {
+            baseColumnWidth = 40; // フォールバック
+            return;
+        }
+
+        baseColumnWidth = availableTimelineWidth / TotalDays;
+    }
+
+    private string GetGridTemplateColumns()
+    {
+        var cellWidth = GetActualCellWidth();
+        return $"repeat({TotalDays}, {cellWidth}px)";
+    }
+
+    private double GetActualCellWidth()
+    {
+        var width = baseColumnWidth * zoomScale;
+        // 最小8px、最大120pxに制限
+        return Math.Max(8, Math.Min(120, width));
+    }
+
+    private bool CanZoomIn => currentZoomLevelIndex < ZoomLevels.Length - 1;
+    private bool CanZoomOut => currentZoomLevelIndex > 0;
+
+    private async Task ZoomIn()
+    {
+        if (CanZoomIn)
+        {
+            currentZoomLevelIndex++;
+            await ApplyZoomLevel();
+        }
+    }
+
+    private async Task ZoomOut()
+    {
+        if (CanZoomOut)
+        {
+            currentZoomLevelIndex--;
+            await ApplyZoomLevel();
+        }
+    }
+
+    private async Task FitToScreen()
+    {
+        currentZoomLevelIndex = 0; // 100%（全体表示）にリセット
+        await ApplyZoomLevel();
+    }
+
+    private async Task ApplyZoomLevel()
+    {
+        zoomScale = ZoomLevels[currentZoomLevelIndex];
+
+        if (OnZoomChanged.HasDelegate)
+        {
+            await OnZoomChanged.InvokeAsync(zoomScale);
+        }
+
+        StateHasChanged();
+    }
+
+    private bool ShouldDisplayDateLabel(int dayIndex)
+    {
+        if (TimelineStart == null) return false;
+
+        var cellWidth = GetActualCellWidth();
+        var date = TimelineStart.Value.AddDays(dayIndex);
+
+        // セル幅に応じて表示頻度を調整
+        if (cellWidth >= 30)
+        {
+            // 広い: すべての日付を表示
+            return true;
+        }
+        else if (cellWidth >= 25)
+        {
+            // やや広い: 2日おき + 月初を表示
+            return date.Day == 1 || dayIndex % 2 == 0;
+        }
+        else if (cellWidth >= 18)
+        {
+            // 中程度: 3日おき + 月初を表示
+            return date.Day == 1 || dayIndex % 3 == 0;
+        }
+        else if (cellWidth >= 12)
+        {
+            // やや狭い: 5日おき + 月初を表示
+            return date.Day == 1 || date.Day % 5 == 0;
+        }
+        else
+        {
+            // 非常に狭い: 10日おき + 月初を表示
+            return date.Day == 1 || date.Day % 10 == 0;
         }
     }
 }

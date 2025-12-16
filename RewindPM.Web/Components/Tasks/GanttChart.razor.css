@@ -152,6 +152,7 @@
     /* Half of header height roughly, or explicitly sized */
     display: flex;
     border-bottom: 1px solid var(--border-subtle);
+    overflow: visible;
 }
 
 .gantt-timeline-subrow:last-child {
@@ -161,7 +162,7 @@
 /* Month/Date Cells */
 /* Re-use existing grid styles but adjust heights */
 .gantt-month-cell {
-    text-align: center;
+    text-align: left;
     font-size: 0.875rem;
     font-weight: 600;
     color: var(--text-secondary);
@@ -169,8 +170,8 @@
     box-sizing: border-box;
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 8px 0;
+    justify-content: flex-start;
+    padding: 8px 0 8px 8px;
     height: 32px;
 }
 
@@ -186,6 +187,13 @@
     justify-content: center;
     background: var(--bg-subtle);
     height: 32px;
+    overflow: visible;
+}
+
+.gantt-date-label {
+    white-space: nowrap;
+    position: relative;
+    z-index: 1;
 }
 
 /* Grid */
@@ -195,6 +203,7 @@
     height: 100%;
     box-sizing: border-box;
     align-items: center;
+    overflow: visible;
 }
 
 /* Adjust Row Height to match */
@@ -366,4 +375,44 @@
     .gantt-bar.fading-out {
         animation: none !important;
     }
+}
+
+/* ========================================
+   ズームツールバー
+   ======================================== */
+
+.gantt-zoom-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.gantt-zoom-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+    min-width: 36px;
+}
+
+.gantt-zoom-btn:hover:not(:disabled) {
+    background: var(--bg-subtle);
+    border-color: var(--primary);
+}
+
+.gantt-zoom-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.gantt-zoom-fit {
+    padding: 6px 16px;
 }
