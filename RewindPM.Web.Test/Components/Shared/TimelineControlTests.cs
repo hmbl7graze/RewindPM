@@ -581,5 +581,150 @@ public class TimelineControlTests : Bunit.TestContext
     }
 
     #endregion
+
+    #region カレンダーピッカーのテスト
+
+    [Fact(DisplayName = "カレンダーピッカーボタンが表示される")]
+    public void TimelineControl_CalendarButtonVisible()
+    {
+        // Arrange & Act
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
+
+        // Assert
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        Assert.NotNull(calendarButton);
+        Assert.Equal("📅", calendarButton.TextContent.Trim());
+    }
+
+    [Fact(DisplayName = "編集日がない場合、カレンダーピッカーボタンが無効化される")]
+    public void TimelineControl_CalendarButtonDisabled_WhenNoEditDates()
+    {
+        // Arrange & Act
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, new List<DateTimeOffset>()));
+
+        // Assert
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        Assert.True(calendarButton.HasAttribute("disabled"));
+    }
+
+    [Fact(DisplayName = "編集日がある場合、カレンダーピッカーボタンが有効化される")]
+    public void TimelineControl_CalendarButtonEnabled_WhenEditDatesExist()
+    {
+        // Arrange & Act
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
+
+        // Assert
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        Assert.False(calendarButton.HasAttribute("disabled"));
+    }
+
+    [Fact(DisplayName = "カレンダーピッカーは初期状態で非表示")]
+    public void TimelineControl_CalendarHidden_Initially()
+    {
+        // Arrange & Act
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
+
+        // Assert
+        var calendarDropdowns = cut.FindAll(".timeline-calendar-dropdown");
+        Assert.Empty(calendarDropdowns);
+    }
+
+    [Fact(DisplayName = "カレンダーボタンをクリックするとカレンダーが表示される")]
+    public void TimelineControl_CalendarShown_WhenButtonClicked()
+    {
+        // Arrange
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        // Assert
+        var calendarDropdown = cut.Find(".timeline-calendar-dropdown");
+        Assert.NotNull(calendarDropdown);
+    }
+
+    [Fact(DisplayName = "カレンダーに曜日が表示される")]
+    public void TimelineControl_CalendarShowsWeekdays()
+    {
+        // Arrange
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        // Assert
+        var weekdays = cut.FindAll(".calendar-weekday");
+        Assert.Equal(7, weekdays.Count);
+        Assert.Equal("日", weekdays[0].TextContent);
+        Assert.Equal("土", weekdays[6].TextContent);
+    }
+
+    [Fact(DisplayName = "最小日付から最大日付の範囲内の日付が選択可能")]
+    public void TimelineControl_EnablesDateRangeBetweenMinAndMax()
+    {
+        // Arrange
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
+        };
+
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        // Assert
+        var allDays = cut.FindAll(".calendar-day");
+        var enabledDays = allDays.Where(d => !d.HasAttribute("disabled")).ToList();
+
+        // 1/5から1/15までの11日間が有効
+        Assert.Equal(11, enabledDays.Count);
+    }
+
+    [Fact(DisplayName = "EditDatesに含まれる日付にはedit-dateクラスが付与される")]
+    public void TimelineControl_AddsEditDateClass_ToEditDates()
+    {
+        // Arrange
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
+        };
+
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        // Assert
+        var editDateDays = cut.FindAll(".calendar-day.edit-date");
+
+        // EditDatesの3日間にedit-dateクラスが付与される
+        Assert.Equal(3, editDateDays.Count);
+    }
+
+    #endregion
 }
 

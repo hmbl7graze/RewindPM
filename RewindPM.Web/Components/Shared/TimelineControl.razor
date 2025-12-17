@@ -1,4 +1,51 @@
 <div class="timeline-toolbar @(IsViewingPast ? "viewing-past" : "")">
+    <div class="timeline-calendar-wrapper">
+        <button
+            class="timeline-btn timeline-btn-calendar"
+            @onclick="ToggleCalendarPicker"
+            disabled="@(!HasEditDates)"
+            title="カレンダーから日付を選択"
+            type="button">
+            📅
+        </button>
+
+        @if (_isCalendarOpen)
+        {
+            <div class="timeline-calendar-dropdown" @onclick:stopPropagation="true">
+                <div class="calendar-header">
+                    <button class="calendar-nav-btn" @onclick="PreviousMonth" type="button">◀</button>
+                    <div class="calendar-month-year">
+                        @_displayMonth.ToString("yyyy年 M月")
+                    </div>
+                    <button class="calendar-nav-btn" @onclick="NextMonth" type="button">▶</button>
+                </div>
+                <div class="calendar-grid">
+                    <div class="calendar-weekdays">
+                        <div class="calendar-weekday">日</div>
+                        <div class="calendar-weekday">月</div>
+                        <div class="calendar-weekday">火</div>
+                        <div class="calendar-weekday">水</div>
+                        <div class="calendar-weekday">木</div>
+                        <div class="calendar-weekday">金</div>
+                        <div class="calendar-weekday">土</div>
+                    </div>
+                    <div class="calendar-days">
+                        @foreach (var day in GetCalendarDays())
+                        {
+                            <button
+                                class="calendar-day @GetDayClass(day)"
+                                @onclick="() => SelectDate(day)"
+                                disabled="@(!IsDateSelectable(day))"
+                                type="button">
+                                @(day.Day)
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
     <button
         class="timeline-btn timeline-btn-prev"
         @onclick="MoveToPrevious"
@@ -70,6 +117,9 @@
 @inject ILogger<TimelineControl> Logger
 
 @code {
+    private bool _isCalendarOpen = false;
+    private DateTime _displayMonth;
+
     /// <summary>
     /// 現在表示中の日付（nullの場合は最新）
     /// </summary>
@@ -343,5 +393,157 @@
     private bool IsValidEditDateIndex(int index)
     {
         return index >= 0 && index < EditDates?.Count;
+    }
+
+    protected override void OnInitialized()
+    {
+        // 初期表示月を設定（現在の日付または最新の編集日）
+        _displayMonth = CurrentDate?.DateTime ?? EditDates?.FirstOrDefault().DateTime ?? DateTime.Now;
+    }
+
+    /// <summary>
+    /// カレンダーピッカーの開閉を切り替え
+    /// </summary>
+    private void ToggleCalendarPicker()
+    {
+        _isCalendarOpen = !_isCalendarOpen;
+        if (_isCalendarOpen)
+        {
+            // カレンダーを開くときに表示月を設定
+            _displayMonth = CurrentDate?.DateTime ?? EditDates?.FirstOrDefault().DateTime ?? DateTime.Now;
+        }
+    }
+
+    /// <summary>
+    /// 前月へ移動
+    /// </summary>
+    private void PreviousMonth()
+    {
+        _displayMonth = _displayMonth.AddMonths(-1);
+    }
+
+    /// <summary>
+    /// 次月へ移動
+    /// </summary>
+    private void NextMonth()
+    {
+        _displayMonth = _displayMonth.AddMonths(1);
+    }
+
+    /// <summary>
+    /// カレンダーに表示する日付のリストを取得
+    /// </summary>
+    private List<DateTime> GetCalendarDays()
+    {
+        var days = new List<DateTime>();
+        var firstDayOfMonth = new DateTime(_displayMonth.Year, _displayMonth.Month, 1);
+        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+
+        // 月初の曜日を取得（日曜日=0）
+        var firstDayOfWeek = (int)firstDayOfMonth.DayOfWeek;
+
+        // 前月の日付を追加（月初が日曜日でない場合）
+        var startDate = firstDayOfMonth.AddDays(-firstDayOfWeek);
+
+        // 6週間分（42日）表示
+        for (int i = 0; i < 42; i++)
+        {
+            days.Add(startDate.AddDays(i));
+        }
+
+        return days;
+    }
+
+    /// <summary>
+    /// 日付が選択可能かどうか（最小日付から最大日付の範囲内）
+    /// </summary>
+    private bool IsDateSelectable(DateTime date)
+    {
+        if (!HasEditDates)
+            return false;
+
+        var minDate = EditDates!.Min().Date;
+        var maxDate = EditDates!.Max().Date;
+
+        // 最小日付から最大日付の範囲内であれば選択可能
+        return date.Date >= minDate && date.Date <= maxDate;
+    }
+
+    /// <summary>
+    /// EditDatesに含まれる日付かどうか
+    /// </summary>
+    private bool IsEditDate(DateTime date)
+    {
+        if (!HasEditDates)
+            return false;
+
+        return EditDates!.Any(d => d.Date == date.Date);
+    }
+
+    /// <summary>
+    /// 日付のCSSクラスを取得
+    /// </summary>
+    private string GetDayClass(DateTime date)
+    {
+        var classes = new List<string>();
+
+        // 当月以外の日付
+        if (date.Month != _displayMonth.Month)
+        {
+            classes.Add("other-month");
+        }
+
+        // EditDatesに含まれる日付
+        if (IsEditDate(date))
+        {
+            classes.Add("edit-date");
+        }
+
+        // 選択中の日付
+        if (CurrentDate.HasValue && date.Date == CurrentDate.Value.Date)
+        {
+            classes.Add("selected");
+        }
+
+        // 今日
+        if (date.Date == DateTime.Today)
+        {
+            classes.Add("today");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    /// <summary>
+    /// 日付を選択
+    /// </summary>
+    private async Task SelectDate(DateTime date)
+    {
+        if (!IsDateSelectable(date))
+            return;
+
+        // EditDatesに含まれる日付か確認
+        var matchingDate = EditDates!.FirstOrDefault(d => d.Date == date.Date);
+
+        if (matchingDate != default(DateTimeOffset))
+        {
+            // EditDatesに含まれる日付の場合
+            await OnDateChanged.InvokeAsync(matchingDate);
+        }
+        else
+        {
+            // EditDatesに含まれていない日付の場合、最も近い日付を探す
+            var closestDate = EditDates!
+                .OrderBy(d => Math.Abs((d.Date - date.Date).TotalDays))
+                .First();
+
+            Logger.LogInformation(
+                "選択された日付 {SelectedDate} はEditDatesに含まれていません。最も近い日付 {ClosestDate} を使用します。",
+                date, closestDate);
+
+            await OnDateChanged.InvokeAsync(closestDate);
+        }
+
+        _isCalendarOpen = false; // カレンダーを閉じる
     }
 }
