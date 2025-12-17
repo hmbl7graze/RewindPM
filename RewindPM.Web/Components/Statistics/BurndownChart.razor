@@ -173,7 +173,7 @@ else
             {
                 var snapshots = timeSeriesData.DailySnapshots;
 
-                // 実績線データを作成（リワインド時はAsOfDateまでの「日付」までのデータのみ）
+                // 実績線データを作成（リワインド時はAsOfDateまでの「日付」までのデータのみを表示）
                 _actualData = snapshots
                     .Where(s => !actualDataEndDate.HasValue || s.Date.Date <= actualDataEndDate.Value.Date)
                     .Select(s => new ChartDataPoint
