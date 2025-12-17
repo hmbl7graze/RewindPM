@@ -69,17 +69,13 @@ window.ganttZoom = {
         }
 
         const toolbar = e.currentTarget;
-        const container = toolbar.closest('.gantt-scroll-container');
-        if (!container) return;
-
         const toolbarRect = toolbar.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
 
-        // コンテナ内の相対位置を計算
-        const currentTop = toolbarRect.top - containerRect.top + container.scrollTop;
-        const currentLeft = toolbarRect.left - containerRect.left + container.scrollLeft;
+        // viewport 内での現在位置を取得
+        const currentTop = toolbarRect.top;
+        const currentLeft = toolbarRect.left;
 
-        // absolute位置を設定
+        // fixed 位置を設定
         toolbar.style.top = `${currentTop}px`;
         toolbar.style.left = `${currentLeft}px`;
         toolbar.style.bottom = 'auto';
@@ -91,7 +87,6 @@ window.ganttZoom = {
 
         this.dragState = {
             toolbar: toolbar,
-            container: container,
             offsetX: offsetX,
             offsetY: offsetY
         };
@@ -106,11 +101,10 @@ window.ganttZoom = {
         if (!window.ganttZoom.dragState) return;
 
         const state = window.ganttZoom.dragState;
-        const containerRect = state.container.getBoundingClientRect();
 
-        // マウスの位置からコンテナの位置とオフセットを引いた相対位置を計算
-        const newLeft = e.clientX - containerRect.left - state.offsetX + state.container.scrollLeft;
-        const newTop = e.clientY - containerRect.top - state.offsetY + state.container.scrollTop;
+        // viewport 内での位置を計算
+        const newLeft = e.clientX - state.offsetX;
+        const newTop = e.clientY - state.offsetY;
 
         // ツールバーの位置を更新
         state.toolbar.style.left = `${newLeft}px`;

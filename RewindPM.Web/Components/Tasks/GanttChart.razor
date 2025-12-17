@@ -240,8 +240,6 @@
         {
             try
             {
-                await LoadZoomLevelsFromStorage();
-
                 dotNetRef = DotNetObjectReference.Create(this);
                 await JSRuntime.InvokeVoidAsync("ganttScrollSync.initialize", dotNetRef);
 
@@ -249,6 +247,9 @@
                 availableTimelineHeight = await JSRuntime.InvokeAsync<double>("ganttZoom.getAvailableHeight");
                 _zoomManager.CalculateBaseColumnWidth(TotalDays, availableTimelineWidth);
                 _zoomManager.CalculateBaseRowHeight(Tasks?.Count ?? 0, availableTimelineHeight);
+
+                await LoadZoomLevelsFromStorage();
+                UpdateGridTemplateColumns();
 
                 await JSRuntime.InvokeVoidAsync("ganttZoom.initializeDraggableToolbar");
 
