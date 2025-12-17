@@ -1,16 +1,18 @@
-// ガントチャートのスクロール同期とリサイズ
+// ガントチャートのスクロール同期とリサイズ機能
 window.ganttScrollSync = {
+    // 状態管理
     timelineScroll: null,
     wheelHandler: null,
     dotNetRef: null,
     resizeState: null,
 
+    /**
+     * ガントチャートのリサイズハンドル機能を初期化
+     * @param {DotNetObjectReference} dotNetReference - .NETオブジェクトへの参照
+     */
     initialize: function (dotNetReference) {
         this.dispose();
-
         this.dotNetRef = dotNetReference;
-
-        // リサイズハンドルのイベントリスナーを設定
         this.initializeResizeHandles();
     },
 

@@ -1,41 +1,49 @@
 // ガントチャートのズーム機能
 window.ganttZoom = {
+    // 定数定義（GanttConstants.cs と一致させる）
+    CONSTANTS: {
+        TASK_NAME_WIDTH: 280,
+        SCROLLBAR_WIDTH: 15,
+        HEADER_HEIGHT: 64,
+        MARGIN: 20,
+        MIN_AVAILABLE_WIDTH: 100,
+        MIN_AVAILABLE_HEIGHT: 100,
+        FALLBACK_WIDTH: 800,
+        FALLBACK_HEIGHT: 600
+    },
+
     dragState: null,
 
     getAvailableWidth: function() {
         const ganttScrollContainer = document.querySelector('.gantt-scroll-container');
         if (!ganttScrollContainer) {
             console.warn('gantt-scroll-container not found, using fallback width');
-            return 800; // フォールバック
+            return this.CONSTANTS.FALLBACK_WIDTH;
         }
 
         const chartWidth = ganttScrollContainer.clientWidth;
-        const taskNameWidth = 280; // .gantt-sticky-left の幅
-        const scrollbarWidth = 15; // スクロールバーの概算幅
-        const margin = 20; // マージン
+        const availableWidth = chartWidth
+            - this.CONSTANTS.TASK_NAME_WIDTH
+            - this.CONSTANTS.SCROLLBAR_WIDTH
+            - this.CONSTANTS.MARGIN;
 
-        const availableWidth = chartWidth - taskNameWidth - scrollbarWidth - margin;
-
-        // 最小幅を保証
-        return Math.max(100, availableWidth);
+        return Math.max(this.CONSTANTS.MIN_AVAILABLE_WIDTH, availableWidth);
     },
 
     getAvailableHeight: function() {
         const ganttScrollContainer = document.querySelector('.gantt-scroll-container');
         if (!ganttScrollContainer) {
             console.warn('gantt-scroll-container not found, using fallback height');
-            return 600; // フォールバック
+            return this.CONSTANTS.FALLBACK_HEIGHT;
         }
 
         const containerHeight = ganttScrollContainer.clientHeight;
-        const headerHeight = 64; // ヘッダー行の高さ（月行32px + 日付行32px）
-        const scrollbarHeight = 15; // スクロールバーの概算高さ
-        const margin = 20; // マージン
+        const availableHeight = containerHeight
+            - this.CONSTANTS.HEADER_HEIGHT
+            - this.CONSTANTS.SCROLLBAR_WIDTH
+            - this.CONSTANTS.MARGIN;
 
-        const availableHeight = containerHeight - headerHeight - scrollbarHeight - margin;
-
-        // 最小高さを保証
-        return Math.max(100, availableHeight);
+        return Math.max(this.CONSTANTS.MIN_AVAILABLE_HEIGHT, availableHeight);
     },
 
     initializeDraggableToolbar: function() {
