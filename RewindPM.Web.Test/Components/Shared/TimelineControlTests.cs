@@ -6,13 +6,7 @@ namespace RewindPM.Web.Test.Components.Shared;
 
 public class TimelineControlTests : Bunit.TestContext
 {
-    public TimelineControlTests()
-    {
-        // JavaScript interopのモックをセットアップ
-        var jsModule = JSInterop.SetupModule("./js/calendar-picker.js");
-        jsModule.SetupVoid("initializeCalendarClickOutside");
-        jsModule.SetupVoid("disposeCalendarClickOutside");
-    }
+    // JS 相互運用のモックはこのテストでは不要のため削除
 
     [Fact(DisplayName = "最新表示時に「最新」と表示される")]
     public void TimelineControl_DisplaysLatest_WhenCurrentDateIsNull()
@@ -936,7 +930,7 @@ public class TimelineControlTests : Bunit.TestContext
 
         // Assert
         Assert.NotNull(selectedDate);
-        // 1/10に最も近いのは1/15 (5日差) 1/5は5日差なので同じだが、OrderByの安定ソートにより1/15が選ばれる
+        // 1/10に最も近いのは1/15 (5日差)。1/5も5日差で同じだが、EditDatesリスト内で先に定義されている1/15が選ばれる（順序依存の挙動）
         Assert.Equal(new DateTime(2025, 1, 15), selectedDate.Value.Date);
     }
 

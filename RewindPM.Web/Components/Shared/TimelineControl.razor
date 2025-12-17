@@ -129,7 +129,7 @@
     private DateTime? _minDate;
     private DateTime? _maxDate;
     private List<DateTime>? _cachedCalendarDays;
-    private DateTime _cachedCalendarMonth;
+    private DateTime _cachedCalendarMonth = DateTime.MinValue;
 
     /// <summary>
     /// 現在表示中の日付(nullの場合は最新)
@@ -406,12 +406,6 @@
         return index >= 0 && index < EditDates?.Count;
     }
 
-    protected override void OnInitialized()
-    {
-        UpdateCachedData();
-        UpdateDisplayMonth();
-    }
-
     protected override void OnParametersSet()
     {
         UpdateCachedData();
@@ -617,12 +611,12 @@
             return;
 
         // EditDatesに含まれる日付か確認
-        var matchingDate = EditDates!.Where(d => d.Date == date.Date).Cast<DateTimeOffset?>().FirstOrDefault();
+        var matchingDate = EditDates!.FirstOrDefault(d => d.Date == date.Date);
 
-        if (matchingDate.HasValue)
+        if (matchingDate != default(DateTimeOffset))
         {
             // EditDatesに含まれる日付の場合
-            await OnDateChanged.InvokeAsync(matchingDate.Value);
+            await OnDateChanged.InvokeAsync(matchingDate);
         }
         else
         {
