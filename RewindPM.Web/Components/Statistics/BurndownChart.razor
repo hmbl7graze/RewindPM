@@ -102,31 +102,80 @@ else
             var editDates = await Mediator.Send(editDatesQuery);
 
             DateTimeOffset startDate;
-            DateTimeOffset endDate;
+            DateTimeOffset chartEndDate;  // チャート表示範囲の終了日
+            DateTimeOffset? actualDataEndDate;  // 実績データの終了日(リワインドモード時はAsOfDate、通常モード時はnull)
 
             if (editDates != null && editDates.Any())
             {
                 // 最初の編集日から開始
                 startDate = editDates.First();
-                // リワインド時はAsOfDate、通常時は最後の編集日または現在日時
-                endDate = AsOfDate ?? editDates.Last();
+                // リワインドモード時のみ実績データ終了日を設定
+                actualDataEndDate = AsOfDate;
             }
             else
             {
                 // フォールバック: 編集履歴がない場合は30日前から
-                endDate = AsOfDate ?? DateTimeOffset.UtcNow;
-                startDate = endDate.AddDays(-30);
+                // この場合は実績データ終了日をAsOfDateまたは現在日時として、開始日を30日前とする
+                var fallbackDate = AsOfDate ?? DateTimeOffset.UtcNow;
+                actualDataEndDate = AsOfDate;  // リワインドモード時のみ設定
+                startDate = fallbackDate.AddDays(-30);
             }
 
-            var query = new GetProjectStatisticsTimeSeriesQuery(ProjectId, startDate, endDate);
+            // 開始時点でのタスク一覧を取得して、プロジェクトの終了日を決定
+            var tasksQuery = new GetTasksByProjectIdAtTimeQuery(ProjectId, startDate);
+            var tasksAtStart = await Mediator.Send(tasksQuery);
+
+            if (tasksAtStart != null && tasksAtStart.Any())
+            {
+                // ScheduledEndDate を持つタスクが一つもない場合のフォールバック値を事前に計算する
+                var fallbackEndDate = actualDataEndDate
+                    ?? (editDates != null && editDates.Any()
+                        ? editDates.Last()
+                        : startDate.AddDays(30));
+
+                // タスクの最も遅い予定終了日をチャートの終了日とする
+                var latestScheduledEndDate = tasksAtStart
+                    .Where(t => t.ScheduledEndDate.HasValue)
+                    .Select(t => t.ScheduledEndDate!.Value)
+                    .DefaultIfEmpty(fallbackEndDate)
+                    .Max();
+
+                chartEndDate = latestScheduledEndDate;
+
+                // リワインドモードでない場合は、現在の編集日の最新まで表示
+                if (!AsOfDate.HasValue && editDates != null && editDates.Any())
+                {
+                    chartEndDate = new[] { chartEndDate, editDates.Last() }.Max();
+                }
+            }
+            else
+            {
+                // タスクがない場合
+                // リワインドモードの場合はAsOfDate、通常モードの場合は最後の編集日またはDateTimeOffset.UtcNow
+                if (actualDataEndDate.HasValue)
+                {
+                    chartEndDate = actualDataEndDate.Value;
+                }
+                else if (editDates != null && editDates.Any())
+                {
+                    chartEndDate = editDates.Last();
+                }
+                else
+                {
+                    chartEndDate = DateTimeOffset.UtcNow;
+                }
+            }
+
+            var query = new GetProjectStatisticsTimeSeriesQuery(ProjectId, startDate, chartEndDate);
             var timeSeriesData = await Mediator.Send(query);
 
             if (timeSeriesData != null && timeSeriesData.DailySnapshots.Any())
             {
                 var snapshots = timeSeriesData.DailySnapshots;
 
-                // 実績線データを作成
+                // 実績線データを作成（リワインド時はAsOfDateまでの「日付」までのデータのみを表示）
                 _actualData = snapshots
+                    .Where(s => !actualDataEndDate.HasValue || s.Date.Date <= actualDataEndDate.Value.Date)
                     .Select(s => new ChartDataPoint
                     {
                         X = s.Date,
@@ -135,10 +184,6 @@ else
                     .ToList();
 
                 // 理想線データを作成：開始時点でのタスクの予定終了日に基づいて計算
-                // 開始時点でのタスク一覧を取得
-                var tasksQuery = new GetTasksByProjectIdAtTimeQuery(ProjectId, startDate);
-                var tasksAtStart = await Mediator.Send(tasksQuery);
-
                 if (tasksAtStart != null && tasksAtStart.Any())
                 {
                     var totalTasks = tasksAtStart.Count;
