@@ -69,21 +69,29 @@ window.ganttZoom = {
         }
 
         const toolbar = e.currentTarget;
-        const rect = toolbar.getBoundingClientRect();
+        const container = toolbar.closest('.gantt-scroll-container');
+        if (!container) return;
 
-        // bottom/rightからtop/leftへの切り替え
-        // 現在の位置を取得してtop/leftに設定
-        toolbar.style.top = `${rect.top}px`;
-        toolbar.style.left = `${rect.left}px`;
+        const toolbarRect = toolbar.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+
+        // コンテナ内の相対位置を計算
+        const currentTop = toolbarRect.top - containerRect.top + container.scrollTop;
+        const currentLeft = toolbarRect.left - containerRect.left + container.scrollLeft;
+
+        // absolute位置を設定
+        toolbar.style.top = `${currentTop}px`;
+        toolbar.style.left = `${currentLeft}px`;
         toolbar.style.bottom = 'auto';
         toolbar.style.right = 'auto';
 
         // クリック位置のツールバー内でのオフセットを計算
-        const offsetX = e.clientX - rect.left;
-        const offsetY = e.clientY - rect.top;
+        const offsetX = e.clientX - toolbarRect.left;
+        const offsetY = e.clientY - toolbarRect.top;
 
         this.dragState = {
             toolbar: toolbar,
+            container: container,
             offsetX: offsetX,
             offsetY: offsetY
         };
@@ -98,15 +106,17 @@ window.ganttZoom = {
         if (!window.ganttZoom.dragState) return;
 
         const state = window.ganttZoom.dragState;
+        const containerRect = state.container.getBoundingClientRect();
 
-        // マウスの位置からツールバー内のオフセットを引いた位置にツールバーを配置
-        const newLeft = e.clientX - state.offsetX;
-        const newTop = e.clientY - state.offsetY;
+        // マウスの位置からコンテナの位置とオフセットを引いた相対位置を計算
+        const newLeft = e.clientX - containerRect.left - state.offsetX + state.container.scrollLeft;
+        const newTop = e.clientY - containerRect.top - state.offsetY + state.container.scrollTop;
 
         // ツールバーの位置を更新
         state.toolbar.style.left = `${newLeft}px`;
         state.toolbar.style.top = `${newTop}px`;
-        state.toolbar.style.right = 'auto'; // rightを無効化
+        state.toolbar.style.right = 'auto';
+        state.toolbar.style.bottom = 'auto';
     },
 
     onMouseUp: () => {
@@ -116,5 +126,11 @@ window.ganttZoom = {
         document.removeEventListener('mouseup', window.ganttZoom.onMouseUp);
 
         window.ganttZoom.dragState = null;
+    },
+
+    dispose: function() {
+        document.removeEventListener('mousemove', this.onMouseMove);
+        document.removeEventListener('mouseup', this.onMouseUp);
+        this.dragState = null;
     }
 };

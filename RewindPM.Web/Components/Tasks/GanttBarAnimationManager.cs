@@ -117,11 +117,8 @@ public class GanttBarAnimationManager
             _fadingOutBars.Add(barKey);
         }
 
-        // 表示バーは前回の状態を維持（削除されるバーも表示し続ける）
+        // 表示バーは前回の状態を維持(削除されるバーも表示し続ける)
         _displayBarStates = _previousBarStates.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-
-        // 変更検出も実行（他のバーの変更を検出）
-        DetectChanges();
     }
 
     /// <summary>
@@ -139,40 +136,6 @@ public class GanttBarAnimationManager
     public void UpdateDisplayBarStates()
     {
         _displayBarStates = _previousBarStates.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-    }
-
-    /// <summary>
-    /// バーの変更を検出
-    /// </summary>
-    public void DetectChanges()
-    {
-        var newBarsToAnimate = new HashSet<string>();
-        var currentBarStates = new Dictionary<string, BarState>();
-
-        foreach (var kvp in _previousBarStates)
-        {
-            currentBarStates[kvp.Key] = kvp.Value;
-        }
-
-        foreach (var kvp in currentBarStates)
-        {
-            var key = kvp.Key;
-            var currentState = kvp.Value;
-
-            if (_previousBarStates.TryGetValue(key, out var previousState))
-            {
-                if (!previousState.Equals(currentState))
-                {
-                    newBarsToAnimate.Add(key);
-                }
-            }
-            else
-            {
-                newBarsToAnimate.Add(key);
-            }
-        }
-
-        _barsToAnimate = newBarsToAnimate;
     }
 
     /// <summary>

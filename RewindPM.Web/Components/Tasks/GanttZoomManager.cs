@@ -74,7 +74,7 @@ public class GanttZoomManager
     {
         if (_isBaseColumnWidthCalculated && !force) return;
 
-        if (totalDays == 0 || availableWidth == 0)
+        if (totalDays <= 0 || availableWidth <= 0.0)
         {
             _baseColumnWidth = GanttConstants.CellWidth.DefaultBase;
             return;
@@ -94,7 +94,7 @@ public class GanttZoomManager
     {
         if (_isBaseRowHeightCalculated && !force) return;
 
-        if (taskCount == 0 || availableHeight == 0)
+        if (taskCount <= 0 || availableHeight <= 0.0)
         {
             _baseRowHeight = GanttConstants.RowHeight.DefaultBase;
             return;
@@ -251,11 +251,11 @@ public class GanttZoomManager
         }
         else if (cellWidth >= GanttConstants.DateLabel.ShowEvery5DaysThreshold)
         {
-            return day == 1 || day % 5 == 0;
+            return day == 1 || dayIndex % 5 == 0;
         }
         else
         {
-            return day == 1 || day % 10 == 0;
+            return day == 1 || dayIndex % 10 == 0;
         }
     }
 }

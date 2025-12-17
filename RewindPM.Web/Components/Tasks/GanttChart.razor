@@ -23,24 +23,24 @@
         <div class="gantt-scroll-container" style="@(scriptsInitialized ? "" : "visibility: hidden;")">
             @* Zoom Toolbar - Floating at top-right *@
             <div class="gantt-zoom-toolbar">
-                <button class="gantt-zoom-btn gantt-zoom-fit" @onclick="FitToScreen" title="全体を表示">
+                <button class="gantt-zoom-btn gantt-zoom-fit" @onclick="FitToScreen" disabled="@IsLoading" title="全体を表示" aria-label="全体を表示">
                     全体を表示
                 </button>
                 <div class="gantt-zoom-group">
                     <span class="gantt-zoom-label">横:</span>
-                    <button class="gantt-zoom-btn" @onclick="ZoomOutHorizontal" disabled="@(!CanZoomOutHorizontal)" title="横方向縮小">
+                    <button class="gantt-zoom-btn" @onclick="ZoomOutHorizontal" disabled="@(!CanZoomOutHorizontal || IsLoading)" title="横方向縮小" aria-label="横方向縮小">
                         −
                     </button>
-                    <button class="gantt-zoom-btn" @onclick="ZoomInHorizontal" disabled="@(!CanZoomInHorizontal)" title="横方向拡大">
+                    <button class="gantt-zoom-btn" @onclick="ZoomInHorizontal" disabled="@(!CanZoomInHorizontal || IsLoading)" title="横方向拡大" aria-label="横方向拡大">
                         +
                     </button>
                 </div>
                 <div class="gantt-zoom-group">
                     <span class="gantt-zoom-label">縦:</span>
-                    <button class="gantt-zoom-btn" @onclick="ZoomOutVertical" disabled="@(!CanZoomOutVertical)" title="縦方向縮小">
+                    <button class="gantt-zoom-btn" @onclick="ZoomOutVertical" disabled="@(!CanZoomOutVertical || IsLoading)" title="縦方向縮小" aria-label="縦方向縮小">
                         −
                     </button>
-                    <button class="gantt-zoom-btn" @onclick="ZoomInVertical" disabled="@(!CanZoomInVertical)" title="縦方向拡大">
+                    <button class="gantt-zoom-btn" @onclick="ZoomInVertical" disabled="@(!CanZoomInVertical || IsLoading)" title="縦方向拡大" aria-label="縦方向拡大">
                         +
                     </button>
                 </div>
@@ -158,6 +158,9 @@
     public bool IsReadOnly { get; set; } = false;
 
     [Parameter]
+    public bool IsLoading { get; set; } = false;
+
+    [Parameter]
     public EventCallback<double> OnZoomChanged { get; set; }
 
     // ヘルパークラス
@@ -170,6 +173,9 @@
 
     private DotNetObjectReference<GanttChart>? dotNetRef;
     private bool scriptsInitialized = false;
+
+    // キャッシュフィールド
+    private string? _gridTemplateColumns;
 
     // ヘルパープロパティ
     private DateTime? TimelineStart => _timelineCalculator.TimelineStart;
@@ -196,6 +202,7 @@
             // タイムラインが変更された場合、基準値を再計算
             _zoomManager.CalculateBaseColumnWidth(TotalDays, availableTimelineWidth);
             _zoomManager.CalculateBaseRowHeight(Tasks?.Count ?? 0, availableTimelineHeight);
+            UpdateGridTemplateColumns();
         }
     }
 
@@ -354,10 +361,15 @@
 
     // ========== ズーム機能 ==========
 
-    private string GetGridTemplateColumns()
+    private void UpdateGridTemplateColumns()
     {
         var cellWidth = _zoomManager.GetActualCellWidth();
-        return $"repeat({TotalDays}, {cellWidth}px)";
+        _gridTemplateColumns = $"repeat({TotalDays}, {cellWidth}px)";
+    }
+
+    private string GetGridTemplateColumns()
+    {
+        return _gridTemplateColumns ?? string.Empty;
     }
 
     private string GetRowHeightStyle()
@@ -408,6 +420,7 @@
         if (_zoomManager.CanZoomInHorizontal)
         {
             _zoomManager.ZoomInHorizontal();
+            UpdateGridTemplateColumns();
             await SaveZoomLevelsToStorage();
             if (OnZoomChanged.HasDelegate)
             {
@@ -422,6 +435,7 @@
         if (_zoomManager.CanZoomOutHorizontal)
         {
             _zoomManager.ZoomOutHorizontal();
+            UpdateGridTemplateColumns();
             await SaveZoomLevelsToStorage();
             if (OnZoomChanged.HasDelegate)
             {
@@ -454,6 +468,7 @@
     private async Task FitToScreen()
     {
         _zoomManager.FitToScreen(TotalDays, Tasks?.Count ?? 0, availableTimelineWidth, availableTimelineHeight);
+        UpdateGridTemplateColumns();
         await SaveZoomLevelsToStorage();
         if (OnZoomChanged.HasDelegate)
         {

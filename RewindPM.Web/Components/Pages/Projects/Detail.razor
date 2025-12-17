@@ -91,7 +91,8 @@ else
                                 OnTaskClick="ShowTaskDetailModal"
                                 OnBarResize="HandleBarResize"
                                 ViewDate="_currentViewDate"
-                                IsReadOnly="_isViewingPast" />
+                                IsReadOnly="_isViewingPast"
+                                IsLoading="@isLoadingTasks" />
                 </div>
             }
             else if (_viewType == "Statistics")
