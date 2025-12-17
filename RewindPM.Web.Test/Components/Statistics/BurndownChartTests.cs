@@ -559,7 +559,7 @@ public class BurndownChartTests : Bunit.TestContext
         _mediatorMock.Send(Arg.Any<GetTasksByProjectIdAtTimeQuery>(), Arg.Any<CancellationToken>())
             .Returns(tasksAtStart);
 
-        // 時系列データ
+        // 時系列データ（latestScheduledEndDateまでのデータ）
         var timeSeriesData = new ProjectStatisticsTimeSeriesDto
         {
             ProjectId = projectId,
@@ -573,11 +573,6 @@ public class BurndownChartTests : Bunit.TestContext
                 new DailyStatisticsSnapshot
                 {
                     Date = asOfDate, TotalTasks = 2, CompletedTasks = 1,
-                    InProgressTasks = 0, InReviewTasks = 0, TodoTasks = 1
-                },
-                new DailyStatisticsSnapshot
-                {
-                    Date = latestScheduledEndDate, TotalTasks = 2, CompletedTasks = 1,
                     InProgressTasks = 0, InReviewTasks = 0, TodoTasks = 1
                 }
             }
@@ -665,6 +660,117 @@ public class BurndownChartTests : Bunit.TestContext
 
         Assert.NotNull(actualData);
         Assert.Equal(2, actualData!.Count); // startDateとasOfDateの2件のみ（futureDateは含まれない）
+    }
+
+    [Fact(DisplayName = "BurndownChart: 通常モード時、タスクの予定終了日が編集日より前の場合")]
+    public async Task BurndownChart_WithoutAsOfDate_ScheduledEndDateBeforeLastEditDate()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var startDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var scheduledEndDate = new DateTimeOffset(2024, 1, 15, 0, 0, 0, TimeSpan.Zero);
+        var lastEditDate = new DateTimeOffset(2024, 1, 31, 0, 0, 0, TimeSpan.Zero);
+
+        // 編集日一覧
+        var editDates = new List<DateTimeOffset> { startDate, scheduledEndDate, lastEditDate };
+        _mediatorMock.Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(editDates);
+
+        // タスク一覧（予定終了日が編集日の最終日より前）
+        var tasksAtStart = new List<TaskDto>
+        {
+            new TaskDto { Id = Guid.NewGuid(), ProjectId = projectId, Title = "Task1", Description = "",
+                Status = TaskStatus.Todo, ScheduledEndDate = scheduledEndDate,
+                CreatedAt = startDate, UpdatedAt = null, CreatedBy = "user" }
+        };
+        _mediatorMock.Send(Arg.Any<GetTasksByProjectIdAtTimeQuery>(), Arg.Any<CancellationToken>())
+            .Returns(tasksAtStart);
+
+        // 時系列データ
+        var timeSeriesData = new ProjectStatisticsTimeSeriesDto
+        {
+            ProjectId = projectId,
+            DailySnapshots = new List<DailyStatisticsSnapshot>
+            {
+                new DailyStatisticsSnapshot
+                {
+                    Date = startDate, TotalTasks = 1, CompletedTasks = 0,
+                    InProgressTasks = 1, InReviewTasks = 0, TodoTasks = 0
+                },
+                new DailyStatisticsSnapshot
+                {
+                    Date = lastEditDate, TotalTasks = 1, CompletedTasks = 1,
+                    InProgressTasks = 0, InReviewTasks = 0, TodoTasks = 0
+                }
+            }
+        };
+        _mediatorMock.Send(Arg.Any<GetProjectStatisticsTimeSeriesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(timeSeriesData);
+
+        // Act
+        RenderComponent<BurndownChart>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        // Assert - チャートの終了日が編集日の最終日になることを確認
+        await _mediatorMock.Received(1).Send(
+            Arg.Is<GetProjectStatisticsTimeSeriesQuery>(q =>
+                q.ProjectId == projectId &&
+                q.StartDate == startDate &&
+                q.EndDate == lastEditDate), // scheduledEndDateより後のlastEditDateが使われる
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "BurndownChart: 通常モード時、タスクの予定終了日が編集日より後の場合")]
+    public async Task BurndownChart_WithoutAsOfDate_ScheduledEndDateAfterLastEditDate()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var startDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var lastEditDate = new DateTimeOffset(2024, 1, 15, 0, 0, 0, TimeSpan.Zero);
+        var scheduledEndDate = new DateTimeOffset(2024, 1, 31, 0, 0, 0, TimeSpan.Zero);
+
+        // 編集日一覧
+        var editDates = new List<DateTimeOffset> { startDate, lastEditDate };
+        _mediatorMock.Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(editDates);
+
+        // タスク一覧（予定終了日が編集日の最終日より後）
+        var tasksAtStart = new List<TaskDto>
+        {
+            new TaskDto { Id = Guid.NewGuid(), ProjectId = projectId, Title = "Task1", Description = "",
+                Status = TaskStatus.Todo, ScheduledEndDate = scheduledEndDate,
+                CreatedAt = startDate, UpdatedAt = null, CreatedBy = "user" }
+        };
+        _mediatorMock.Send(Arg.Any<GetTasksByProjectIdAtTimeQuery>(), Arg.Any<CancellationToken>())
+            .Returns(tasksAtStart);
+
+        // 時系列データ
+        var timeSeriesData = new ProjectStatisticsTimeSeriesDto
+        {
+            ProjectId = projectId,
+            DailySnapshots = new List<DailyStatisticsSnapshot>
+            {
+                new DailyStatisticsSnapshot
+                {
+                    Date = startDate, TotalTasks = 1, CompletedTasks = 0,
+                    InProgressTasks = 1, InReviewTasks = 0, TodoTasks = 0
+                }
+            }
+        };
+        _mediatorMock.Send(Arg.Any<GetProjectStatisticsTimeSeriesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(timeSeriesData);
+
+        // Act
+        RenderComponent<BurndownChart>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        // Assert - チャートの終了日がタスクの予定終了日になることを確認
+        await _mediatorMock.Received(1).Send(
+            Arg.Is<GetProjectStatisticsTimeSeriesQuery>(q =>
+                q.ProjectId == projectId &&
+                q.StartDate == startDate &&
+                q.EndDate == scheduledEndDate), // lastEditDateより後のscheduledEndDateが使われる
+            Arg.Any<CancellationToken>());
     }
 }
 

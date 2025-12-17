@@ -103,19 +103,22 @@ else
 
             DateTimeOffset startDate;
             DateTimeOffset chartEndDate;  // チャート表示範囲の終了日
-            DateTimeOffset? actualDataEndDate;  // 実績データの終了日(AsOfDate)
+            DateTimeOffset? actualDataEndDate;  // 実績データの終了日(リワインドモード時はAsOfDate、通常モード時はnull)
 
             if (editDates != null && editDates.Any())
             {
                 // 最初の編集日から開始
                 startDate = editDates.First();
-                actualDataEndDate = AsOfDate;  // リワインド時の実績データの終了日
+                // リワインドモード時のみ実績データ終了日を設定
+                actualDataEndDate = AsOfDate;
             }
             else
             {
                 // フォールバック: 編集履歴がない場合は30日前から
-                actualDataEndDate = AsOfDate ?? DateTimeOffset.UtcNow;
-                startDate = actualDataEndDate.Value.AddDays(-30);
+                // この場合は実績データ終了日をAsOfDateまたは現在日時として、開始日を30日前とする
+                var fallbackDate = AsOfDate ?? DateTimeOffset.UtcNow;
+                actualDataEndDate = AsOfDate;  // リワインドモード時のみ設定
+                startDate = fallbackDate.AddDays(-30);
             }
 
             // 開始時点でのタスク一覧を取得して、プロジェクトの終了日を決定
@@ -124,11 +127,17 @@ else
 
             if (tasksAtStart != null && tasksAtStart.Any())
             {
+                // ScheduledEndDate を持つタスクが一つもない場合のフォールバック値を事前に計算する
+                var fallbackEndDate = actualDataEndDate
+                    ?? (editDates != null && editDates.Any()
+                        ? editDates.Last()
+                        : startDate.AddDays(30));
+
                 // タスクの最も遅い予定終了日をチャートの終了日とする
                 var latestScheduledEndDate = tasksAtStart
                     .Where(t => t.ScheduledEndDate.HasValue)
                     .Select(t => t.ScheduledEndDate!.Value)
-                    .DefaultIfEmpty(actualDataEndDate ?? DateTimeOffset.UtcNow)
+                    .DefaultIfEmpty(fallbackEndDate)
                     .Max();
 
                 chartEndDate = latestScheduledEndDate;
@@ -164,9 +173,9 @@ else
             {
                 var snapshots = timeSeriesData.DailySnapshots;
 
-                // 実績線データを作成（リワインド時はAsOfDateまでのデータのみ）
+                // 実績線データを作成（リワインド時はAsOfDateまでの「日付」までのデータのみ）
                 _actualData = snapshots
-                    .Where(s => !actualDataEndDate.HasValue || s.Date <= actualDataEndDate.Value)
+                    .Where(s => !actualDataEndDate.HasValue || s.Date.Date <= actualDataEndDate.Value.Date)
                     .Select(s => new ChartDataPoint
                     {
                         X = s.Date,
