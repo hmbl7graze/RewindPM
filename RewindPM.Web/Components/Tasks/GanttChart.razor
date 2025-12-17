@@ -20,7 +20,7 @@
     }
     else
     {
-        <div class="gantt-scroll-container">
+        <div class="gantt-scroll-container" style="@(scriptsInitialized ? "" : "visibility: hidden;")">
             @* Zoom Toolbar - Floating at top-right *@
             <div class="gantt-zoom-toolbar">
                 <button class="gantt-zoom-btn gantt-zoom-fit" @onclick="FitToScreen" title="全体を表示">
@@ -164,6 +164,11 @@
     private DateTime? TimelineEnd { get; set; }
     private int TotalDays { get; set; }
 
+    // 前回のタイムライン範囲を保持（ズーム保持のため）
+    private DateTime? previousTimelineStart;
+    private DateTime? previousTimelineEnd;
+    private int previousTotalDays;
+
     // ズーム機能関連
     private double horizontalZoomScale = 1.0; // 横方向ズーム 100%
     private double verticalZoomScale = 1.0; // 縦方向ズーム 100%
@@ -174,6 +179,10 @@
     private static readonly double[] ZoomLevels = { 1.0, 1.5, 2.0, 3.0, 4.0 };
     private int horizontalZoomLevelIndex = 0; // 横方向ズームレベル (初期値: 100%)
     private int verticalZoomLevelIndex = 0; // 縦方向ズームレベル (初期値: 100%)
+    
+    // Initial Zoom Calculation Flags
+    private bool _isBaseColumnWidthCalculated = false;
+    private bool _isBaseRowHeightCalculated = false;
 
     private DotNetObjectReference<GanttChart>? dotNetRef;
     private bool scriptsInitialized = false;
@@ -311,6 +320,9 @@
         {
             try
             {
+                // ローカルストレージからズームレベルを復元
+                await LoadZoomLevelsFromStorage();
+
                 dotNetRef = DotNetObjectReference.Create(this);
                 // Only initialize resize handles and pass dotnet ref for callbacks
                 await JSRuntime.InvokeVoidAsync("ganttScrollSync.initialize", dotNetRef);
@@ -325,6 +337,9 @@
                 await JSRuntime.InvokeVoidAsync("ganttZoom.initializeDraggableToolbar");
 
                 scriptsInitialized = true;
+                
+                // 初期表示のズーム状態を正しく反映するために再レンダリングする
+                // これがないと初期表示時に計算された幅が反映されず、最初の操作で表示が飛ぶ現象が発生する
                 StateHasChanged();
             }
             catch (Exception ex)
@@ -414,9 +429,36 @@
         TimelineEnd = allDates.Max().Date;
         TotalDays = (int)(TimelineEnd.Value - TimelineStart.Value).TotalDays + 1;
 
-        // タイムライン変更時に基準セル幅・行高さを再計算
-        CalculateBaseColumnWidth();
-        CalculateBaseRowHeight();
+        // タイムラインの範囲が実際に変わった場合にのみ基準値を再計算
+        // ユーザーが設定したズームレベルは保持される
+        if (HasTimelineRangeChanged())
+        {
+            // 基準値を再計算
+            CalculateBaseColumnWidth();
+            CalculateBaseRowHeight();
+
+            // ズームレベルは保持（ユーザーが設定した値をそのまま維持）
+            // 自動調整は行わない
+
+            // 現在の値を保存
+            previousTimelineStart = TimelineStart;
+            previousTimelineEnd = TimelineEnd;
+            previousTotalDays = TotalDays;
+        }
+    }
+
+    private bool HasTimelineRangeChanged()
+    {
+        // 初回の場合は変更ありとみなす
+        if (previousTimelineStart == null || previousTimelineEnd == null)
+        {
+            return true;
+        }
+
+        // タイムラインの範囲またはタスク数が変わった場合
+        return TimelineStart != previousTimelineStart
+            || TimelineEnd != previousTimelineEnd
+            || TotalDays != previousTotalDays;
     }
 
     private string GetGridColumn(DateTimeOffset startDate, DateTimeOffset endDate)
@@ -632,8 +674,10 @@
 
     // ========== ズーム機能 ==========
 
-    private void CalculateBaseColumnWidth()
+    private void CalculateBaseColumnWidth(bool force = false)
     {
+        if (_isBaseColumnWidthCalculated && !force) return;
+
         if (TotalDays == 0 || availableTimelineWidth == 0)
         {
             baseColumnWidth = 40; // フォールバック
@@ -641,10 +685,13 @@
         }
 
         baseColumnWidth = availableTimelineWidth / TotalDays;
+        _isBaseColumnWidthCalculated = true;
     }
 
-    private void CalculateBaseRowHeight()
+    private void CalculateBaseRowHeight(bool force = false)
     {
+        if (_isBaseRowHeightCalculated && !force) return;
+
         var taskCount = Tasks?.Count ?? 0;
         if (taskCount == 0 || availableTimelineHeight == 0)
         {
@@ -653,6 +700,7 @@
         }
 
         baseRowHeight = availableTimelineHeight / taskCount;
+        _isBaseRowHeightCalculated = true;
     }
 
     private string GetGridTemplateColumns()
@@ -761,6 +809,9 @@
     {
         horizontalZoomScale = ZoomLevels[horizontalZoomLevelIndex];
 
+        // ローカルストレージに保存
+        await SaveZoomLevelsToStorage();
+
         if (OnZoomChanged.HasDelegate)
         {
             await OnZoomChanged.InvokeAsync(horizontalZoomScale);
@@ -794,16 +845,71 @@
     private async Task ApplyVerticalZoomLevel()
     {
         verticalZoomScale = ZoomLevels[verticalZoomLevelIndex];
+
+        // ローカルストレージに保存
+        await SaveZoomLevelsToStorage();
+
         StateHasChanged();
     }
 
     // 全体表示
     private async Task FitToScreen()
     {
+        // 強制的に再計算して画面に合わせる
+        CalculateBaseColumnWidth(force: true);
+        CalculateBaseRowHeight(force: true);
+        
         horizontalZoomLevelIndex = 0; // 100%（全体表示）にリセット
         verticalZoomLevelIndex = 0; // 100%（全体表示）にリセット
         await ApplyHorizontalZoomLevel();
         await ApplyVerticalZoomLevel();
+    }
+
+    private async Task LoadZoomLevelsFromStorage()
+    {
+        try
+        {
+            // 横方向ズームを復元
+            var hZoom = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", "gantt_hZoom");
+            if (hZoom != null && int.TryParse(hZoom, out var hZoomIndex))
+            {
+                if (hZoomIndex >= 0 && hZoomIndex < ZoomLevels.Length)
+                {
+                    horizontalZoomLevelIndex = hZoomIndex;
+                    horizontalZoomScale = ZoomLevels[hZoomIndex];
+                }
+            }
+
+            // 縦方向ズームを復元
+            var vZoom = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", "gantt_vZoom");
+            if (vZoom != null && int.TryParse(vZoom, out var vZoomIndex))
+            {
+                if (vZoomIndex >= 0 && vZoomIndex < ZoomLevels.Length)
+                {
+                    verticalZoomLevelIndex = vZoomIndex;
+                    verticalZoomScale = ZoomLevels[vZoomIndex];
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // ストレージ読み取りエラーは無視（デフォルト値を使用）
+            Console.Error.WriteLine($"ローカルストレージからズームレベルを読み取れませんでした: {ex.Message}");
+        }
+    }
+
+    private async Task SaveZoomLevelsToStorage()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "gantt_hZoom", horizontalZoomLevelIndex.ToString());
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "gantt_vZoom", verticalZoomLevelIndex.ToString());
+        }
+        catch (Exception ex)
+        {
+            // ストレージ保存エラーは無視（機能には影響しない）
+            Console.Error.WriteLine($"ローカルストレージにズームレベルを保存できませんでした: {ex.Message}");
+        }
     }
 
     private bool ShouldDisplayDateLabel(int dayIndex)
