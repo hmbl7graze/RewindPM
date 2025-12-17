@@ -6,6 +6,8 @@ namespace RewindPM.Web.Test.Components.Shared;
 
 public class TimelineControlTests : Bunit.TestContext
 {
+    // JS 相互運用のモックはこのテストでは不要のため削除
+
     [Fact(DisplayName = "最新表示時に「最新」と表示される")]
     public void TimelineControl_DisplaysLatest_WhenCurrentDateIsNull()
     {
@@ -581,5 +583,358 @@ public class TimelineControlTests : Bunit.TestContext
     }
 
     #endregion
+
+    #region カレンダーピッカーのテスト
+
+    [Fact(DisplayName = "カレンダーピッカーボタンが表示される")]
+    public void TimelineControl_CalendarButtonVisible()
+    {
+        // Arrange & Act
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
+
+        // Assert
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        Assert.NotNull(calendarButton);
+        Assert.Equal("📅", calendarButton.TextContent.Trim());
+    }
+
+    [Fact(DisplayName = "編集日がない場合、カレンダーピッカーボタンが無効化される")]
+    public void TimelineControl_CalendarButtonDisabled_WhenNoEditDates()
+    {
+        // Arrange & Act
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, new List<DateTimeOffset>()));
+
+        // Assert
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        Assert.True(calendarButton.HasAttribute("disabled"));
+    }
+
+    [Fact(DisplayName = "編集日がある場合、カレンダーピッカーボタンが有効化される")]
+    public void TimelineControl_CalendarButtonEnabled_WhenEditDatesExist()
+    {
+        // Arrange & Act
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
+
+        // Assert
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        Assert.False(calendarButton.HasAttribute("disabled"));
+    }
+
+    [Fact(DisplayName = "カレンダーピッカーは初期状態で非表示")]
+    public void TimelineControl_CalendarHidden_Initially()
+    {
+        // Arrange & Act
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
+
+        // Assert
+        var calendarDropdowns = cut.FindAll(".timeline-calendar-dropdown");
+        Assert.Empty(calendarDropdowns);
+    }
+
+    [Fact(DisplayName = "カレンダーボタンをクリックするとカレンダーが表示される")]
+    public void TimelineControl_CalendarShown_WhenButtonClicked()
+    {
+        // Arrange
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        // Assert
+        var calendarDropdown = cut.Find(".timeline-calendar-dropdown");
+        Assert.NotNull(calendarDropdown);
+    }
+
+    [Fact(DisplayName = "カレンダーに曜日が表示される")]
+    public void TimelineControl_CalendarShowsWeekdays()
+    {
+        // Arrange
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, new List<DateTimeOffset> { new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero) }));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        // Assert
+        var weekdays = cut.FindAll(".calendar-weekday");
+        Assert.Equal(7, weekdays.Count);
+        Assert.Equal("日", weekdays[0].TextContent);
+        Assert.Equal("土", weekdays[6].TextContent);
+    }
+
+    [Fact(DisplayName = "最小日付から最大日付の範囲内の日付が選択可能")]
+    public void TimelineControl_EnablesDateRangeBetweenMinAndMax()
+    {
+        // Arrange
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
+        };
+
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        // Assert
+        var allDays = cut.FindAll(".calendar-day");
+        var enabledDays = allDays.Where(d => !d.HasAttribute("disabled")).ToList();
+
+        // 1/5から1/15までの11日間が有効
+        Assert.Equal(11, enabledDays.Count);
+    }
+
+    [Fact(DisplayName = "EditDatesに含まれる日付にはedit-dateクラスが付与される")]
+    public void TimelineControl_AddsEditDateClass_ToEditDates()
+    {
+        // Arrange
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
+        };
+
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        // Assert
+        var editDateDays = cut.FindAll(".calendar-day.edit-date");
+
+        // EditDatesの3日間にedit-dateクラスが付与される
+        Assert.Equal(3, editDateDays.Count);
+    }
+
+    [Fact(DisplayName = "日付を選択するとOnDateChangedイベントが発火される")]
+    public void TimelineControl_OnDateChangedFired_WhenDateSelected()
+    {
+        // Arrange
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero)
+        };
+        DateTimeOffset? selectedDate = null;
+
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates)
+            .Add(p => p.OnDateChanged, EventCallback.Factory.Create<DateTimeOffset?>(this, d => selectedDate = d)));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        var dayButtons = cut.FindAll(".calendar-day");
+        var targetButton = dayButtons.FirstOrDefault(b => 
+            !b.HasAttribute("disabled") && 
+            b.TextContent.Trim() == "10");
+        
+        Assert.NotNull(targetButton);
+        targetButton.Click();
+
+        // Assert
+        Assert.NotNull(selectedDate);
+        Assert.Equal(new DateTime(2025, 1, 10), selectedDate.Value.Date);
+    }
+
+    [Fact(DisplayName = "日付選択後にカレンダーが閉じる")]
+    public void TimelineControl_CalendarClosed_AfterDateSelection()
+    {
+        // Arrange
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero)
+        };
+
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        var dayButtons = cut.FindAll(".calendar-day");
+        var targetButton = dayButtons.FirstOrDefault(b => 
+            !b.HasAttribute("disabled") && 
+            b.TextContent.Trim() == "10");
+        
+        Assert.NotNull(targetButton);
+        targetButton.Click();
+
+        // Assert
+        var calendarDropdowns = cut.FindAll(".timeline-calendar-dropdown");
+        Assert.Empty(calendarDropdowns);
+    }
+
+    [Fact(DisplayName = "前月ボタンをクリックすると前月が表示される")]
+    public void TimelineControl_ShowsPreviousMonth_WhenPreviousButtonClicked()
+    {
+        // Arrange
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(new DateTime(2025, 2, 15), TimeSpan.Zero)
+        };
+
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        var monthYearBefore = cut.Find(".calendar-month-year").TextContent;
+        Assert.Contains("2025年 2月", monthYearBefore);
+
+        var prevButton = cut.Find(".calendar-nav-btn");
+        prevButton.Click();
+
+        // Assert
+        var monthYearAfter = cut.Find(".calendar-month-year").TextContent;
+        Assert.Contains("2025年 1月", monthYearAfter);
+    }
+
+    [Fact(DisplayName = "次月ボタンをクリックすると次月が表示される")]
+    public void TimelineControl_ShowsNextMonth_WhenNextButtonClicked()
+    {
+        // Arrange
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero)
+        };
+
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        var monthYearBefore = cut.Find(".calendar-month-year").TextContent;
+        Assert.Contains("2025年 1月", monthYearBefore);
+
+        var nextButtons = cut.FindAll(".calendar-nav-btn");
+        nextButtons[1].Click(); // 2番目のボタンが次月ボタン
+
+        // Assert
+        var monthYearAfter = cut.Find(".calendar-month-year").TextContent;
+        Assert.Contains("2025年 2月", monthYearAfter);
+    }
+
+    [Fact(DisplayName = "選択された日付にselectedクラスが付与される")]
+    public void TimelineControl_AddsSelectedClass_ToCurrentDate()
+    {
+        // Arrange
+        var selectedDate = new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero);
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            selectedDate,
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
+        };
+
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, selectedDate)
+            .Add(p => p.EditDates, editDates));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        // Assert
+        var selectedDays = cut.FindAll(".calendar-day.selected");
+        Assert.Single(selectedDays);
+        Assert.Equal("10", selectedDays[0].TextContent.Trim());
+    }
+
+    [Fact(DisplayName = "今日の日付にtodayクラスが付与される")]
+    public void TimelineControl_AddsTodayClass_ToTodayDate()
+    {
+        // Arrange
+        var today = DateTimeOffset.Now.Date;
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(today.AddDays(5)),
+            new DateTimeOffset(today),
+            new DateTimeOffset(today.AddDays(-5))
+        };
+
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        // Assert
+        var todayDays = cut.FindAll(".calendar-day.today");
+        Assert.Single(todayDays);
+        Assert.Equal(today.Day.ToString(), todayDays[0].TextContent.Trim());
+    }
+
+    [Fact(DisplayName = "EditDatesに含まれない日付を選択した場合、最も近い日付が選択される")]
+    public void TimelineControl_SelectsClosestDate_WhenNonEditDateSelected()
+    {
+        // Arrange
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 5), TimeSpan.Zero)
+        };
+        DateTimeOffset? selectedDate = null;
+
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates)
+            .Add(p => p.OnDateChanged, EventCallback.Factory.Create<DateTimeOffset?>(this, d => selectedDate = d)));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        // 1/10を選択(EditDatesには含まれていないが範囲内)
+        var dayButtons = cut.FindAll(".calendar-day");
+        var targetButton = dayButtons.FirstOrDefault(b => 
+            !b.HasAttribute("disabled") && 
+            b.TextContent.Trim() == "10");
+        
+        Assert.NotNull(targetButton);
+        targetButton.Click();
+
+        // Assert
+        Assert.NotNull(selectedDate);
+        // 1/10に最も近いのは1/15 (5日差)。1/5も5日差で同じだが、EditDatesリスト内で先に定義されている1/15が選ばれる（順序依存の挙動）
+        Assert.Equal(new DateTime(2025, 1, 15), selectedDate.Value.Date);
+    }
+
+    #endregion
 }
+
 
