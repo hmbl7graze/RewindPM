@@ -81,7 +81,7 @@
             @* Task Rows *@
             @foreach (var (task, index) in Tasks.Select((t, i) => (t, i)))
             {
-                <div class="gantt-row gantt-task-row">
+                <div class="gantt-row gantt-task-row @(index % 2 == 0 ? "gantt-row-even" : "gantt-row-odd")">
                     <div class="gantt-cell gantt-sticky-left gantt-task-name-cell" style="@GetRowHeightStyle()" title="@task.Title" @onclick="() => HandleTaskClick(task)">
                         <span class="gantt-task-title">@task.Title</span>
                         <span class="gantt-task-status gantt-status-@GetStatusClass(task.Status)" style="@GetStatusBadgeStyle()">
