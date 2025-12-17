@@ -880,9 +880,9 @@ public class TimelineControlTests : Bunit.TestContext
         var today = DateTimeOffset.Now.Date;
         var editDates = new List<DateTimeOffset>
         {
-            new DateTimeOffset(today.AddDays(5)),
+            new DateTimeOffset(today.AddDays(-5)),
             new DateTimeOffset(today),
-            new DateTimeOffset(today.AddDays(-5))
+            new DateTimeOffset(today.AddDays(-10))
         };
 
         var cut = RenderComponent<TimelineControl>(parameters => parameters
@@ -938,14 +938,14 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_ReturnsNull_WhenTodaySelected()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = DateTimeOffset.Now.Date;
         var editDates = new List<DateTimeOffset>
         {
-            new DateTimeOffset(today.AddDays(5)),
+            new DateTimeOffset(today.AddDays(-5)),
             new DateTimeOffset(today), // 今日の日付がEditDatesに含まれている
-            new DateTimeOffset(today.AddDays(-5))
+            new DateTimeOffset(today.AddDays(-10))
         };
-        DateTimeOffset? selectedDate = new DateTimeOffset(today.AddDays(-5)); // 初期値
+        DateTimeOffset? selectedDate = new DateTimeOffset(today.AddDays(-10)); // 初期値
 
         var cut = RenderComponent<TimelineControl>(parameters => parameters
             .Add(p => p.CurrentDate, null)
@@ -973,7 +973,7 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_FiltersOutToday_WhenTodayIsLatestEditDate()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = DateTimeOffset.Now.Date;
         var editDates = new List<DateTimeOffset>
         {
             new DateTimeOffset(today), // 最新の編集日が今日
@@ -997,7 +997,7 @@ public class TimelineControlTests : Bunit.TestContext
     public void TimelineControl_DoesNotFilterOut_WhenLatestEditDateIsNotToday()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = DateTimeOffset.Now.Date;
         var editDates = new List<DateTimeOffset>
         {
             new DateTimeOffset(today.AddDays(-1)), // 昨日
