@@ -177,6 +177,10 @@
     // キャッシュフィールド
     private string? _gridTemplateColumns;
 
+    // デバウンス用タイマー
+    private System.Threading.Timer? _zoomSaveTimer;
+    private const int SaveDebounceMs = 300;
+
     // ヘルパープロパティ
     private DateTime? TimelineStart => _timelineCalculator.TimelineStart;
     private DateTime? TimelineEnd => _timelineCalculator.TimelineEnd;
@@ -200,8 +204,8 @@
         if (timelineChanged)
         {
             // タイムラインが変更された場合、基準値を再計算
-            _zoomManager.CalculateBaseColumnWidth(TotalDays, availableTimelineWidth);
-            _zoomManager.CalculateBaseRowHeight(Tasks?.Count ?? 0, availableTimelineHeight);
+            _zoomManager.CalculateBaseColumnWidth(TotalDays, availableTimelineWidth, force: true);
+            _zoomManager.CalculateBaseRowHeight(Tasks?.Count ?? 0, availableTimelineHeight, force: true);
             UpdateGridTemplateColumns();
         }
     }
@@ -300,6 +304,7 @@
         }
         catch { }
 
+        _zoomSaveTimer?.Dispose();
         dotNetRef?.Dispose();
     }
 
@@ -370,6 +375,11 @@
 
     private string GetGridTemplateColumns()
     {
+        // グリッドテンプレートが未初期化または空の場合はここで再計算する
+        if (string.IsNullOrEmpty(_gridTemplateColumns))
+        {
+            UpdateGridTemplateColumns();
+        }
         return _gridTemplateColumns ?? string.Empty;
     }
 
@@ -401,14 +411,11 @@
         var gap = _zoomManager.GetBarGap();
         var verticalMargin = (rowHeight - barHeight - barHeight - gap) / 2;
 
-        if (barType == "scheduled")
-        {
-            return $"height: {barHeight}px; margin-top: {verticalMargin}px; margin-bottom: {gap}px;";
-        }
-        else
-        {
-            return $"height: {barHeight}px; margin-top: {gap}px; margin-bottom: {verticalMargin}px;";
-        }
+        var isScheduled = barType == "scheduled";
+        var marginTop = isScheduled ? verticalMargin : gap;
+        var marginBottom = isScheduled ? gap : verticalMargin;
+
+        return $"height: {barHeight}px; margin-top: {marginTop}px; margin-bottom: {marginBottom}px;";
     }
 
     private bool CanZoomInHorizontal => _zoomManager.CanZoomInHorizontal;
@@ -422,7 +429,7 @@
         {
             _zoomManager.ZoomInHorizontal();
             UpdateGridTemplateColumns();
-            await SaveZoomLevelsToStorage();
+            DebounceSaveZoomLevels();
             if (OnZoomChanged.HasDelegate)
             {
                 await OnZoomChanged.InvokeAsync(_zoomManager.HorizontalZoomScale);
@@ -437,7 +444,7 @@
         {
             _zoomManager.ZoomOutHorizontal();
             UpdateGridTemplateColumns();
-            await SaveZoomLevelsToStorage();
+            DebounceSaveZoomLevels();
             if (OnZoomChanged.HasDelegate)
             {
                 await OnZoomChanged.InvokeAsync(_zoomManager.HorizontalZoomScale);
@@ -446,22 +453,22 @@
         }
     }
 
-    private async Task ZoomInVertical()
+    private void ZoomInVertical()
     {
         if (_zoomManager.CanZoomInVertical)
         {
             _zoomManager.ZoomInVertical();
-            await SaveZoomLevelsToStorage();
+            DebounceSaveZoomLevels();
             StateHasChanged();
         }
     }
 
-    private async Task ZoomOutVertical()
+    private void ZoomOutVertical()
     {
         if (_zoomManager.CanZoomOutVertical)
         {
             _zoomManager.ZoomOutVertical();
-            await SaveZoomLevelsToStorage();
+            DebounceSaveZoomLevels();
             StateHasChanged();
         }
     }
@@ -470,7 +477,7 @@
     {
         _zoomManager.FitToScreen(TotalDays, Tasks?.Count ?? 0, availableTimelineWidth, availableTimelineHeight);
         UpdateGridTemplateColumns();
-        await SaveZoomLevelsToStorage();
+        DebounceSaveZoomLevels();
         if (OnZoomChanged.HasDelegate)
         {
             await OnZoomChanged.InvokeAsync(_zoomManager.HorizontalZoomScale);
@@ -494,6 +501,18 @@
         {
             Console.Error.WriteLine($"ローカルストレージからズームレベルを読み取れませんでした: {ex.Message}");
         }
+    }
+
+    private void DebounceSaveZoomLevels()
+    {
+        _zoomSaveTimer?.Dispose();
+        _zoomSaveTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await SaveZoomLevelsToStorage();
+            });
+        }, null, SaveDebounceMs, System.Threading.Timeout.Infinite);
     }
 
     private async Task SaveZoomLevelsToStorage()

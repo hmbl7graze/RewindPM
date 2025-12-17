@@ -47,7 +47,7 @@ public class GanttZoomManager
     /// <summary>
     /// 横方向にズームインできるかどうか
     /// </summary>
-    public bool CanZoomInHorizontal => _horizontalZoomLevelIndex < GanttConstants.ZoomLevels.Length - 1;
+    public bool CanZoomInHorizontal => _horizontalZoomLevelIndex < GanttConstants.ZoomLevels.Count - 1;
 
     /// <summary>
     /// 横方向にズームアウトできるかどうか
@@ -57,7 +57,7 @@ public class GanttZoomManager
     /// <summary>
     /// 縦方向にズームインできるかどうか
     /// </summary>
-    public bool CanZoomInVertical => _verticalZoomLevelIndex < GanttConstants.ZoomLevels.Length - 1;
+    public bool CanZoomInVertical => _verticalZoomLevelIndex < GanttConstants.ZoomLevels.Count - 1;
 
     /// <summary>
     /// 縦方向にズームアウトできるかどうか
@@ -74,7 +74,7 @@ public class GanttZoomManager
     {
         if (_isBaseColumnWidthCalculated && !force) return;
 
-        if (totalDays <= 0 || availableWidth <= 0.0)
+        if (totalDays <= 0 || availableWidth <= double.Epsilon)
         {
             _baseColumnWidth = GanttConstants.CellWidth.DefaultBase;
             return;
@@ -94,7 +94,7 @@ public class GanttZoomManager
     {
         if (_isBaseRowHeightCalculated && !force) return;
 
-        if (taskCount <= 0 || availableHeight <= 0.0)
+        if (taskCount <= 0 || availableHeight <= double.Epsilon)
         {
             _baseRowHeight = GanttConstants.RowHeight.DefaultBase;
             return;
@@ -215,13 +215,13 @@ public class GanttZoomManager
     /// <param name="verticalZoomIndex">縦方向ズームレベルインデックス</param>
     public void RestoreZoomLevels(int horizontalZoomIndex, int verticalZoomIndex)
     {
-        if (horizontalZoomIndex >= 0 && horizontalZoomIndex < GanttConstants.ZoomLevels.Length)
+        if (horizontalZoomIndex >= 0 && horizontalZoomIndex < GanttConstants.ZoomLevels.Count)
         {
             _horizontalZoomLevelIndex = horizontalZoomIndex;
             _horizontalZoomScale = GanttConstants.ZoomLevels[horizontalZoomIndex];
         }
 
-        if (verticalZoomIndex >= 0 && verticalZoomIndex < GanttConstants.ZoomLevels.Length)
+        if (verticalZoomIndex >= 0 && verticalZoomIndex < GanttConstants.ZoomLevels.Count)
         {
             _verticalZoomLevelIndex = verticalZoomIndex;
             _verticalZoomScale = GanttConstants.ZoomLevels[verticalZoomIndex];

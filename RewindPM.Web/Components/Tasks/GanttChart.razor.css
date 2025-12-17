@@ -383,14 +383,23 @@
     align-items: center;
     gap: 8px;
     padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.7);
+    /* フォールバック: blur 非対応環境でも十分なコントラストを確保 */
+    background: rgba(255, 255, 255, 0.95);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
     width: fit-content;
-    backdrop-filter: blur(8px);
     cursor: move;
     user-select: none;
+}
+
+/* blur サポート環境向けの強化スタイル */
+@supports (backdrop-filter: blur(8px)) or (-webkit-backdrop-filter: blur(8px)) {
+    .gantt-zoom-toolbar {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
 }
 
 .gantt-zoom-group {

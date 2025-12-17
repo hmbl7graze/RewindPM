@@ -1,6 +1,7 @@
 // ガントチャートのズーム機能
 window.ganttZoom = {
-    // 定数定義（GanttConstants.cs と一致させる）
+    // 定数定義(GanttConstants.cs の Layout クラスと一致させる)
+    // 注意: これらの値を変更する場合は、C# 側の GanttConstants.Layout も同時に更新すること
     CONSTANTS: {
         TASK_NAME_WIDTH: 280,
         SCROLLBAR_WIDTH: 15,
@@ -123,8 +124,16 @@ window.ganttZoom = {
     },
 
     dispose: function() {
-        document.removeEventListener('mousemove', this.onMouseMove);
-        document.removeEventListener('mouseup', this.onMouseUp);
+        // イベントリスナーのクリーンアップ
+        document.removeEventListener('mousemove', window.ganttZoom.onMouseMove);
+        document.removeEventListener('mouseup', window.ganttZoom.onMouseUp);
+        
+        // ツールバーの初期化フラグをクリア
+        const toolbar = document.querySelector('.gantt-zoom-toolbar');
+        if (toolbar) {
+            delete toolbar.dataset.draggableInitialized;
+        }
+        
         this.dragState = null;
     }
 };

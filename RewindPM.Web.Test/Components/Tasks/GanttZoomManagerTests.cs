@@ -150,7 +150,7 @@ public class GanttZoomManagerTests
         var manager = new GanttZoomManager();
         
         // ズームレベルを最大まで上げる
-        for (int i = 0; i < GanttConstants.ZoomLevels.Length; i++)
+        for (int i = 0; i < GanttConstants.ZoomLevels.Count; i++)
         {
             manager.ZoomInHorizontal();
         }
@@ -370,7 +370,7 @@ public class GanttZoomManagerTests
         var manager = new GanttZoomManager();
         
         // 最大まで上げる
-        for (int i = 0; i < GanttConstants.ZoomLevels.Length; i++)
+        for (int i = 0; i < GanttConstants.ZoomLevels.Count; i++)
         {
             manager.ZoomInHorizontal();
         }
