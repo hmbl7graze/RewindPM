@@ -1,23 +1,25 @@
-<div class="timeline-toolbar @(IsViewingPast ? "viewing-past" : "")">
+<div class="timeline-toolbar @(IsViewingPast ? "viewing-past" : "")" @onclick="HandleToolbarClick">
     <div class="timeline-calendar-wrapper">
         <button
             class="timeline-btn timeline-btn-calendar"
             @onclick="ToggleCalendarPicker"
+            @onclick:stopPropagation="true"
             disabled="@(!HasEditDates)"
             title="カレンダーから日付を選択"
+            aria-label="カレンダーから日付を選択"
             type="button">
-            📅
+            <span role="img" aria-hidden="true">📅</span>
         </button>
 
         @if (_isCalendarOpen)
         {
-            <div class="timeline-calendar-dropdown" @onclick:stopPropagation="true">
+            <div class="timeline-calendar-dropdown" @onclick:stopPropagation="true" role="dialog" aria-modal="true" aria-label="日付選択カレンダー">
                 <div class="calendar-header">
-                    <button class="calendar-nav-btn" @onclick="PreviousMonth" type="button">◀</button>
+                    <button class="calendar-nav-btn" @onclick="PreviousMonth" type="button" aria-label="前の月へ">◀</button>
                     <div class="calendar-month-year">
                         @_displayMonth.ToString("yyyy年 M月")
                     </div>
-                    <button class="calendar-nav-btn" @onclick="NextMonth" type="button">▶</button>
+                    <button class="calendar-nav-btn" @onclick="NextMonth" type="button" aria-label="次の月へ">▶</button>
                 </div>
                 <div class="calendar-grid">
                     <div class="calendar-weekdays">
@@ -36,6 +38,8 @@
                                 class="calendar-day @GetDayClass(day)"
                                 @onclick="() => SelectDate(day)"
                                 disabled="@(!IsDateSelectable(day))"
+                                aria-label="@GetDayAriaLabel(day)"
+                                aria-pressed="@(CurrentDate.HasValue && day.Date == CurrentDate.Value.Date ? "true" : "false")"
                                 type="button">
                                 @(day.Day)
                             </button>
@@ -119,15 +123,22 @@
 @code {
     private bool _isCalendarOpen = false;
     private DateTime _displayMonth;
+    
+    // パフォーマンス改善: EditDatesをHashSetにキャッシュ
+    private HashSet<DateTime>? _editDatesCache;
+    private DateTime? _minDate;
+    private DateTime? _maxDate;
+    private List<DateTime>? _cachedCalendarDays;
+    private DateTime _cachedCalendarMonth;
 
     /// <summary>
-    /// 現在表示中の日付（nullの場合は最新）
+    /// 現在表示中の日付(nullの場合は最新)
     /// </summary>
     [Parameter]
     public DateTimeOffset? CurrentDate { get; set; }
 
     /// <summary>
-    /// 編集日一覧（降順：新しい順）
+    /// 編集日一覧(降順:新しい順)
     /// </summary>
     [Parameter]
     public List<DateTimeOffset> EditDates { get; set; } = new();
@@ -144,7 +155,7 @@
     private bool IsViewingPast => CurrentDate.HasValue;
 
     /// <summary>
-    /// スライドバーの最大値（0が最古、MaxSliderValueが最新）
+    /// スライドバーの最大値(0が最古、MaxSliderValueが最新)
     /// </summary>
     private int MaxSliderValue => EditDates?.Count ?? 0;
 
@@ -397,7 +408,43 @@
 
     protected override void OnInitialized()
     {
-        // 初期表示月を設定（現在の日付または最新の編集日）
+        UpdateCachedData();
+        UpdateDisplayMonth();
+    }
+
+    protected override void OnParametersSet()
+    {
+        UpdateCachedData();
+        UpdateDisplayMonth();
+    }
+
+    /// <summary>
+    /// キャッシュデータを更新
+    /// </summary>
+    private void UpdateCachedData()
+    {
+        if (HasEditDates)
+        {
+            _editDatesCache = EditDates!.Select(d => d.Date).ToHashSet();
+            _minDate = EditDates!.Min().Date;
+            _maxDate = EditDates!.Max().Date;
+        }
+        else
+        {
+            _editDatesCache = null;
+            _minDate = null;
+            _maxDate = null;
+        }
+        
+        // カレンダーのキャッシュをクリア
+        _cachedCalendarDays = null;
+    }
+
+    /// <summary>
+    /// 表示月を更新
+    /// </summary>
+    private void UpdateDisplayMonth()
+    {
         _displayMonth = CurrentDate?.DateTime ?? EditDates?.FirstOrDefault().DateTime ?? DateTime.Now;
     }
 
@@ -409,9 +456,28 @@
         _isCalendarOpen = !_isCalendarOpen;
         if (_isCalendarOpen)
         {
-            // カレンダーを開くときに表示月を設定
-            _displayMonth = CurrentDate?.DateTime ?? EditDates?.FirstOrDefault().DateTime ?? DateTime.Now;
+            UpdateDisplayMonth();
         }
+    }
+
+    /// <summary>
+    /// ツールバー領域のクリックを処理(カレンダー外部クリック検出用)
+    /// </summary>
+    private void HandleToolbarClick()
+    {
+        // カレンダーが開いている場合、ツールバー内(カレンダー外)のクリックで閉じる
+        if (_isCalendarOpen)
+        {
+            CloseCalendar();
+        }
+    }
+
+    /// <summary>
+    /// カレンダーを閉じる
+    /// </summary>
+    private void CloseCalendar()
+    {
+        _isCalendarOpen = false;
     }
 
     /// <summary>
@@ -420,6 +486,7 @@
     private void PreviousMonth()
     {
         _displayMonth = _displayMonth.AddMonths(-1);
+        _cachedCalendarDays = null; // キャッシュをクリア
     }
 
     /// <summary>
@@ -428,6 +495,7 @@
     private void NextMonth()
     {
         _displayMonth = _displayMonth.AddMonths(1);
+        _cachedCalendarDays = null; // キャッシュをクリア
     }
 
     /// <summary>
@@ -435,38 +503,44 @@
     /// </summary>
     private List<DateTime> GetCalendarDays()
     {
+        // キャッシュが有効で、表示月が変わっていない場合はキャッシュを返す
+        if (_cachedCalendarDays != null && _cachedCalendarMonth == _displayMonth)
+        {
+            return _cachedCalendarDays;
+        }
+
         var days = new List<DateTime>();
         var firstDayOfMonth = new DateTime(_displayMonth.Year, _displayMonth.Month, 1);
-        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
 
-        // 月初の曜日を取得（日曜日=0）
+        // 月初の曜日を取得(日曜日=0)
         var firstDayOfWeek = (int)firstDayOfMonth.DayOfWeek;
 
-        // 前月の日付を追加（月初が日曜日でない場合）
+        // 前月の日付を追加(月初が日曜日でない場合)
         var startDate = firstDayOfMonth.AddDays(-firstDayOfWeek);
 
-        // 6週間分（42日）表示
+        // 6週間分(42日)表示
         for (int i = 0; i < 42; i++)
         {
             days.Add(startDate.AddDays(i));
         }
 
+        // キャッシュを更新
+        _cachedCalendarDays = days;
+        _cachedCalendarMonth = _displayMonth;
+
         return days;
     }
 
     /// <summary>
-    /// 日付が選択可能かどうか（最小日付から最大日付の範囲内）
+    /// 日付が選択可能かどうか(最小日付から最大日付の範囲内)
     /// </summary>
     private bool IsDateSelectable(DateTime date)
     {
-        if (!HasEditDates)
+        if (!HasEditDates || _minDate == null || _maxDate == null)
             return false;
 
-        var minDate = EditDates!.Min().Date;
-        var maxDate = EditDates!.Max().Date;
-
         // 最小日付から最大日付の範囲内であれば選択可能
-        return date.Date >= minDate && date.Date <= maxDate;
+        return date.Date >= _minDate.Value && date.Date <= _maxDate.Value;
     }
 
     /// <summary>
@@ -474,10 +548,10 @@
     /// </summary>
     private bool IsEditDate(DateTime date)
     {
-        if (!HasEditDates)
+        if (_editDatesCache == null)
             return false;
 
-        return EditDates!.Any(d => d.Date == date.Date);
+        return _editDatesCache.Contains(date.Date);
     }
 
     /// <summary>
@@ -515,6 +589,26 @@
     }
 
     /// <summary>
+    /// 日付のaria-labelを取得
+    /// </summary>
+    private string GetDayAriaLabel(DateTime date)
+    {
+        var label = date.ToString("M月d日");
+        
+        if (IsEditDate(date))
+        {
+            label += " (編集日)";
+        }
+        
+        if (CurrentDate.HasValue && date.Date == CurrentDate.Value.Date)
+        {
+            label += " 選択中";
+        }
+        
+        return label;
+    }
+
+    /// <summary>
     /// 日付を選択
     /// </summary>
     private async Task SelectDate(DateTime date)
@@ -523,12 +617,12 @@
             return;
 
         // EditDatesに含まれる日付か確認
-        var matchingDate = EditDates!.FirstOrDefault(d => d.Date == date.Date);
+        var matchingDate = EditDates!.Where(d => d.Date == date.Date).Cast<DateTimeOffset?>().FirstOrDefault();
 
-        if (matchingDate != default(DateTimeOffset))
+        if (matchingDate.HasValue)
         {
             // EditDatesに含まれる日付の場合
-            await OnDateChanged.InvokeAsync(matchingDate);
+            await OnDateChanged.InvokeAsync(matchingDate.Value);
         }
         else
         {
