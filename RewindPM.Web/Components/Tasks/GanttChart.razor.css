@@ -86,7 +86,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    height: 48px;
+    /* height is set dynamically via inline style */
     transition: background-color 0.1s ease;
 }
 
@@ -107,8 +107,7 @@
 
 /* Status Badges */
 .gantt-task-status {
-    font-size: 0.7rem;
-    padding: 2px 6px;
+    /* font-size and padding are set dynamically via inline style */
     border-radius: var(--radius-pill);
     display: inline-block;
     width: fit-content;
@@ -220,8 +219,7 @@
 
 /* Task Bars */
 .gantt-bar {
-    height: 12px;
-    /* Thinner bars for better visual grouping */
+    /* height is set dynamically via inline style */
     border-radius: var(--radius-pill);
     position: relative;
     box-sizing: border-box;
@@ -238,20 +236,14 @@
     /* Use system color for consistency with design system */
     opacity: 1;
     align-self: start;
-    margin-top: 11px;
-    /* Vertical centering: (48px row height - 12px bar - 12px bar - 2px gap) / 2 = 11px */
-    margin-bottom: 1px;
-    /* Creates a small gap between scheduled and actual bars */
+    /* margin is set dynamically via inline style */
 }
 
 /* Actual Bar - Always on bottom */
 .gantt-bar-actual {
     background: var(--primary);
     align-self: end;
-    margin-top: 1px;
-    /* Creates a small gap between scheduled and actual bars */
-    margin-bottom: 11px;
-    /* Vertical centering: (48px row height - 12px bar - 12px bar - 2px gap) / 2 = 11px */
+    /* margin is set dynamically via inline style */
 }
 
 .gantt-bar:hover {

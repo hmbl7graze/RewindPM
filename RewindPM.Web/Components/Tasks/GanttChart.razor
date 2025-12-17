@@ -84,7 +84,7 @@
                 <div class="gantt-row gantt-task-row">
                     <div class="gantt-cell gantt-sticky-left gantt-task-name-cell" style="@GetRowHeightStyle()" title="@task.Title" @onclick="() => HandleTaskClick(task)">
                         <span class="gantt-task-title">@task.Title</span>
-                        <span class="gantt-task-status gantt-status-@GetStatusClass(task.Status)">
+                        <span class="gantt-task-status gantt-status-@GetStatusClass(task.Status)" style="@GetStatusBadgeStyle()">
                             @GetStatusLabel(task.Status)
                         </span>
                     </div>
@@ -681,22 +681,57 @@
         return $"height: {rowHeight}px;";
     }
 
+    private double GetBarHeight()
+    {
+        var rowHeight = GetActualRowHeight();
+        // バーの高さを行の高さの35%にする
+        var barHeight = rowHeight * 0.35;
+        // 最小6px、最大16pxに制限
+        return Math.Max(6, Math.Min(16, barHeight));
+    }
+
+    private double GetBarGap()
+    {
+        var rowHeight = GetActualRowHeight();
+        // ギャップを行の高さの2%にする
+        var gap = rowHeight * 0.02;
+        // 最小0px、最大4pxに制限
+        return Math.Max(0, Math.Min(4, gap));
+    }
+
+    private string GetStatusBadgeStyle()
+    {
+        var rowHeight = GetActualRowHeight();
+        // フォントサイズを行の高さに応じて調整
+        var fontSize = rowHeight * 0.25; // 行の高さの25%
+        fontSize = Math.Max(0.6, Math.Min(0.75, fontSize)); // 0.6rem〜0.75rem
+
+        // パディングを行の高さに応じて調整
+        var paddingVertical = rowHeight * 0.02; // 行の高さの2%
+        paddingVertical = Math.Max(1, Math.Min(3, paddingVertical)); // 1px〜3px
+
+        var paddingHorizontal = rowHeight * 0.12; // 行の高さの12%
+        paddingHorizontal = Math.Max(4, Math.Min(8, paddingHorizontal)); // 4px〜8px
+
+        return $"font-size: {fontSize}rem; padding: {paddingVertical}px {paddingHorizontal}px;";
+    }
+
     private string GetBarMarginStyle(string barType)
     {
         var rowHeight = GetActualRowHeight();
-        var barHeight = 12.0; // バーの高さは固定
-        var gap = 2.0; // バー間のギャップ
+        var barHeight = GetBarHeight();
+        var gap = GetBarGap();
         var verticalMargin = (rowHeight - barHeight - barHeight - gap) / 2;
 
         if (barType == "scheduled")
         {
             // 上側のバー
-            return $"margin-top: {verticalMargin}px; margin-bottom: {gap}px;";
+            return $"height: {barHeight}px; margin-top: {verticalMargin}px; margin-bottom: {gap}px;";
         }
         else // actual
         {
             // 下側のバー
-            return $"margin-top: {gap}px; margin-bottom: {verticalMargin}px;";
+            return $"height: {barHeight}px; margin-top: {gap}px; margin-bottom: {verticalMargin}px;";
         }
     }
 
