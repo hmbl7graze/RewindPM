@@ -79,20 +79,21 @@ else
         <div class="view-container">
             @if (_viewType == "Gantt")
             {
-                @if (isLoadingTasks)
-                {
-                    <div class="loading-overlay">
-                        <p><em>タスクを読み込み中...</em></p>
-                    </div>
-                }
-                else
-                {
+                <div class="gantt-container" style="position: relative;">
+                    @if (isLoadingTasks)
+                    {
+                        <div class="loading-overlay">
+                            <p><em>タスクを読み込み中...</em></p>
+                        </div>
+                    }
+                    
                     <GanttChart Tasks="@(tasks ?? new List<TaskDto>())"
                                 OnTaskClick="ShowTaskDetailModal"
                                 OnBarResize="HandleBarResize"
                                 ViewDate="_currentViewDate"
-                                IsReadOnly="_isViewingPast" />
-                }
+                                IsReadOnly="_isViewingPast"
+                                IsLoading="@isLoadingTasks" />
+                </div>
             }
             else if (_viewType == "Statistics")
             {

@@ -32,6 +32,7 @@
     position: relative;
     border: 1px solid var(--border-color);
     background: var(--bg-surface);
+    /* スクロールコンテナ内に絶対配置された要素（ツールバー）の基準点となる */
 }
 
 /* Rows */
@@ -85,7 +86,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    height: 48px;
+    /* height is set dynamically via inline style */
     transition: background-color 0.1s ease;
 }
 
@@ -106,8 +107,7 @@
 
 /* Status Badges */
 .gantt-task-status {
-    font-size: 0.7rem;
-    padding: 2px 6px;
+    /* font-size and padding are set dynamically via inline style */
     border-radius: var(--radius-pill);
     display: inline-block;
     width: fit-content;
@@ -152,6 +152,7 @@
     /* Half of header height roughly, or explicitly sized */
     display: flex;
     border-bottom: 1px solid var(--border-subtle);
+    overflow: visible;
 }
 
 .gantt-timeline-subrow:last-child {
@@ -161,7 +162,7 @@
 /* Month/Date Cells */
 /* Re-use existing grid styles but adjust heights */
 .gantt-month-cell {
-    text-align: center;
+    text-align: left;
     font-size: 0.875rem;
     font-weight: 600;
     color: var(--text-secondary);
@@ -169,8 +170,8 @@
     box-sizing: border-box;
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 8px 0;
+    justify-content: flex-start;
+    padding: 8px 0 8px 8px;
     height: 32px;
 }
 
@@ -186,6 +187,13 @@
     justify-content: center;
     background: var(--bg-subtle);
     height: 32px;
+    overflow: visible;
+}
+
+.gantt-date-label {
+    white-space: nowrap;
+    position: relative;
+    z-index: 1;
 }
 
 /* Grid */
@@ -195,6 +203,7 @@
     height: 100%;
     box-sizing: border-box;
     align-items: center;
+    overflow: visible;
 }
 
 /* Adjust Row Height to match */
@@ -210,8 +219,7 @@
 
 /* Task Bars */
 .gantt-bar {
-    height: 12px;
-    /* Thinner bars for better visual grouping */
+    /* height is set dynamically via inline style */
     border-radius: var(--radius-pill);
     position: relative;
     box-sizing: border-box;
@@ -228,20 +236,14 @@
     /* Use system color for consistency with design system */
     opacity: 1;
     align-self: start;
-    margin-top: 11px;
-    /* Vertical centering: (48px row height - 12px bar - 12px bar - 2px gap) / 2 = 11px */
-    margin-bottom: 1px;
-    /* Creates a small gap between scheduled and actual bars */
+    /* margin is set dynamically via inline style */
 }
 
 /* Actual Bar - Always on bottom */
 .gantt-bar-actual {
     background: var(--primary);
     align-self: end;
-    margin-top: 1px;
-    /* Creates a small gap between scheduled and actual bars */
-    margin-bottom: 11px;
-    /* Vertical centering: (48px row height - 12px bar - 12px bar - 2px gap) / 2 = 11px */
+    /* margin is set dynamically via inline style */
 }
 
 .gantt-bar:hover {
@@ -366,4 +368,76 @@
     .gantt-bar.fading-out {
         animation: none !important;
     }
+}
+
+/* ========================================
+   ズームツールバー
+   ======================================== */
+
+.gantt-zoom-toolbar {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    /* フォールバック: blur 非対応環境でも十分なコントラストを確保 */
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    width: fit-content;
+    cursor: move;
+    user-select: none;
+}
+
+/* blur サポート環境向けの強化スタイル */
+@supports (backdrop-filter: blur(8px)) or (-webkit-backdrop-filter: blur(8px)) {
+    .gantt-zoom-toolbar {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+}
+
+.gantt-zoom-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.gantt-zoom-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-right: 2px;
+}
+
+.gantt-zoom-btn {
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+    min-width: 36px;
+}
+
+.gantt-zoom-btn:hover:not(:disabled) {
+    background: var(--bg-subtle);
+    border-color: var(--primary);
+}
+
+.gantt-zoom-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.gantt-zoom-fit {
+    padding: 6px 16px;
 }

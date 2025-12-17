@@ -20,14 +20,38 @@
     }
     else
     {
-        <div class="gantt-scroll-container">
+        <div class="gantt-scroll-container" style="@(scriptsInitialized ? "" : "visibility: hidden;")">
+            @* Zoom Toolbar - Floating at top-right *@
+            <div class="gantt-zoom-toolbar">
+                <button class="gantt-zoom-btn gantt-zoom-fit" @onclick="FitToScreen" disabled="@IsLoading" title="全体を表示" aria-label="全体を表示">
+                    全体を表示
+                </button>
+                <div class="gantt-zoom-group">
+                    <span class="gantt-zoom-label">横:</span>
+                    <button class="gantt-zoom-btn" @onclick="ZoomOutHorizontal" disabled="@(!CanZoomOutHorizontal || IsLoading)" title="横方向縮小" aria-label="横方向縮小">
+                        −
+                    </button>
+                    <button class="gantt-zoom-btn" @onclick="ZoomInHorizontal" disabled="@(!CanZoomInHorizontal || IsLoading)" title="横方向拡大" aria-label="横方向拡大">
+                        +
+                    </button>
+                </div>
+                <div class="gantt-zoom-group">
+                    <span class="gantt-zoom-label">縦:</span>
+                    <button class="gantt-zoom-btn" @onclick="ZoomOutVertical" disabled="@(!CanZoomOutVertical || IsLoading)" title="縦方向縮小" aria-label="縦方向縮小">
+                        −
+                    </button>
+                    <button class="gantt-zoom-btn" @onclick="ZoomInVertical" disabled="@(!CanZoomInVertical || IsLoading)" title="縦方向拡大" aria-label="縦方向拡大">
+                        +
+                    </button>
+                </div>
+            </div>
             @* Header Row *@
             <div class="gantt-row gantt-header-row">
                 <div class="gantt-cell gantt-sticky-left gantt-header-corner">タスク名</div>
                 <div class="gantt-timeline-area">
                     @* Month Row *@
                     <div class="gantt-timeline-subrow">
-                        <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, minmax(40px, 1fr));">
+                        <div class="gantt-timeline-grid" style="grid-template-columns: @GetGridTemplateColumns();">
                             @foreach (var monthGroup in GetMonthGroups())
                             {
                                 <div class="gantt-month-cell" style="grid-column: @monthGroup.StartColumn / @monthGroup.EndColumn;">
@@ -38,12 +62,15 @@
                     </div>
                     @* Date Row *@
                     <div class="gantt-timeline-subrow">
-                        <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, minmax(40px, 1fr));">
+                        <div class="gantt-timeline-grid" style="grid-template-columns: @GetGridTemplateColumns();">
                             @for (int i = 0; i < TotalDays; i++)
                             {
                                 var date = TimelineStart.Value.AddDays(i);
                                 <div class="gantt-date-cell">
-                                    <div class="gantt-date-label">@date.Day</div>
+                                    @if (ShouldDisplayDateLabel(i))
+                                    {
+                                        <div class="gantt-date-label">@date.Day</div>
+                                    }
                                 </div>
                             }
                         </div>
@@ -55,14 +82,14 @@
             @foreach (var (task, index) in Tasks.Select((t, i) => (t, i)))
             {
                 <div class="gantt-row gantt-task-row">
-                    <div class="gantt-cell gantt-sticky-left gantt-task-name-cell" title="@task.Title" @onclick="() => HandleTaskClick(task)">
+                    <div class="gantt-cell gantt-sticky-left gantt-task-name-cell" style="@GetRowHeightStyle()" title="@task.Title" @onclick="() => HandleTaskClick(task)">
                         <span class="gantt-task-title">@task.Title</span>
-                        <span class="gantt-task-status gantt-status-@GetStatusClass(task.Status)">
+                        <span class="gantt-task-status gantt-status-@GetStatusClass(task.Status)" style="@GetStatusBadgeStyle()">
                             @GetStatusLabel(task.Status)
                         </span>
                     </div>
-                    <div class="gantt-timeline-area">
-                        <div class="gantt-timeline-grid" style="grid-template-columns: repeat(@TotalDays, minmax(40px, 1fr));">
+                    <div class="gantt-timeline-area" style="@GetRowHeightStyle()">
+                        <div class="gantt-timeline-grid" style="grid-template-columns: @GetGridTemplateColumns();">
                             @* Scheduled Bar *@
                             @if (ShouldDisplayBar(task.Id, "scheduled"))
                             {
@@ -72,7 +99,7 @@
                                     var gridColumn = GetGridColumn(barState.StartDate, barState.EndDate);
                                     var animationClass = GetBarAnimationClass(task.Id, "scheduled");
                                     <div class="gantt-bar gantt-bar-scheduled @animationClass"
-                                         style="grid-column: @gridColumn;"
+                                         style="grid-column: @gridColumn; @GetBarMarginStyle("scheduled")"
                                          title="予定: @barState.StartDate.ToString("yyyy/MM/dd") - @barState.EndDate.ToString("yyyy/MM/dd")"
                                          data-task-id="@task.Id"
                                          data-bar-type="scheduled">
@@ -94,7 +121,7 @@
                                     var gridColumn = GetGridColumn(barState.StartDate, barState.EndDate);
                                     var animationClass = GetBarAnimationClass(task.Id, "actual");
                                     <div class="gantt-bar gantt-bar-actual @animationClass"
-                                         style="grid-column: @gridColumn;"
+                                         style="grid-column: @gridColumn; @GetBarMarginStyle("actual")"
                                          title="実績: @barState.StartDate.ToString("yyyy/MM/dd") - @barState.EndDate.ToString("yyyy/MM/dd")"
                                          data-task-id="@task.Id"
                                          data-bar-type="actual">
@@ -130,67 +157,63 @@
     [Parameter]
     public bool IsReadOnly { get; set; } = false;
 
-    private DateTime? TimelineStart { get; set; }
-    private DateTime? TimelineEnd { get; set; }
-    private int TotalDays { get; set; }
+    [Parameter]
+    public bool IsLoading { get; set; } = false;
+
+    [Parameter]
+    public EventCallback<double> OnZoomChanged { get; set; }
+
+    // ヘルパークラス
+    private readonly GanttTimelineCalculator _timelineCalculator = new();
+    private readonly GanttZoomManager _zoomManager = new();
+    private readonly GanttBarAnimationManager _animationManager = new();
+
+    private double availableTimelineWidth = 0;
+    private double availableTimelineHeight = 0;
 
     private DotNetObjectReference<GanttChart>? dotNetRef;
     private bool scriptsInitialized = false;
 
-    // 前回のバー状態を保持（アニメーション判定用）
-    private Dictionary<string, BarState> previousBarStates = new();
-    private HashSet<string> barsToAnimate = new();
-    private readonly HashSet<string> fadingOutBars = new();
-    private Dictionary<string, BarState> displayBarStates = new();
+    // キャッシュフィールド
+    private string? _gridTemplateColumns;
+
+    // デバウンス用タイマー
+    private System.Threading.Timer? _zoomSaveTimer;
+    private const int SaveDebounceMs = 300;
+
+    // ヘルパープロパティ
+    private DateTime? TimelineStart => _timelineCalculator.TimelineStart;
+    private DateTime? TimelineEnd => _timelineCalculator.TimelineEnd;
+    private int TotalDays => _timelineCalculator.TotalDays;
 
     protected override async Task OnParametersSetAsync()
     {
         await base.OnParametersSetAsync();
 
-        if (IsInitialLoad())
+        if (_animationManager.IsInitialLoad())
         {
-            InitializeBarStates();
-            InitializeDisplayBarStates();
+            _animationManager.InitializeBarStates(Tasks);
+            _animationManager.InitializeDisplayBarStates();
         }
         else
         {
             await HandleBarsChanged();
         }
 
-        CalculateTimeline();
-    }
-
-    private bool IsInitialLoad() => previousBarStates.Count == 0;
-
-    private void InitializeBarStates()
-    {
-        if (Tasks == null) return;
-
-        foreach (var task in Tasks)
+        var timelineChanged = _timelineCalculator.CalculateTimeline(Tasks);
+        if (timelineChanged)
         {
-            if (task.ScheduledStartDate.HasValue && task.ScheduledEndDate.HasValue)
-            {
-                var key = GetBarKey(task.Id, "scheduled");
-                previousBarStates[key] = new BarState(task.ScheduledStartDate.Value, task.ScheduledEndDate.Value);
-            }
-
-            if (task.ActualStartDate.HasValue && task.ActualEndDate.HasValue)
-            {
-                var key = GetBarKey(task.Id, "actual");
-                previousBarStates[key] = new BarState(task.ActualStartDate.Value, task.ActualEndDate.Value);
-            }
+            // タイムラインが変更された場合、基準値を再計算
+            _zoomManager.CalculateBaseColumnWidth(TotalDays, availableTimelineWidth, force: true);
+            _zoomManager.CalculateBaseRowHeight(Tasks?.Count ?? 0, availableTimelineHeight, force: true);
+            UpdateGridTemplateColumns();
         }
-    }
-
-    private void InitializeDisplayBarStates()
-    {
-        displayBarStates = previousBarStates.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
     }
 
     private async Task HandleBarsChanged()
     {
-        var currentBarStates = GetCurrentBarStates();
-        var removedBars = GetRemovedBars(currentBarStates);
+        var currentBarStates = _animationManager.GetCurrentBarStates(Tasks);
+        var removedBars = _animationManager.GetRemovedBars(currentBarStates);
 
         if (removedBars.Any())
         {
@@ -198,70 +221,21 @@
         }
         else
         {
-            DetectChanges();
-            UpdateDisplayBarStates();
+            _animationManager.DetectChangesAndUpdate(Tasks);
+            _animationManager.UpdateDisplayBarStates();
         }
 
-        previousBarStates = currentBarStates;
-    }
-
-    private Dictionary<string, BarState> GetCurrentBarStates()
-    {
-        var currentBarStates = new Dictionary<string, BarState>();
-        if (Tasks == null) return currentBarStates;
-
-        foreach (var task in Tasks)
-        {
-            if (task.ScheduledStartDate.HasValue && task.ScheduledEndDate.HasValue)
-            {
-                var key = GetBarKey(task.Id, "scheduled");
-                currentBarStates[key] = new BarState(task.ScheduledStartDate.Value, task.ScheduledEndDate.Value);
-            }
-
-            if (task.ActualStartDate.HasValue && task.ActualEndDate.HasValue)
-            {
-                var key = GetBarKey(task.Id, "actual");
-                currentBarStates[key] = new BarState(task.ActualStartDate.Value, task.ActualEndDate.Value);
-            }
-        }
-
-        return currentBarStates;
-    }
-
-    private List<string> GetRemovedBars(Dictionary<string, BarState> currentBarStates)
-    {
-        return previousBarStates.Keys
-            .Where(key => !currentBarStates.ContainsKey(key))
-            .ToList();
+        _animationManager.UpdatePreviousBarStates(currentBarStates);
     }
 
     private async Task AnimateBarRemoval(List<string> removedBars)
     {
-        // フェードアウト対象をマーク
-        foreach (var barKey in removedBars)
-        {
-            fadingOutBars.Add(barKey);
-        }
-
-        // 表示バーは前回の状態を維持（削除されるバーも表示し続ける）
-        displayBarStates = previousBarStates.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
-
-        // 変更検出も実行（他のバーの変更を検出）
-        DetectChanges();
-
+        _animationManager.PrepareBarRemovalAnimation(removedBars);
         StateHasChanged();
 
-        // アニメーション期間待機
         await Task.Delay(AnimationConstants.FadeOutDurationMs);
 
-        // フェードアウト完了後、実際に削除
-        fadingOutBars.Clear();
-        UpdateDisplayBarStates();
-    }
-
-    private void UpdateDisplayBarStates()
-    {
-        displayBarStates = GetCurrentBarStates();
+        _animationManager.CompleteBarRemovalAnimation();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -271,13 +245,23 @@
             try
             {
                 dotNetRef = DotNetObjectReference.Create(this);
-                // Only initialize resize handles and pass dotnet ref for callbacks
                 await JSRuntime.InvokeVoidAsync("ganttScrollSync.initialize", dotNetRef);
+
+                availableTimelineWidth = await JSRuntime.InvokeAsync<double>("ganttZoom.getAvailableWidth");
+                availableTimelineHeight = await JSRuntime.InvokeAsync<double>("ganttZoom.getAvailableHeight");
+                _zoomManager.CalculateBaseColumnWidth(TotalDays, availableTimelineWidth);
+                _zoomManager.CalculateBaseRowHeight(Tasks?.Count ?? 0, availableTimelineHeight);
+
+                await LoadZoomLevelsFromStorage();
+                UpdateGridTemplateColumns();
+
+                await JSRuntime.InvokeVoidAsync("ganttZoom.initializeDraggableToolbar");
+
                 scriptsInitialized = true;
+                StateHasChanged();
             }
             catch (Exception ex)
             {
-                // JavaScript初期化エラーをログに記録
                 Console.Error.WriteLine($"ガントチャートの初期化エラー: {ex.Message}");
             }
         }
@@ -285,12 +269,10 @@
         {
             try
             {
-                // 再レンダリング後にリサイズハンドルを再初期化
                 await JSRuntime.InvokeVoidAsync("ganttScrollSync.reinitializeResizeHandles");
             }
             catch (Exception ex)
             {
-                // JavaScript再初期化エラーをログに記録
                 Console.Error.WriteLine($"リサイズハンドルの再初期化エラー: {ex.Message}");
             }
         }
@@ -322,60 +304,13 @@
         }
         catch { }
 
+        _zoomSaveTimer?.Dispose();
         dotNetRef?.Dispose();
-    }
-
-    private void CalculateTimeline()
-    {
-        if (Tasks == null || !Tasks.Any())
-        {
-            TimelineStart = null;
-            TimelineEnd = null;
-            TotalDays = 0;
-            return;
-        }
-
-        // 全タスクの最も早い開始日と最も遅い終了日を取得
-        var allDates = new List<DateTimeOffset>();
-
-        foreach (var task in Tasks)
-        {
-            if (task.ScheduledStartDate.HasValue)
-                allDates.Add(task.ScheduledStartDate.Value);
-            if (task.ScheduledEndDate.HasValue)
-                allDates.Add(task.ScheduledEndDate.Value);
-            if (task.ActualStartDate.HasValue)
-                allDates.Add(task.ActualStartDate.Value);
-            if (task.ActualEndDate.HasValue)
-                allDates.Add(task.ActualEndDate.Value);
-        }
-
-        if (!allDates.Any())
-        {
-            TimelineStart = null;
-            TimelineEnd = null;
-            TotalDays = 0;
-            return;
-        }
-
-        TimelineStart = allDates.Min().Date;
-        TimelineEnd = allDates.Max().Date;
-        TotalDays = (int)(TimelineEnd.Value - TimelineStart.Value).TotalDays + 1;
     }
 
     private string GetGridColumn(DateTimeOffset startDate, DateTimeOffset endDate)
     {
-        if (TimelineStart == null) return "1 / 2";
-
-        // グリッドの開始列を計算（1-indexed）
-        var startDay = (int)(startDate.Date - TimelineStart.Value).TotalDays + 1;
-        var endDay = (int)(endDate.Date - TimelineStart.Value).TotalDays + 2; // 終了日は次の日の始まりまで
-
-        // 範囲外の場合は調整
-        startDay = Math.Max(1, Math.Min(startDay, TotalDays));
-        endDay = Math.Max(startDay + 1, Math.Min(endDay, TotalDays + 1));
-
-        return $"{startDay} / {endDay}";
+        return _timelineCalculator.GetGridColumn(startDate, endDate);
     }
 
     private async Task HandleTaskClick(TaskDto task)
@@ -410,167 +345,193 @@
         };
     }
 
-    private List<MonthGroup> GetMonthGroups()
+    private List<GanttTimelineCalculator.MonthGroup> GetMonthGroups()
     {
-        var groups = new List<MonthGroup>();
-        if (TimelineStart == null || TotalDays == 0) return groups;
-
-        var processedDays = 0;
-        while (processedDays < TotalDays)
-        {
-            var currentDate = TimelineStart.Value.AddDays(processedDays);
-            var currentMonth = currentDate.Month;
-            var currentYear = currentDate.Year;
-            var startColumn = processedDays + 1;
-
-            // この月の日数をカウント
-            var daysInThisMonth = 0;
-            for (int i = processedDays; i < TotalDays; i++)
-            {
-                var checkDate = TimelineStart.Value.AddDays(i);
-                if (checkDate.Month == currentMonth && checkDate.Year == currentYear)
-                {
-                    daysInThisMonth++;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            var endColumn = startColumn + daysInThisMonth;
-            groups.Add(new MonthGroup
-            {
-                Year = currentYear,
-                Month = currentMonth,
-                StartColumn = startColumn,
-                EndColumn = endColumn,
-                DayCount = daysInThisMonth
-            });
-
-            processedDays += daysInThisMonth;
-        }
-
-        return groups;
-    }
-
-    private void DetectChanges()
-    {
-        if (Tasks == null) return;
-
-        var newBarsToAnimate = new HashSet<string>();
-        var currentBarStates = new Dictionary<string, BarState>();
-
-        foreach (var task in Tasks)
-        {
-            // Scheduled Bar
-            if (task.ScheduledStartDate.HasValue && task.ScheduledEndDate.HasValue)
-            {
-                var key = GetBarKey(task.Id, "scheduled");
-                var currentState = new BarState(task.ScheduledStartDate.Value, task.ScheduledEndDate.Value);
-                currentBarStates[key] = currentState;
-
-                if (previousBarStates.TryGetValue(key, out var previousState))
-                {
-                    // 前回の状態と比較して変更があればアニメーション対象に追加
-                    if (!previousState.Equals(currentState))
-                    {
-                        newBarsToAnimate.Add(key);
-                    }
-                }
-                else
-                {
-                    // 新規追加されたバーはアニメーション対象
-                    newBarsToAnimate.Add(key);
-                }
-            }
-
-            // Actual Bar
-            if (task.ActualStartDate.HasValue && task.ActualEndDate.HasValue)
-            {
-                var key = GetBarKey(task.Id, "actual");
-                var currentState = new BarState(task.ActualStartDate.Value, task.ActualEndDate.Value);
-                currentBarStates[key] = currentState;
-
-                if (previousBarStates.TryGetValue(key, out var previousState))
-                {
-                    // 前回の状態と比較して変更があればアニメーション対象に追加
-                    if (!previousState.Equals(currentState))
-                    {
-                        newBarsToAnimate.Add(key);
-                    }
-                }
-                else
-                {
-                    // 新規追加されたバーはアニメーション対象
-                    newBarsToAnimate.Add(key);
-                }
-            }
-        }
-
-        // 削除されたバーを検出（前回存在したが今回存在しないバー）
-        // 削除の場合はアニメーションしない（バーが消えるだけ）
-
-        // 状態を更新
-        previousBarStates = currentBarStates;
-        barsToAnimate = newBarsToAnimate;
-    }
-
-    private string GetBarKey(Guid taskId, string barType)
-    {
-        return $"{taskId}_{barType}";
+        return _timelineCalculator.GetMonthGroups();
     }
 
     private bool ShouldDisplayBar(Guid taskId, string barType)
     {
-        var key = GetBarKey(taskId, barType);
-        return displayBarStates.ContainsKey(key);
+        return _animationManager.ShouldDisplayBar(taskId, barType);
     }
 
-    private BarState? GetDisplayBarState(Guid taskId, string barType)
+    private GanttBarAnimationManager.BarState? GetDisplayBarState(Guid taskId, string barType)
     {
-        var key = GetBarKey(taskId, barType);
-        return displayBarStates.TryGetValue(key, out var state) ? state : null;
+        return _animationManager.GetDisplayBarState(taskId, barType);
     }
 
     private string GetBarAnimationClass(Guid taskId, string barType)
     {
-        var key = GetBarKey(taskId, barType);
-        if (fadingOutBars.Contains(key))
-        {
-            return "fading-out";
-        }
-        if (barsToAnimate.Contains(key))
-        {
-            return "animating";
-        }
-        return "";
+        return _animationManager.GetBarAnimationClass(taskId, barType);
     }
 
-    private class MonthGroup
+    // ========== ズーム機能 ==========
+
+    private void UpdateGridTemplateColumns()
     {
-        public int Year { get; set; }
-        public int Month { get; set; }
-        public int StartColumn { get; set; }
-        public int EndColumn { get; set; }
-        public int DayCount { get; set; }
+        var cellWidth = _zoomManager.GetActualCellWidth();
+        _gridTemplateColumns = $"repeat({TotalDays}, {cellWidth}px)";
     }
 
-    private record BarState(DateTimeOffset StartDate, DateTimeOffset EndDate)
+    private string GetGridTemplateColumns()
     {
-        public virtual bool Equals(BarState? other)
+        // グリッドテンプレートが未初期化または空の場合はここで再計算する
+        if (string.IsNullOrEmpty(_gridTemplateColumns))
         {
-            if (ReferenceEquals(this, other)) return true;
-            if (other is null) return false;
-            // UTC時刻で比較
-            return StartDate.UtcDateTime == other.StartDate.UtcDateTime
-                && EndDate.UtcDateTime == other.EndDate.UtcDateTime;
+            UpdateGridTemplateColumns();
         }
+        return _gridTemplateColumns ?? string.Empty;
+    }
 
-        public override int GetHashCode()
+    private string GetRowHeightStyle()
+    {
+        var rowHeight = _zoomManager.GetActualRowHeight();
+        return $"height: {rowHeight}px;";
+    }
+
+    private string GetStatusBadgeStyle()
+    {
+        var rowHeight = _zoomManager.GetActualRowHeight();
+        var fontSize = rowHeight * GanttConstants.StatusBadge.FontSizeRatio;
+        fontSize = Math.Max(GanttConstants.StatusBadge.MinFontSize, Math.Min(GanttConstants.StatusBadge.MaxFontSize, fontSize));
+
+        var paddingVertical = rowHeight * GanttConstants.StatusBadge.PaddingVerticalRatio;
+        paddingVertical = Math.Max(GanttConstants.StatusBadge.MinPaddingVertical, Math.Min(GanttConstants.StatusBadge.MaxPaddingVertical, paddingVertical));
+
+        var paddingHorizontal = rowHeight * GanttConstants.StatusBadge.PaddingHorizontalRatio;
+        paddingHorizontal = Math.Max(GanttConstants.StatusBadge.MinPaddingHorizontal, Math.Min(GanttConstants.StatusBadge.MaxPaddingHorizontal, paddingHorizontal));
+
+        return $"font-size: {fontSize}rem; padding: {paddingVertical}px {paddingHorizontal}px;";
+    }
+
+    private string GetBarMarginStyle(string barType)
+    {
+        var rowHeight = _zoomManager.GetActualRowHeight();
+        var barHeight = _zoomManager.GetBarHeight();
+        var gap = _zoomManager.GetBarGap();
+        var verticalMargin = (rowHeight - barHeight - barHeight - gap) / 2;
+
+        var isScheduled = barType == "scheduled";
+        var marginTop = isScheduled ? verticalMargin : gap;
+        var marginBottom = isScheduled ? gap : verticalMargin;
+
+        return $"height: {barHeight}px; margin-top: {marginTop}px; margin-bottom: {marginBottom}px;";
+    }
+
+    private bool CanZoomInHorizontal => _zoomManager.CanZoomInHorizontal;
+    private bool CanZoomOutHorizontal => _zoomManager.CanZoomOutHorizontal;
+    private bool CanZoomInVertical => _zoomManager.CanZoomInVertical;
+    private bool CanZoomOutVertical => _zoomManager.CanZoomOutVertical;
+
+    private async Task ZoomInHorizontal()
+    {
+        if (_zoomManager.CanZoomInHorizontal)
         {
-            // UTC時刻でハッシュ化
-            return HashCode.Combine(StartDate.UtcDateTime, EndDate.UtcDateTime);
+            _zoomManager.ZoomInHorizontal();
+            UpdateGridTemplateColumns();
+            DebounceSaveZoomLevels();
+            if (OnZoomChanged.HasDelegate)
+            {
+                await OnZoomChanged.InvokeAsync(_zoomManager.HorizontalZoomScale);
+            }
+            StateHasChanged();
         }
+    }
+
+    private async Task ZoomOutHorizontal()
+    {
+        if (_zoomManager.CanZoomOutHorizontal)
+        {
+            _zoomManager.ZoomOutHorizontal();
+            UpdateGridTemplateColumns();
+            DebounceSaveZoomLevels();
+            if (OnZoomChanged.HasDelegate)
+            {
+                await OnZoomChanged.InvokeAsync(_zoomManager.HorizontalZoomScale);
+            }
+            StateHasChanged();
+        }
+    }
+
+    private void ZoomInVertical()
+    {
+        if (_zoomManager.CanZoomInVertical)
+        {
+            _zoomManager.ZoomInVertical();
+            DebounceSaveZoomLevels();
+            StateHasChanged();
+        }
+    }
+
+    private void ZoomOutVertical()
+    {
+        if (_zoomManager.CanZoomOutVertical)
+        {
+            _zoomManager.ZoomOutVertical();
+            DebounceSaveZoomLevels();
+            StateHasChanged();
+        }
+    }
+
+    private async Task FitToScreen()
+    {
+        _zoomManager.FitToScreen(TotalDays, Tasks?.Count ?? 0, availableTimelineWidth, availableTimelineHeight);
+        UpdateGridTemplateColumns();
+        DebounceSaveZoomLevels();
+        if (OnZoomChanged.HasDelegate)
+        {
+            await OnZoomChanged.InvokeAsync(_zoomManager.HorizontalZoomScale);
+        }
+        StateHasChanged();
+    }
+
+    private async Task LoadZoomLevelsFromStorage()
+    {
+        try
+        {
+            var hZoom = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", GanttConstants.StorageKeys.HorizontalZoom);
+            var vZoom = await JSRuntime.InvokeAsync<string?>("localStorage.getItem", GanttConstants.StorageKeys.VerticalZoom);
+
+            var hZoomIndex = hZoom != null && int.TryParse(hZoom, out var h) ? h : 0;
+            var vZoomIndex = vZoom != null && int.TryParse(vZoom, out var v) ? v : 0;
+
+            _zoomManager.RestoreZoomLevels(hZoomIndex, vZoomIndex);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ローカルストレージからズームレベルを読み取れませんでした: {ex.Message}");
+        }
+    }
+
+    private void DebounceSaveZoomLevels()
+    {
+        _zoomSaveTimer?.Dispose();
+        _zoomSaveTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await SaveZoomLevelsToStorage();
+            });
+        }, null, SaveDebounceMs, System.Threading.Timeout.Infinite);
+    }
+
+    private async Task SaveZoomLevelsToStorage()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", GanttConstants.StorageKeys.HorizontalZoom, _zoomManager.HorizontalZoomLevelIndex.ToString());
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", GanttConstants.StorageKeys.VerticalZoom, _zoomManager.VerticalZoomLevelIndex.ToString());
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ローカルストレージにズームレベルを保存できませんでした: {ex.Message}");
+        }
+    }
+
+    private bool ShouldDisplayDateLabel(int dayIndex)
+    {
+        if (TimelineStart == null) return false;
+        var date = TimelineStart.Value.AddDays(dayIndex);
+        return _zoomManager.ShouldDisplayDateLabel(dayIndex, date.Day);
     }
 }
