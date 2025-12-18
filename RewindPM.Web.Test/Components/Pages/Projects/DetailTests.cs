@@ -1258,5 +1258,153 @@ public class DetailTests : Bunit.TestContext
         _mediatorMock.Received(1)
             .Send(Arg.Any<GetProjectStatisticsDetailQuery>(), Arg.Any<CancellationToken>());
     }
+
+    // ========== 新規タスクボタンの表示制御テスト ==========
+
+    [Fact(DisplayName = "統計タブ表示時に新規タスクボタンが非表示になること")]
+    public void Detail_HidesNewTaskButton_WhenStatisticsTabIsActive()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DateTimeOffset>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - Statisticsタブをクリック
+        var statisticsTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("統計"));
+        statisticsTab.Click();
+
+        // Assert - 新規タスクボタンが存在しないことを確認
+        var newTaskButtons = cut.FindAll("button").Where(b => b.TextContent.Contains("新規タスク"));
+        Assert.Empty(newTaskButtons);
+    }
+
+    [Fact(DisplayName = "Kanbanタブ表示時に新規タスクボタンが表示されること")]
+    public void Detail_ShowsNewTaskButton_WhenKanbanTabIsActive()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DateTimeOffset>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - Kanbanタブをクリック（デフォルトはKanbanだが、明示的にクリック）
+        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("カンバン"));
+        kanbanTab.Click();
+
+        // Assert - 新規タスクボタンが表示されていることを確認
+        var newTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("新規タスク"));
+        Assert.NotNull(newTaskButton);
+        Assert.False(newTaskButton.HasAttribute("disabled")); // 過去表示中でないので有効
+    }
+
+    [Fact(DisplayName = "Ganttタブ表示時に新規タスクボタンが表示されること")]
+    public void Detail_ShowsNewTaskButton_WhenGanttTabIsActive()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DateTimeOffset>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - Ganttタブをクリック
+        var ganttTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("ガントチャート"));
+        ganttTab.Click();
+
+        // Assert - 新規タスクボタンが表示されていることを確認
+        var newTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("新規タスク"));
+        Assert.NotNull(newTaskButton);
+        Assert.False(newTaskButton.HasAttribute("disabled")); // 過去表示中でないので有効
+    }
+
+    [Fact(DisplayName = "統計タブから他のタブに切り替えた際に新規タスクボタンが再表示されること")]
+    public void Detail_ShowsNewTaskButton_WhenSwitchingFromStatisticsToOtherTab()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DateTimeOffset>());
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Act - Statisticsタブをクリック
+        var statisticsTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("統計"));
+        statisticsTab.Click();
+
+        // 統計タブでボタンが非表示であることを確認
+        var buttonsOnStatistics = cut.FindAll("button").Where(b => b.TextContent.Contains("新規タスク"));
+        Assert.Empty(buttonsOnStatistics);
+
+        // Kanbanタブに切り替え
+        var kanbanTab = cut.FindAll(".view-tab").First(t => t.TextContent.Contains("カンバン"));
+        kanbanTab.Click();
+
+        // Assert - 新規タスクボタンが再表示されていることを確認
+        var newTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("新規タスク"));
+        Assert.NotNull(newTaskButton);
+    }
+
+    [Fact(DisplayName = "統計タブ表示時にクエリパラメータで直接アクセスした場合も新規タスクボタンが非表示になること")]
+    public void Detail_HidesNewTaskButton_WhenAccessingStatisticsTabDirectlyViaQueryParameter()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<TaskDto>());
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DateTimeOffset>());
+
+        // NavigationManagerのURIを設定（統計タブを直接指定）
+        var navMan = Services.GetRequiredService<NavigationManager>();
+        navMan.NavigateTo($"/projects/{_testProjectId}?tab=statistics");
+
+        // Act
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // Assert - 新規タスクボタンが存在しないことを確認
+        var newTaskButtons = cut.FindAll("button").Where(b => b.TextContent.Contains("新規タスク"));
+        Assert.Empty(newTaskButtons);
+    }
 }
 
