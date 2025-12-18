@@ -28,7 +28,7 @@ public static class GanttConstants
         /// <summary>
         /// 最小セル幅
         /// </summary>
-        public const double Min = 6.0;
+        public const double Min = 8.0;
 
         /// <summary>
         /// 最大セル幅
@@ -162,7 +162,7 @@ public static class GanttConstants
         /// <summary>
         /// 3日おきに表示する最小セル幅
         /// </summary>
-        public const double ShowEvery3DaysThreshold = 7.0;
+        public const double ShowEvery3DaysThreshold = 17.9;
     }
 
     /// <summary>
