@@ -311,7 +311,7 @@ public class TaskFormModalTests : Bunit.TestContext
 
         // Assert
         var errors = cut.FindAll(".text-danger");
-        Assert.Contains(errors, e => e.TextContent.Contains("終了日は開始日より後の日付を指定してください"));
+        Assert.Contains(errors, e => e.TextContent.Contains("予定終了日は予定開始日より後でなければなりません"));
 
         // コマンドが送信されていないことを確認
         await _mediatorMock.DidNotReceive().Send(
@@ -482,6 +482,255 @@ public class TaskFormModalTests : Bunit.TestContext
                 cmd.ActualStartDate == actualStartDate &&
                 cmd.ActualEndDate == actualEndDate &&
                 cmd.ActualHours == 30),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "編集モードで開始日のみ入力した場合、バリデーションエラーが表示される")]
+    public async Task TaskFormModal_DisplaysValidationError_WhenOnlyStartDateEntered()
+    {
+        // Arrange
+        var existingTask = new TaskDto
+        {
+            Id = _testTaskId,
+            ProjectId = _testProjectId,
+            Title = "Test Task",
+            Description = "Test Description",
+            Status = TaskStatus.Todo,
+            ScheduledStartDate = null,
+            ScheduledEndDate = null,
+            EstimatedHours = null,
+            ActualStartDate = null,
+            ActualEndDate = null,
+            ActualHours = null,
+            CreatedAt = DateTime.Now,
+            UpdatedAt = null,
+            CreatedBy = "admin"
+        };
+
+        var cut = RenderComponent<TaskFormModal>(parameters => parameters
+            .Add(p => p.IsVisible, true)
+            .Add(p => p.ProjectId, _testProjectId)
+            .Add(p => p.ExistingTask, existingTask));
+
+        // Act
+        var dateInputs = cut.FindAll("input[type='date']");
+        var startDateInput = dateInputs[0];
+        await cut.InvokeAsync(() => startDateInput.Change(DateTime.Today.ToString("yyyy-MM-dd")));
+
+        var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
+        await cut.InvokeAsync(() => saveButton.Click());
+
+        // Assert
+        var errors = cut.FindAll(".text-danger");
+        Assert.Contains(errors, e => e.TextContent.Contains("予定期間を変更する場合は、開始日と終了日の両方を入力してください"));
+
+        // コマンドが送信されていないことを確認
+        await _mediatorMock.DidNotReceive().Send(
+            Arg.Any<ChangeTaskScheduleCommand>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "編集モードで終了日のみ入力した場合、バリデーションエラーが表示される")]
+    public async Task TaskFormModal_DisplaysValidationError_WhenOnlyEndDateEntered()
+    {
+        // Arrange
+        var existingTask = new TaskDto
+        {
+            Id = _testTaskId,
+            ProjectId = _testProjectId,
+            Title = "Test Task",
+            Description = "Test Description",
+            Status = TaskStatus.Todo,
+            ScheduledStartDate = null,
+            ScheduledEndDate = null,
+            EstimatedHours = null,
+            ActualStartDate = null,
+            ActualEndDate = null,
+            ActualHours = null,
+            CreatedAt = DateTime.Now,
+            UpdatedAt = null,
+            CreatedBy = "admin"
+        };
+
+        var cut = RenderComponent<TaskFormModal>(parameters => parameters
+            .Add(p => p.IsVisible, true)
+            .Add(p => p.ProjectId, _testProjectId)
+            .Add(p => p.ExistingTask, existingTask));
+
+        // Act
+        var dateInputs = cut.FindAll("input[type='date']");
+        var endDateInput = dateInputs[1];
+        await cut.InvokeAsync(() => endDateInput.Change(DateTime.Today.AddDays(5).ToString("yyyy-MM-dd")));
+
+        var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
+        await cut.InvokeAsync(() => saveButton.Click());
+
+        // Assert
+        var errors = cut.FindAll(".text-danger");
+        Assert.Contains(errors, e => e.TextContent.Contains("予定期間を変更する場合は、開始日と終了日の両方を入力してください"));
+
+        // コマンドが送信されていないことを確認
+        await _mediatorMock.DidNotReceive().Send(
+            Arg.Any<ChangeTaskScheduleCommand>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "編集モードで工数なしで予定期間を変更できる")]
+    public async Task TaskFormModal_CanUpdateScheduleWithoutEstimatedHours()
+    {
+        // Arrange
+        var existingTask = CreateTestTask();
+        _mediatorMock
+            .Send(Arg.Any<ChangeTaskScheduleCommand>(), Arg.Any<CancellationToken>())
+            .Returns(Task.CompletedTask);
+
+        var cut = RenderComponent<TaskFormModal>(parameters => parameters
+            .Add(p => p.IsVisible, true)
+            .Add(p => p.ProjectId, _testProjectId)
+            .Add(p => p.ExistingTask, existingTask)
+            .Add(p => p.OnSuccess, EventCallback.Factory.Create(this, () => { })));
+
+        // Act
+        // 開始日を変更
+        var dateInputs = cut.FindAll("input[type='date']");
+        var startDateInput = dateInputs[0];
+        await cut.InvokeAsync(() => startDateInput.Change(DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")));
+
+        // 再レンダリング後に終了日を変更
+        dateInputs = cut.FindAll("input[type='date']");
+        var endDateInput = dateInputs[1];
+        await cut.InvokeAsync(() => endDateInput.Change(DateTime.Today.AddDays(8).ToString("yyyy-MM-dd")));
+
+        // 再レンダリング後に工数をクリア
+        var estimatedHoursInputs = cut.FindAll("input[type='number']");
+        var estimatedHoursInput = estimatedHoursInputs[0];
+        await cut.InvokeAsync(() => estimatedHoursInput.Change(""));
+
+        // 再レンダリング後に保存ボタンをクリック
+        var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
+        await cut.InvokeAsync(() => saveButton.Click());
+
+        // Assert - ChangeTaskScheduleCommandがEstimatedHours=nullで送信される
+        await _mediatorMock.Received(1).Send(
+            Arg.Is<ChangeTaskScheduleCommand>(cmd =>
+                cmd.TaskId == _testTaskId &&
+                cmd.EstimatedHours == null),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "工数が0の場合、バリデーションエラーが表示される")]
+    public async Task TaskFormModal_DisplaysValidationError_WhenEstimatedHoursIsZero()
+    {
+        // Arrange
+        var cut = RenderComponent<TaskFormModal>(parameters => parameters
+            .Add(p => p.IsVisible, true)
+            .Add(p => p.ProjectId, _testProjectId));
+
+        // Act
+        var titleInput = cut.Find(".task-title-input");
+        await cut.InvokeAsync(() => titleInput.Change("Test Task"));
+
+        var estimatedHoursInputs = cut.FindAll("input[type='number']");
+        var estimatedHoursInput = estimatedHoursInputs[0];
+        await cut.InvokeAsync(() => estimatedHoursInput.Change("0"));
+
+        var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
+        await cut.InvokeAsync(() => saveButton.Click());
+
+        // Assert
+        var errors = cut.FindAll(".invalid-feedback");
+        Assert.Contains(errors, e => e.TextContent.Contains("見積工数は正の数でなければなりません"));
+
+        // コマンドが送信されていないことを確認
+        await _mediatorMock.DidNotReceive().Send(
+            Arg.Any<CreateTaskCommand>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "工数が負の値の場合、バリデーションエラーが表示される")]
+    public async Task TaskFormModal_DisplaysValidationError_WhenEstimatedHoursIsNegative()
+    {
+        // Arrange
+        var cut = RenderComponent<TaskFormModal>(parameters => parameters
+            .Add(p => p.IsVisible, true)
+            .Add(p => p.ProjectId, _testProjectId));
+
+        // Act
+        var titleInput = cut.Find(".task-title-input");
+        await cut.InvokeAsync(() => titleInput.Change("Test Task"));
+
+        var estimatedHoursInputs = cut.FindAll("input[type='number']");
+        var estimatedHoursInput = estimatedHoursInputs[0];
+        await cut.InvokeAsync(() => estimatedHoursInput.Change("-5"));
+
+        var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
+        await cut.InvokeAsync(() => saveButton.Click());
+
+        // Assert
+        var errors = cut.FindAll(".invalid-feedback");
+        Assert.Contains(errors, e => e.TextContent.Contains("見積工数は正の数でなければなりません"));
+
+        // コマンドが送信されていないことを確認
+        await _mediatorMock.DidNotReceive().Send(
+            Arg.Any<CreateTaskCommand>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "新規作成モードで開始日のみ入力した場合、バリデーションエラーが表示される")]
+    public async Task TaskFormModal_NewMode_DisplaysValidationError_WhenOnlyStartDateEntered()
+    {
+        // Arrange
+        var cut = RenderComponent<TaskFormModal>(parameters => parameters
+            .Add(p => p.IsVisible, true)
+            .Add(p => p.ProjectId, _testProjectId));
+
+        // Act
+        var titleInput = cut.Find(".task-title-input");
+        await cut.InvokeAsync(() => titleInput.Change("Test Task"));
+
+        var dateInputs = cut.FindAll("input[type='date']");
+        var startDateInput = dateInputs[0];
+        await cut.InvokeAsync(() => startDateInput.Change(DateTime.Today.ToString("yyyy-MM-dd")));
+
+        var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
+        await cut.InvokeAsync(() => saveButton.Click());
+
+        // Assert
+        var errors = cut.FindAll(".text-danger");
+        Assert.Contains(errors, e => e.TextContent.Contains("予定期間を変更する場合は、開始日と終了日の両方を入力してください"));
+
+        // コマンドが送信されていないことを確認
+        await _mediatorMock.DidNotReceive().Send(
+            Arg.Any<CreateTaskCommand>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "新規作成モードで終了日のみ入力した場合、バリデーションエラーが表示される")]
+    public async Task TaskFormModal_NewMode_DisplaysValidationError_WhenOnlyEndDateEntered()
+    {
+        // Arrange
+        var cut = RenderComponent<TaskFormModal>(parameters => parameters
+            .Add(p => p.IsVisible, true)
+            .Add(p => p.ProjectId, _testProjectId));
+
+        // Act
+        var titleInput = cut.Find(".task-title-input");
+        await cut.InvokeAsync(() => titleInput.Change("Test Task"));
+
+        var dateInputs = cut.FindAll("input[type='date']");
+        var endDateInput = dateInputs[1];
+        await cut.InvokeAsync(() => endDateInput.Change(DateTime.Today.AddDays(5).ToString("yyyy-MM-dd")));
+
+        var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
+        await cut.InvokeAsync(() => saveButton.Click());
+
+        // Assert
+        var errors = cut.FindAll(".text-danger");
+        Assert.Contains(errors, e => e.TextContent.Contains("予定期間を変更する場合は、開始日と終了日の両方を入力してください"));
+
+        // コマンドが送信されていないことを確認
+        await _mediatorMock.DidNotReceive().Send(
+            Arg.Any<CreateTaskCommand>(),
             Arg.Any<CancellationToken>());
     }
 }
