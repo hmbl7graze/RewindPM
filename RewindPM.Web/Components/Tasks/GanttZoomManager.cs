@@ -243,19 +243,15 @@ public class GanttZoomManager
         }
         else if (cellWidth >= GanttConstants.DateLabel.ShowEvery2DaysThreshold)
         {
-            return day == 1 || dayIndex % 2 == 0;
+            return dayIndex % 2 == 0;
         }
         else if (cellWidth >= GanttConstants.DateLabel.ShowEvery3DaysThreshold)
         {
-            return day == 1 || dayIndex % 3 == 0;
-        }
-        else if (cellWidth >= GanttConstants.DateLabel.ShowEvery5DaysThreshold)
-        {
-            return day == 1 || dayIndex % 5 == 0;
+            return dayIndex % 3 == 0;
         }
         else
         {
-            return day == 1 || dayIndex % 10 == 0;
+            return dayIndex % 5 == 0;
         }
     }
 }
