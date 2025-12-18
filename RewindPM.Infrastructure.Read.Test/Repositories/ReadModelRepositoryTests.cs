@@ -659,4 +659,65 @@ public class ReadModelRepositoryTests : IDisposable
         Assert.Single(result);
         Assert.Equal(baseDate, result[0]); // プロジェクト1の日付のみ
     }
+
+    [Fact(DisplayName = "同じ日付の異なる時刻の履歴がある場合、日付部分のみで重複を除外すること")]
+    public async Task GetProjectEditDatesAsync_SameDay_DifferentTimes_ShouldReturnOneDatePerDay()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var baseDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+
+        // 同じ日（1月1日）の異なる時刻に3つのタスク履歴を作成
+        var history1 = new TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = Guid.NewGuid(),
+            ProjectId = projectId,
+            SnapshotDate = baseDate.AddHours(9), // 9:00
+            Title = "Task 1",
+            Description = "Description",
+            Status = TaskStatus.Todo,
+            CreatedAt = baseDate,
+            CreatedBy = "user1",
+            SnapshotCreatedAt = baseDate.AddHours(9)
+        };
+
+        var history2 = new TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = Guid.NewGuid(),
+            ProjectId = projectId,
+            SnapshotDate = baseDate.AddHours(14), // 14:00（同じ日）
+            Title = "Task 2",
+            Description = "Description",
+            Status = TaskStatus.Todo,
+            CreatedAt = baseDate,
+            CreatedBy = "user1",
+            SnapshotCreatedAt = baseDate.AddHours(14)
+        };
+
+        var history3 = new TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = Guid.NewGuid(),
+            ProjectId = projectId,
+            SnapshotDate = baseDate.AddHours(18), // 18:00（同じ日）
+            Title = "Task 3",
+            Description = "Description",
+            Status = TaskStatus.Todo,
+            CreatedAt = baseDate,
+            CreatedBy = "user1",
+            SnapshotCreatedAt = baseDate.AddHours(18)
+        };
+
+        _context.TaskHistories.AddRange(history1, history2, history3);
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        var result = await _repository.GetProjectEditDatesAsync(projectId, ascending: false, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Single(result); // 時刻が異なっても日付部分で重複除外されるため1つだけ
+        Assert.Equal(baseDate.Date, result[0].Date);
+    }
 }

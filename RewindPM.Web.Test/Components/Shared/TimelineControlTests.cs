@@ -880,9 +880,9 @@ public class TimelineControlTests : Bunit.TestContext
         var today = DateTimeOffset.Now.Date;
         var editDates = new List<DateTimeOffset>
         {
-            new DateTimeOffset(today.AddDays(5)),
+            new DateTimeOffset(today.AddDays(-5)),
             new DateTimeOffset(today),
-            new DateTimeOffset(today.AddDays(-5))
+            new DateTimeOffset(today.AddDays(-10))
         };
 
         var cut = RenderComponent<TimelineControl>(parameters => parameters
@@ -921,10 +921,10 @@ public class TimelineControlTests : Bunit.TestContext
 
         // 1/10を選択(EditDatesには含まれていないが範囲内)
         var dayButtons = cut.FindAll(".calendar-day");
-        var targetButton = dayButtons.FirstOrDefault(b => 
-            !b.HasAttribute("disabled") && 
+        var targetButton = dayButtons.FirstOrDefault(b =>
+            !b.HasAttribute("disabled") &&
             b.TextContent.Trim() == "10");
-        
+
         Assert.NotNull(targetButton);
         targetButton.Click();
 
@@ -932,6 +932,89 @@ public class TimelineControlTests : Bunit.TestContext
         Assert.NotNull(selectedDate);
         // 1/10に最も近いのは1/15 (5日差)。1/5も5日差で同じだが、EditDatesリスト内で先に定義されている1/15が選ばれる（順序依存の挙動）
         Assert.Equal(new DateTime(2025, 1, 15), selectedDate.Value.Date);
+    }
+
+    [Fact(DisplayName = "今日の日付を選択した場合、最新状態(null)が渡される")]
+    public void TimelineControl_ReturnsNull_WhenTodaySelected()
+    {
+        // Arrange
+        var today = DateTimeOffset.Now.Date;
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(today.AddDays(-5)),
+            new DateTimeOffset(today), // 今日の日付がEditDatesに含まれている
+            new DateTimeOffset(today.AddDays(-10))
+        };
+        DateTimeOffset? selectedDate = new DateTimeOffset(today.AddDays(-10)); // 初期値
+
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates)
+            .Add(p => p.OnDateChanged, EventCallback.Factory.Create<DateTimeOffset?>(this, d => selectedDate = d)));
+
+        // Act
+        var calendarButton = cut.Find(".timeline-btn-calendar");
+        calendarButton.Click();
+
+        // 今日の日付を選択
+        var dayButtons = cut.FindAll(".calendar-day");
+        var targetButton = dayButtons.FirstOrDefault(b =>
+            !b.HasAttribute("disabled") &&
+            b.TextContent.Trim() == today.Day.ToString());
+
+        Assert.NotNull(targetButton);
+        targetButton.Click();
+
+        // Assert - 今日を選択したのでnullが渡される（最新状態）
+        Assert.Null(selectedDate);
+    }
+
+    [Fact(DisplayName = "最新の編集日が今日の場合、FilteredEditDatesから除外される")]
+    public void TimelineControl_FiltersOutToday_WhenTodayIsLatestEditDate()
+    {
+        // Arrange
+        var today = DateTimeOffset.Now.Date;
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(today), // 最新の編集日が今日
+            new DateTimeOffset(today.AddDays(-1)),
+            new DateTimeOffset(today.AddDays(-2))
+        };
+
+        // Act
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates));
+
+        // Assert
+        var slider = cut.Find("input.timeline-slider");
+        var maxValue = slider.GetAttribute("max");
+        // 今日の日付が除外されるため、FilteredEditDatesのCount = 2
+        Assert.Equal("2", maxValue);
+    }
+
+    [Fact(DisplayName = "最新の編集日が昨日以前の場合、FilteredEditDatesから除外されない")]
+    public void TimelineControl_DoesNotFilterOut_WhenLatestEditDateIsNotToday()
+    {
+        // Arrange
+        var today = DateTimeOffset.Now.Date;
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(today.AddDays(-1)), // 昨日
+            new DateTimeOffset(today.AddDays(-2)),
+            new DateTimeOffset(today.AddDays(-3))
+        };
+
+        // Act
+        var cut = RenderComponent<TimelineControl>(parameters => parameters
+            .Add(p => p.CurrentDate, null)
+            .Add(p => p.EditDates, editDates));
+
+        // Assert
+        var slider = cut.Find("input.timeline-slider");
+        var maxValue = slider.GetAttribute("max");
+        // 今日の日付がEditDatesに含まれていないため、FilteredEditDatesのCount = 3
+        Assert.Equal("3", maxValue);
     }
 
     #endregion

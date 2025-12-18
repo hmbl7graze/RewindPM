@@ -155,17 +155,23 @@ public class ReadModelRepository : IReadModelRepository
     public async Task<List<DateTimeOffset>> GetProjectEditDatesAsync(Guid projectId, bool ascending = false, CancellationToken cancellationToken = default)
     {
         // プロジェクトに属するタスクの履歴から、編集日（SnapshotDate）を取得
+        // 同じ日付の異なる時刻は、日付部分のみで重複除外する
         // SQLiteはDateTimeOffsetのORDER BYをサポートしないため、クライアント側でソート
         var dates = await _context.TaskHistories
             .Where(h => h.ProjectId == projectId)
             .Select(h => h.SnapshotDate)
-            .Distinct()
             .ToListAsync(cancellationToken);
+
+        // 日付部分でグループ化し、各日付の最新の時刻を取得
+        var uniqueDates = dates
+            .GroupBy(d => d.Date)
+            .Select(g => g.OrderByDescending(d => d).First())
+            .ToList();
 
         // クライアント側で並び順を指定
         return ascending
-            ? dates.OrderBy(d => d).ToList()
-            : dates.OrderByDescending(d => d).ToList();
+            ? uniqueDates.OrderBy(d => d).ToList()
+            : uniqueDates.OrderByDescending(d => d).ToList();
     }
 
     /// <summary>

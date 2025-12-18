@@ -130,6 +130,8 @@
     private DateTime? _maxDate;
     private List<DateTime>? _cachedCalendarDays;
     private DateTime _cachedCalendarMonth = DateTime.MinValue;
+    // Filtered (スライダー用) EditDates のキャッシュ
+    private List<DateTimeOffset>? _filteredEditDatesCache;
 
     /// <summary>
     /// 現在表示中の日付(nullの場合は最新)
@@ -155,9 +157,44 @@
     private bool IsViewingPast => CurrentDate.HasValue;
 
     /// <summary>
+    /// スライダー表示用の編集日一覧（最新状態と重複する今日の日付を除外）
+    /// </summary>
+    private List<DateTimeOffset> FilteredEditDates
+    {
+        get
+        {
+            if (_filteredEditDatesCache != null)
+                return _filteredEditDatesCache;
+
+            if (!HasEditDates)
+                return new List<DateTimeOffset>();
+
+            _filteredEditDatesCache = ComputeFilteredEditDates();
+            return _filteredEditDatesCache;
+        }
+    }
+
+    private List<DateTimeOffset> ComputeFilteredEditDates()
+    {
+        if (!HasEditDates)
+            return new List<DateTimeOffset>();
+
+        // 最新の編集日がローカルタイムにおける今日と同じ場合、それを除外（スライダーの最新状態と重複するため）
+        var today = DateTimeOffset.Now.Date;
+        var latestLocalDate = EditDates!.First().ToLocalTime().Date;
+
+        if (latestLocalDate == today)
+        {
+            return EditDates.Skip(1).ToList();
+        }
+
+        return EditDates.ToList();
+    }
+
+    /// <summary>
     /// スライドバーの最大値(0が最古、MaxSliderValueが最新)
     /// </summary>
-    private int MaxSliderValue => EditDates?.Count ?? 0;
+    private int MaxSliderValue => FilteredEditDates?.Count ?? 0;
 
     /// <summary>
     /// 現在のスライドバーの値
@@ -169,8 +206,8 @@
             if (!CurrentDate.HasValue)
                 return MaxSliderValue; // 最新（右端）
 
-            // EditDatesリストでのインデックスを検索（降順リストなので反転）
-            var index = EditDates?.FindIndex(d => d.Date == CurrentDate.Value.Date) ?? -1;
+            // FilteredEditDatesリストでのインデックスを検索（降順リストなので反転）
+            var index = FilteredEditDates?.FindIndex(d => d.Date == CurrentDate.Value.Date) ?? -1;
             if (index >= 0)
             {
                 // 反転: 0番目（最新の編集日）→MaxSliderValue-1、最後（最古）→0
@@ -196,7 +233,7 @@
                 return false;
 
             if (IsViewingLatest)
-                return EditDates.Count > 0;
+                return FilteredEditDates.Count > 0;
 
             return HasOlderDates();
         }
@@ -209,7 +246,7 @@
 
     private bool HasEditDates => EditDates != null && EditDates.Count > 0;
     private bool IsViewingLatest => !CurrentDate.HasValue;
-    private bool HasOlderDates() => EditDates.Any(d => d < CurrentDate!.Value);
+    private bool HasOlderDates() => FilteredEditDates.Any(d => d < CurrentDate!.Value);
 
     /// <summary>
     /// 前の編集日（より古い日付）へ移動
@@ -223,13 +260,13 @@
 
         if (!CurrentDate.HasValue)
         {
-            // 最新表示中の場合、最新の編集日（リストの先頭）へ
-            newDate = EditDates.FirstOrDefault();
+            // 最新表示中の場合、フィルタリングされた最新の編集日（リストの先頭）へ
+            newDate = FilteredEditDates.FirstOrDefault();
         }
         else
         {
             // 現在の日付より古い日付のうち、最も新しいものを取得
-            newDate = EditDates
+            newDate = FilteredEditDates
                 .Where(d => d < CurrentDate.Value)
                 .OrderByDescending(d => d)
                 .FirstOrDefault();
@@ -249,7 +286,7 @@
         if (!CanMoveToNext)
             return;
 
-        var newDate = EditDates
+        var newDate = FilteredEditDates
             .Where(d => d > CurrentDate!.Value)
             .OrderBy(d => d)
             .FirstOrDefault();
@@ -299,9 +336,9 @@
         {
             // 反転してインデックスを計算: sliderValue 0（左端）→最後のインデックス
             var index = MaxSliderValue - 1 - sliderValue;
-            if (index >= 0 && index < EditDates.Count)
+            if (index >= 0 && index < FilteredEditDates.Count)
             {
-                var targetDate = EditDates[index];
+                var targetDate = FilteredEditDates[index];
                 await OnDateChanged.InvokeAsync(targetDate);
             }
         }
@@ -346,8 +383,8 @@
 
             if (i == MaxSliderValue)
             {
-                // 最新状態（最新の編集日を表示）
-                text = EditDates!.First().ToString(ShortDateFormat);
+                // 最新状態（EditDatesの最新日付を表示）
+                text = HasEditDates ? EditDates!.First().ToString(ShortDateFormat) : DateTimeOffset.Now.ToString(ShortDateFormat);
             }
             else if (TryGetEditDateAtSliderValue(i, out var date))
             {
@@ -360,8 +397,8 @@
                 // GetTickPosition は 0〜MaxSliderValue の連続値を前提としており、
                 // sliderValue < MaxSliderValue の範囲では必ず有効な編集日が存在する設計である。
                 Logger.LogWarning(
-                    "TryGetEditDateAtSliderValue が想定外に false を返しました。sliderValue={SliderValue}, MaxSliderValue={MaxSliderValue}, EditDatesCount={EditDatesCount}",
-                    i, MaxSliderValue, EditDates?.Count);
+                    "TryGetEditDateAtSliderValue が想定外に false を返しました。sliderValue={SliderValue}, MaxSliderValue={MaxSliderValue}, FilteredEditDatesCount={FilteredEditDatesCount}",
+                    i, MaxSliderValue, FilteredEditDates?.Count);
                 continue; // 想定外だが、UI の破綻を避けるため当該位置のラベルは描画しない
             }
 
@@ -372,7 +409,7 @@
         if (MaxSliderValue % interval != 0)
         {
             var position = GetTickPosition(MaxSliderValue);
-            var text = EditDates!.First().ToString(ShortDateFormat);
+            var text = HasEditDates ? EditDates!.First().ToString(ShortDateFormat) : DateTimeOffset.Now.ToString(ShortDateFormat);
             labels.Add(new SliderLabel(position, text, MaxSliderValue));
         }
 
@@ -397,13 +434,13 @@
         if (!IsValidEditDateIndex(index))
             return false;
 
-        date = EditDates[index];
+        date = FilteredEditDates[index];
         return true;
     }
 
     private bool IsValidEditDateIndex(int index)
     {
-        return index >= 0 && index < EditDates?.Count;
+        return index >= 0 && index < FilteredEditDates?.Count;
     }
 
     protected override void OnParametersSet()
@@ -422,12 +459,15 @@
             _editDatesCache = EditDates!.Select(d => d.Date).ToHashSet();
             _minDate = EditDates!.Min().Date;
             _maxDate = EditDates!.Max().Date;
+            // FilteredEditDates キャッシュを更新
+            _filteredEditDatesCache = ComputeFilteredEditDates();
         }
         else
         {
             _editDatesCache = null;
             _minDate = null;
             _maxDate = null;
+            _filteredEditDatesCache = null;
         }
         
         // カレンダーのキャッシュをクリア
@@ -574,7 +614,7 @@
         }
 
         // 今日
-        if (date.Date == DateTime.Today)
+        if (date.Date == DateTimeOffset.Now.Date)
         {
             classes.Add("today");
         }
@@ -609,6 +649,14 @@
     {
         if (!IsDateSelectable(date))
             return;
+
+        // 今日の日付が選択された場合、最新状態（null）にする
+        if (date.Date == DateTimeOffset.Now.Date)
+        {
+            await OnDateChanged.InvokeAsync(null);
+            _isCalendarOpen = false;
+            return;
+        }
 
         // EditDatesに含まれる日付か確認
         var matchingDate = EditDates!.FirstOrDefault(d => d.Date == date.Date);
