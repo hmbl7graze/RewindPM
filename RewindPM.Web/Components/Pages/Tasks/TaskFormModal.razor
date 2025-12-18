@@ -270,26 +270,18 @@
         var hasAnyScheduledDate = scheduledStartDate.HasValue || scheduledEndDate.HasValue;
         var hasBothScheduledDates = scheduledStartDate.HasValue && scheduledEndDate.HasValue;
 
-        if (IsEditMode && hasAnyScheduledDate && !hasBothScheduledDates)
+        if (hasAnyScheduledDate && !hasBothScheduledDates)
         {
-            // 編集モードで開始日または終了日の一方のみが入力されている場合
-            if (!scheduledStartDate.HasValue)
-            {
-                scheduledDateError = "予定期間を変更する場合は、開始日と終了日の両方を入力してください。";
-                isValid = false;
-            }
-            else if (!scheduledEndDate.HasValue)
-            {
-                scheduledDateError = "予定期間を変更する場合は、開始日と終了日の両方を入力してください。";
-                isValid = false;
-            }
+            // 開始日または終了日の一方のみが入力されている場合
+            scheduledDateError = "予定期間を変更する場合は、開始日と終了日の両方を入力してください。";
+            isValid = false;
         }
 
         if (scheduledStartDate.HasValue && scheduledEndDate.HasValue)
         {
             if (scheduledEndDate <= scheduledStartDate)
             {
-                scheduledDateError = "予定終了日は予定開始日より後の日付を指定してください。";
+                scheduledDateError = "予定終了日は予定開始日より後でなければなりません";
                 isValid = false;
             }
         }
@@ -306,7 +298,7 @@
         {
             if (actualEndDate <= actualStartDate)
             {
-                actualDateError = "実績終了日は実績開始日より後の日付を指定してください。";
+                actualDateError = "実績終了日は実績開始日より後でなければなりません";
                 isValid = false;
             }
         }
