@@ -232,7 +232,7 @@ public class GanttZoomManager
     /// 日付ラベルを表示すべきかどうかを判定
     /// </summary>
     /// <param name="dayIndex">日のインデックス</param>
-    /// <param name="day">日（1-31）</param>
+    /// <param name="day">日(1-31)</param>
     public bool ShouldDisplayDateLabel(int dayIndex, int day)
     {
         var cellWidth = GetActualCellWidth();

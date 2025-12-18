@@ -6,14 +6,14 @@ namespace RewindPM.Web.Components.Tasks;
 public static class GanttConstants
 {
     /// <summary>
-    /// ズームレベルの配列（内部用）
+    /// ズームレベルの配列(内部用)
     /// </summary>
-    private static readonly double[] ZoomLevelsInternal = { 1.0, 1.5, 2.0, 3.0, 4.0 };
+    private static readonly double[] _zoomLevelsInternal = { 1.0, 1.5, 2.0, 3.0, 4.0 };
 
     /// <summary>
     /// 公開用の読み取り専用ズームレベル
     /// </summary>
-    public static System.Collections.Generic.IReadOnlyList<double> ZoomLevels { get; } = ZoomLevelsInternal;
+    public static System.Collections.Generic.IReadOnlyList<double> ZoomLevels { get; } = _zoomLevelsInternal;
 
     /// <summary>
     /// セル幅の設定

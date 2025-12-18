@@ -63,9 +63,12 @@
                     @* Date Row *@
                     <div class="gantt-timeline-subrow">
                         <div class="gantt-timeline-grid" style="grid-template-columns: @GetGridTemplateColumns();">
+                            @{
+                                var timelineDate = TimelineStart.Value.Date;
+                            }
                             @for (int i = 0; i < TotalDays; i++)
                             {
-                                var date = TimelineStart.Value.AddDays(i);
+                                var date = timelineDate.AddDays(i);
                                 <div class="gantt-date-cell">
                                     @if (ShouldDisplayDateLabel(i))
                                     {
@@ -285,9 +288,10 @@
 
         if (!Guid.TryParse(taskIdStr, out var taskId)) return;
 
-        // インデックスから日付を計算（UTC offsetで統一）
-        var newStartDate = new DateTimeOffset(TimelineStart.Value.AddDays(startDayIndex), TimeSpan.Zero);
-        var newEndDate = new DateTimeOffset(TimelineStart.Value.AddDays(endDayIndex), TimeSpan.Zero);
+        // インデックスから日付を計算(UTC offsetで統一)
+        var timelineDate = TimelineStart.Value.Date;
+        var newStartDate = new DateTimeOffset(timelineDate.AddDays(startDayIndex), TimeSpan.Zero);
+        var newEndDate = new DateTimeOffset(timelineDate.AddDays(endDayIndex), TimeSpan.Zero);
 
         // コールバックを呼び出し
         if (OnBarResize.HasDelegate)
@@ -532,7 +536,8 @@
     private bool ShouldDisplayDateLabel(int dayIndex)
     {
         if (TimelineStart == null) return false;
-        var date = TimelineStart.Value.AddDays(dayIndex);
+        var timelineDate = TimelineStart.Value.Date;
+        var date = timelineDate.AddDays(dayIndex);
         return _zoomManager.ShouldDisplayDateLabel(dayIndex, date.Day);
     }
 }
