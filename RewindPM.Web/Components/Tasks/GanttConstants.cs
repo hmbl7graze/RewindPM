@@ -159,10 +159,6 @@ public static class GanttConstants
         /// </summary>
         public const double ShowEvery2DaysThreshold = 18.0;
 
-        /// <summary>
-        /// 3日おきに表示する最小セル幅
-        /// </summary>
-        public const double ShowEvery3DaysThreshold = 17.9;
     }
 
     /// <summary>

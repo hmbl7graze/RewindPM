@@ -245,13 +245,9 @@ public class GanttZoomManager
         {
             return dayIndex % 2 == 0;
         }
-        else if (cellWidth >= GanttConstants.DateLabel.ShowEvery3DaysThreshold)
-        {
-            return dayIndex % 3 == 0;
-        }
         else
         {
-            return dayIndex % 5 == 0;
+            return dayIndex % 3 == 0;
         }
     }
 }
