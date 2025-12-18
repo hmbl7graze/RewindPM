@@ -4,6 +4,8 @@
 @using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus
 @using RewindPM.Web.Components.Shared
 @using Microsoft.Extensions.Logging
+@using FluentValidation
+@using RewindPM.Domain.Common
 @inject IMediator Mediator
 @inject ILogger<TaskFormModal> Logger
 
@@ -264,11 +266,35 @@
         }
 
         // 予定期間の検証
+        // 予定期間を変更する場合は、開始日、終了日、工数のすべてが必須
+        var hasAnyScheduledValue = scheduledStartDate.HasValue || scheduledEndDate.HasValue || estimatedHours.HasValue;
+        var hasAllScheduledValues = scheduledStartDate.HasValue && scheduledEndDate.HasValue && estimatedHours.HasValue;
+
+        if (IsEditMode && hasAnyScheduledValue && !hasAllScheduledValues)
+        {
+            // 編集モードで予定期間の一部のみが入力されている場合
+            if (!scheduledStartDate.HasValue)
+            {
+                scheduledDateError = "予定期間を変更する場合は、開始日、終了日、工数のすべてを入力してください。";
+                isValid = false;
+            }
+            else if (!scheduledEndDate.HasValue)
+            {
+                scheduledDateError = "予定期間を変更する場合は、開始日、終了日、工数のすべてを入力してください。";
+                isValid = false;
+            }
+            else if (!estimatedHours.HasValue)
+            {
+                estimatedHoursError = "予定期間を変更する場合は、開始日、終了日、工数のすべてを入力してください。";
+                isValid = false;
+            }
+        }
+
         if (scheduledStartDate.HasValue && scheduledEndDate.HasValue)
         {
             if (scheduledEndDate <= scheduledStartDate)
             {
-                scheduledDateError = "終了日は開始日より後の日付を指定してください。";
+                scheduledDateError = "予定終了日は予定開始日より後の日付を指定してください。";
                 isValid = false;
             }
         }
@@ -276,16 +302,16 @@
         // 予定工数の検証
         if (estimatedHours.HasValue && estimatedHours <= 0)
         {
-            estimatedHoursError = "予定工数は1以上を指定してください。";
+            estimatedHoursError = "見積工数は正の数でなければなりません。";
             isValid = false;
         }
 
-        // 実績期間の検証（新規作成・編集モード共通）
+        // 実績期間の検証
         if (actualStartDate.HasValue && actualEndDate.HasValue)
         {
             if (actualEndDate <= actualStartDate)
             {
-                actualDateError = "終了日は開始日より後の日付を指定してください。";
+                actualDateError = "実績終了日は実績開始日より後の日付を指定してください。";
                 isValid = false;
             }
         }
@@ -293,7 +319,7 @@
         // 実績工数の検証
         if (actualHours.HasValue && actualHours <= 0)
         {
-            actualHoursError = "実績工数は1以上を指定してください。";
+            actualHoursError = "実績工数は正の数でなければなりません。";
             isValid = false;
         }
 
@@ -324,9 +350,37 @@
             await OnSuccess.InvokeAsync();
             await CloseModal();
         }
+        catch (ValidationException vex)
+        {
+            // FluentValidationのバリデーションエラー
+            Logger.LogWarning(vex, "タスク保存時にバリデーションエラーが発生しました。TaskId: {TaskId}, ProjectId: {ProjectId}", ExistingTask?.Id, ProjectId);
+
+            // 複数のエラーメッセージを結合して表示
+            var errors = string.Join("\n", vex.Errors.Select(e => e.ErrorMessage));
+            errorMessage = $"入力内容に誤りがあります:\n{errors}";
+        }
+        catch (InvalidOperationException ioex)
+        {
+            // タスクが見つからない場合など
+            Logger.LogError(ioex, "タスク保存中に操作エラーが発生しました。TaskId: {TaskId}, ProjectId: {ProjectId}", ExistingTask?.Id, ProjectId);
+            errorMessage = ioex.Message;
+        }
+        catch (DomainException dex)
+        {
+            // ドメイン層のビジネスルール違反
+            Logger.LogError(dex, "タスク保存中にドメインエラーが発生しました。TaskId: {TaskId}, ProjectId: {ProjectId}", ExistingTask?.Id, ProjectId);
+            errorMessage = $"ビジネスルールの違反:\n{dex.Message}";
+        }
+        catch (ArgumentException aex)
+        {
+            // ValueObjectのバリデーションエラー
+            Logger.LogError(aex, "タスク保存中に引数エラーが発生しました。TaskId: {TaskId}, ProjectId: {ProjectId}", ExistingTask?.Id, ProjectId);
+            errorMessage = aex.Message;
+        }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "タスク保存中にエラーが発生しました。TaskId: {TaskId}, ProjectId: {ProjectId}", ExistingTask?.Id, ProjectId);
+            // その他の予期しないエラー
+            Logger.LogError(ex, "タスク保存中に予期しないエラーが発生しました。TaskId: {TaskId}, ProjectId: {ProjectId}", ExistingTask?.Id, ProjectId);
             errorMessage = "タスクの保存に失敗しました。しばらく時間をおいてから再度お試しください。";
         }
         finally

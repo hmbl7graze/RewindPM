@@ -311,7 +311,7 @@ public class TaskFormModalTests : Bunit.TestContext
 
         // Assert
         var errors = cut.FindAll(".text-danger");
-        Assert.Contains(errors, e => e.TextContent.Contains("終了日は開始日より後の日付を指定してください"));
+        Assert.Contains(errors, e => e.TextContent.Contains("予定終了日は予定開始日より後の日付を指定してください"));
 
         // コマンドが送信されていないことを確認
         await _mediatorMock.DidNotReceive().Send(
