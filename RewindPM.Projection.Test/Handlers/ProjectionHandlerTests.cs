@@ -1120,7 +1120,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         Assert.NotNull(snapshot);
         Assert.Equal("New Title", snapshot.Title);
         Assert.Equal("New Description", snapshot.Description);
-        Assert.Equal(TaskStatus.InProgress.ToString(), snapshot.Status);
+        Assert.Equal(TaskStatus.InProgress, snapshot.Status);
         Assert.Equal(new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero), snapshot.ScheduledStartDate);
         Assert.Equal(new DateTimeOffset(2025, 2, 15, 0, 0, 0, TimeSpan.Zero), snapshot.ScheduledEndDate);
         Assert.Equal(60, snapshot.EstimatedHours);
