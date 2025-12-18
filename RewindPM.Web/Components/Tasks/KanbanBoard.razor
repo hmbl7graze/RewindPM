@@ -32,10 +32,6 @@
                             {
                                 <span class="badge estimate">@task.EstimatedHours 時間</span>
                             }
-                            @if (!string.IsNullOrWhiteSpace(task.CreatedBy))
-                            {
-                                <span class="avatar" title="@task.CreatedBy">@task.CreatedBy[0]</span>
-                            }
                         </div>
                     </div>
                 }
