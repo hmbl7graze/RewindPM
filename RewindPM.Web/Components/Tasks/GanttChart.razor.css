@@ -46,6 +46,25 @@
     border-bottom: none;
 }
 
+/* Alternating row highlights */
+.gantt-row-even {
+    background: var(--bg-surface);
+}
+
+.gantt-row-odd {
+    background: var(--bg-subtle);
+}
+
+.gantt-row-even .gantt-task-name-cell,
+.gantt-row-even .gantt-timeline-area {
+    background: var(--bg-surface);
+}
+
+.gantt-row-odd .gantt-task-name-cell,
+.gantt-row-odd .gantt-timeline-area {
+    background: var(--bg-subtle);
+}
+
 .gantt-header-row {
     position: sticky;
     top: 0;
