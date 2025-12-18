@@ -332,7 +332,7 @@ public class CumulativeFlowDiagramTests : Bunit.TestContext
             Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "CFD: 編集日一覧が空の場吂30日前からのフォールバック期間を使用")]
+    [Fact(DisplayName = "CFD: 編集日一覧が空の場合30日前からのフォールバック期間を使用")]
     public async Task CumulativeFlowDiagram_WithNullOrEmptyEditDates_UsesFallbackPeriod()
     {
         // Arrange
