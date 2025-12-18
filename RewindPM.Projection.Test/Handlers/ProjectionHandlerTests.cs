@@ -978,4 +978,186 @@ public class ProjectionHandlerTests : IAsyncDisposable
     }
 
     #endregion
+
+    #region TaskCompletelyUpdatedEventHandler Tests
+
+    [Fact(DisplayName = "TaskCompletelyUpdatedイベントでタスクのすべてのプロパティが更新されること")]
+    public async Task TaskCompletelyUpdatedEventHandler_Should_Update_All_Task_Properties()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+        var createdAt = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc);
+        var updatedAt = new DateTime(2025, 12, 7, 10, 0, 0, DateTimeKind.Utc);
+
+        // 既存のプロジェクトとタスクを作成
+        var projectHandler = new ProjectCreatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<ProjectCreatedEventHandler>());
+        await projectHandler.HandleAsync(new ProjectCreated
+        {
+            AggregateId = projectId,
+            Title = "Test Project",
+            Description = "Test Description",
+            CreatedBy = "user1",
+            OccurredAt = createdAt
+        });
+
+        var taskHandler = new TaskCreatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskCreatedEventHandler>());
+        await taskHandler.HandleAsync(new TaskCreated
+        {
+            AggregateId = taskId,
+            ProjectId = projectId,
+            Title = "Old Title",
+            Description = "Old Description",
+            ScheduledPeriod = new ScheduledPeriod(
+                new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero),
+                40),
+            CreatedBy = "user1",
+            OccurredAt = createdAt
+        });
+
+        var handler = new TaskCompletelyUpdatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskCompletelyUpdatedEventHandler>());
+        var newScheduledPeriod = new ScheduledPeriod(
+            new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2025, 2, 15, 0, 0, 0, TimeSpan.Zero),
+            60);
+        var newActualPeriod = new ActualPeriod(
+            new DateTimeOffset(2025, 2, 2, 0, 0, 0, TimeSpan.Zero),
+            new DateTimeOffset(2025, 2, 10, 0, 0, 0, TimeSpan.Zero),
+            40);
+
+        var @event = new TaskCompletelyUpdated
+        {
+            AggregateId = taskId,
+            Title = "New Title",
+            Description = "New Description",
+            Status = TaskStatus.InProgress,
+            ScheduledPeriod = newScheduledPeriod,
+            ActualPeriod = newActualPeriod,
+            UpdatedBy = "user2",
+            OccurredAt = updatedAt
+        };
+
+        // Act
+        await handler.HandleAsync(@event);
+
+        // Assert
+        var task = await _context.Tasks.FindAsync([taskId], TestContext.Current.CancellationToken);
+        Assert.NotNull(task);
+        Assert.Equal("New Title", task.Title);
+        Assert.Equal("New Description", task.Description);
+        Assert.Equal(TaskStatus.InProgress, task.Status);
+        Assert.Equal(new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero), task.ScheduledStartDate);
+        Assert.Equal(new DateTimeOffset(2025, 2, 15, 0, 0, 0, TimeSpan.Zero), task.ScheduledEndDate);
+        Assert.Equal(60, task.EstimatedHours);
+        Assert.Equal(new DateTimeOffset(2025, 2, 2, 0, 0, 0, TimeSpan.Zero), task.ActualStartDate);
+        Assert.Equal(new DateTimeOffset(2025, 2, 10, 0, 0, 0, TimeSpan.Zero), task.ActualEndDate);
+        Assert.Equal(40, task.ActualHours);
+        Assert.Equal(updatedAt, task.UpdatedAt);
+        Assert.Equal("user2", task.UpdatedBy);
+    }
+
+    [Fact(DisplayName = "TaskCompletelyUpdatedイベントでスナップショットが作成または更新されること")]
+    public async Task TaskCompletelyUpdatedEventHandler_Should_Create_Or_Update_Snapshot()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var taskId = Guid.NewGuid();
+        var createdAt = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc);
+        var updatedAt = new DateTime(2025, 12, 7, 10, 0, 0, DateTimeKind.Utc);
+
+        // 既存のプロジェクトとタスクを作成
+        var projectHandler = new ProjectCreatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<ProjectCreatedEventHandler>());
+        await projectHandler.HandleAsync(new ProjectCreated
+        {
+            AggregateId = projectId,
+            Title = "Test Project",
+            Description = "Test Description",
+            CreatedBy = "user1",
+            OccurredAt = createdAt
+        });
+
+        var taskHandler = new TaskCreatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskCreatedEventHandler>());
+        await taskHandler.HandleAsync(new TaskCreated
+        {
+            AggregateId = taskId,
+            ProjectId = projectId,
+            Title = "Old Title",
+            Description = "Old Description",
+            ScheduledPeriod = new ScheduledPeriod(
+                new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2025, 1, 10, 0, 0, 0, TimeSpan.Zero),
+                40),
+            CreatedBy = "user1",
+            OccurredAt = createdAt
+        });
+
+        var handler = new TaskCompletelyUpdatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskCompletelyUpdatedEventHandler>());
+        var @event = new TaskCompletelyUpdated
+        {
+            AggregateId = taskId,
+            Title = "New Title",
+            Description = "New Description",
+            Status = TaskStatus.InProgress,
+            ScheduledPeriod = new ScheduledPeriod(
+                new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2025, 2, 15, 0, 0, 0, TimeSpan.Zero),
+                60),
+            ActualPeriod = new ActualPeriod(
+                new DateTimeOffset(2025, 2, 2, 0, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2025, 2, 10, 0, 0, 0, TimeSpan.Zero),
+                40),
+            UpdatedBy = "user2",
+            OccurredAt = updatedAt
+        };
+
+        // Act
+        await handler.HandleAsync(@event);
+
+        // Assert
+        var snapshot = await _context.TaskHistories
+            .FirstOrDefaultAsync(h => h.TaskId == taskId && h.SnapshotDate == updatedAt.Date, TestContext.Current.CancellationToken);
+        Assert.NotNull(snapshot);
+        Assert.Equal("New Title", snapshot.Title);
+        Assert.Equal("New Description", snapshot.Description);
+        Assert.Equal(TaskStatus.InProgress.ToString(), snapshot.Status);
+        Assert.Equal(new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero), snapshot.ScheduledStartDate);
+        Assert.Equal(new DateTimeOffset(2025, 2, 15, 0, 0, 0, TimeSpan.Zero), snapshot.ScheduledEndDate);
+        Assert.Equal(60, snapshot.EstimatedHours);
+        Assert.Equal(new DateTimeOffset(2025, 2, 2, 0, 0, 0, TimeSpan.Zero), snapshot.ActualStartDate);
+        Assert.Equal(new DateTimeOffset(2025, 2, 10, 0, 0, 0, TimeSpan.Zero), snapshot.ActualEndDate);
+        Assert.Equal(40, snapshot.ActualHours);
+        Assert.Equal(updatedAt, snapshot.UpdatedAt);
+        Assert.Equal("user2", snapshot.UpdatedBy);
+    }
+
+    [Fact(DisplayName = "TaskCompletelyUpdatedイベントで存在しないタスクを適切に処理すること")]
+    public async Task TaskCompletelyUpdatedEventHandler_Should_Handle_Missing_Task_Gracefully()
+    {
+        // Arrange
+        var handler = new TaskCompletelyUpdatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskCompletelyUpdatedEventHandler>());
+        var @event = new TaskCompletelyUpdated
+        {
+            AggregateId = Guid.NewGuid(), // 存在しないタスク
+            Title = "New Title",
+            Description = "New Description",
+            Status = TaskStatus.InProgress,
+            ScheduledPeriod = new ScheduledPeriod(
+                new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero),
+                new DateTimeOffset(2025, 2, 15, 0, 0, 0, TimeSpan.Zero),
+                60),
+            ActualPeriod = new ActualPeriod(),
+            UpdatedBy = "user1",
+            OccurredAt = DateTime.UtcNow
+        };
+
+        // Act & Assert - 例外が発生しないことを確認
+        await handler.HandleAsync(@event);
+
+        // タスクが存在しないため、何も更新されないことを確認
+        var task = await _context.Tasks.FindAsync([@event.AggregateId], TestContext.Current.CancellationToken);
+        Assert.Null(task);
+    }
+
+    #endregion
 }

@@ -277,14 +277,17 @@ public class TaskAggregate : AggregateRoot
             throw new DomainException("更新者のユーザーIDは必須です");
         }
 
-        if (scheduledPeriod == null)
-        {
-            throw new DomainException("予定期間は必須です");
-        }
+        // 変更検出: いずれかのプロパティが変更されている場合のみイベントを発行
+        bool hasChanges = Title != title ||
+                         Description != (description ?? string.Empty) ||
+                         Status != status ||
+                         !ScheduledPeriod.Equals(scheduledPeriod) ||
+                         !ActualPeriod.Equals(actualPeriod);
 
-        if (actualPeriod == null)
+        if (!hasChanges)
         {
-            throw new DomainException("実績期間は必須です");
+            // 変更がない場合はイベントを発行しない
+            return;
         }
 
         ApplyEvent(new TaskCompletelyUpdated

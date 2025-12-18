@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<ProjectDeletedEventHandler>();
         services.AddScoped<TaskCreatedEventHandler>();
         services.AddScoped<TaskUpdatedEventHandler>();
+        services.AddScoped<TaskCompletelyUpdatedEventHandler>();
         services.AddScoped<TaskStatusChangedEventHandler>();
         services.AddScoped<TaskScheduledPeriodChangedEventHandler>();
         services.AddScoped<TaskActualPeriodChangedEventHandler>();

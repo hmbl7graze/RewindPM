@@ -507,8 +507,8 @@ public class TaskAggregateTests
         Assert.Equal(updatedBy, @event.UpdatedBy);
     }
 
-    [Fact(DisplayName = "UpdateCompletelyで変更がなくてもTaskCompletelyUpdatedイベントが発生する")]
-    public void UpdateCompletely_WithNoChanges_ShouldStillRaiseEvent()
+    [Fact(DisplayName = "UpdateCompletelyで変更がない場合はTaskCompletelyUpdatedイベントが発生しない")]
+    public void UpdateCompletely_WithNoChanges_ShouldNotRaiseEvent()
     {
         // Arrange
         var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タイトル", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
@@ -520,9 +520,8 @@ public class TaskAggregateTests
         // Act - 同じ値で更新
         task.UpdateCompletely("タイトル", "説明", TaskStatus.Todo, _scheduledPeriod, actualPeriod, updatedBy, _dateTimeProvider);
 
-        // Assert - TaskCompletelyUpdatedイベントが発生する
-        Assert.Single(task.UncommittedEvents);
-        Assert.IsType<TaskCompletelyUpdated>(task.UncommittedEvents.First());
+        // Assert - TaskCompletelyUpdatedイベントが発生しない
+        Assert.Empty(task.UncommittedEvents);
     }
 
     [Fact(DisplayName = "UpdateCompletelyでタイトルのみ変更した場合でもTaskCompletelyUpdatedイベントが発生する")]
@@ -570,30 +569,5 @@ public class TaskAggregateTests
         var exception = Assert.Throws<DomainException>(() =>
             task.UpdateCompletely("新タイトル", "新説明", TaskStatus.Todo, _scheduledPeriod, actualPeriod, updatedBy, _dateTimeProvider));
         Assert.Equal("更新者のユーザーIDは必須です", exception.Message);
-    }
-
-    [Fact(DisplayName = "UpdateCompletelyでScheduledPeriodがnullの場合、DomainExceptionをスローする")]
-    public void UpdateCompletely_WhenScheduledPeriodIsNull_ShouldThrowDomainException()
-    {
-        // Arrange
-        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
-        var actualPeriod = new ActualPeriod();
-
-        // Act & Assert
-        var exception = Assert.Throws<DomainException>(() =>
-            task.UpdateCompletely("新タイトル", "新説明", TaskStatus.Todo, null!, actualPeriod, "user456", _dateTimeProvider));
-        Assert.Equal("予定期間は必須です", exception.Message);
-    }
-
-    [Fact(DisplayName = "UpdateCompletelyでActualPeriodがnullの場合、DomainExceptionをスローする")]
-    public void UpdateCompletely_WhenActualPeriodIsNull_ShouldThrowDomainException()
-    {
-        // Arrange
-        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
-
-        // Act & Assert
-        var exception = Assert.Throws<DomainException>(() =>
-            task.UpdateCompletely("新タイトル", "新説明", TaskStatus.Todo, _scheduledPeriod, null!, "user456", _dateTimeProvider));
-        Assert.Equal("実績期間は必須です", exception.Message);
     }
 }

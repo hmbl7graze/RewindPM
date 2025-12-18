@@ -40,6 +40,9 @@ public class ProjectionInitializer : IHostedService
         _eventPublisher.Subscribe<TaskUpdated>(
             new ScopedEventHandlerAdapter<TaskUpdated, TaskUpdatedEventHandler>(_serviceProvider));
 
+        _eventPublisher.Subscribe<TaskCompletelyUpdated>(
+            new ScopedEventHandlerAdapter<TaskCompletelyUpdated, TaskCompletelyUpdatedEventHandler>(_serviceProvider));
+
         _eventPublisher.Subscribe<TaskStatusChanged>(
             new ScopedEventHandlerAdapter<TaskStatusChanged, TaskStatusChangedEventHandler>(_serviceProvider));
 
