@@ -20,6 +20,7 @@ public class ChangeTaskScheduleCommandValidator : AbstractValidator<ChangeTaskSc
 
         RuleFor(x => x.EstimatedHours)
             .GreaterThan(0)
+            .When(x => x.EstimatedHours.HasValue)
             .WithMessage("見積工数は正の数でなければなりません");
 
         RuleFor(x => x.ChangedBy)

@@ -266,26 +266,21 @@
         }
 
         // 予定期間の検証
-        // 予定期間を変更する場合は、開始日、終了日、工数のすべてが必須
-        var hasAnyScheduledValue = scheduledStartDate.HasValue || scheduledEndDate.HasValue || estimatedHours.HasValue;
-        var hasAllScheduledValues = scheduledStartDate.HasValue && scheduledEndDate.HasValue && estimatedHours.HasValue;
+        // 予定期間を変更する場合は、開始日と終了日の両方が必須（工数はオプショナル）
+        var hasAnyScheduledDate = scheduledStartDate.HasValue || scheduledEndDate.HasValue;
+        var hasBothScheduledDates = scheduledStartDate.HasValue && scheduledEndDate.HasValue;
 
-        if (IsEditMode && hasAnyScheduledValue && !hasAllScheduledValues)
+        if (IsEditMode && hasAnyScheduledDate && !hasBothScheduledDates)
         {
-            // 編集モードで予定期間の一部のみが入力されている場合
+            // 編集モードで開始日または終了日の一方のみが入力されている場合
             if (!scheduledStartDate.HasValue)
             {
-                scheduledDateError = "予定期間を変更する場合は、開始日、終了日、工数のすべてを入力してください。";
+                scheduledDateError = "予定期間を変更する場合は、開始日と終了日の両方を入力してください。";
                 isValid = false;
             }
             else if (!scheduledEndDate.HasValue)
             {
-                scheduledDateError = "予定期間を変更する場合は、開始日、終了日、工数のすべてを入力してください。";
-                isValid = false;
-            }
-            else if (!estimatedHours.HasValue)
-            {
-                estimatedHoursError = "予定期間を変更する場合は、開始日、終了日、工数のすべてを入力してください。";
+                scheduledDateError = "予定期間を変更する場合は、開始日と終了日の両方を入力してください。";
                 isValid = false;
             }
         }
@@ -446,8 +441,8 @@
             await Mediator.Send(changeStatusCommand);
         }
 
-        // 予定期間が変更された場合（すべての値が設定されている場合のみ）
-        if (scheduledStartDate.HasValue && scheduledEndDate.HasValue && estimatedHours.HasValue)
+        // 予定期間が変更された場合（開始日と終了日の両方が設定されている場合のみ）
+        if (scheduledStartDate.HasValue && scheduledEndDate.HasValue)
         {
             if (scheduledStartDate != ExistingTask.ScheduledStartDate ||
                 scheduledEndDate != ExistingTask.ScheduledEndDate ||
@@ -457,7 +452,7 @@
                     TaskId: ExistingTask.Id,
                     ScheduledStartDate: scheduledStartDate.Value,
                     ScheduledEndDate: scheduledEndDate.Value,
-                    EstimatedHours: estimatedHours.Value,
+                    EstimatedHours: estimatedHours,
                     ChangedBy: "admin"
                 );
                 await Mediator.Send(changeScheduleCommand);
