@@ -570,4 +570,31 @@ public class TaskAggregateTests
             task.UpdateCompletely("新タイトル", "新説明", TaskStatus.Todo, _scheduledPeriod, actualPeriod, updatedBy, _dateTimeProvider));
         Assert.Equal("更新者のユーザーIDは必須です", exception.Message);
     }
+
+    [Fact(DisplayName = "UpdateCompletelyで予定期間がnullの場合、DomainExceptionをスローする")]
+    public void UpdateCompletely_WhenScheduledPeriodIsNull_ShouldThrowDomainException()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
+        ScheduledPeriod scheduledPeriod = null!;
+        var actualPeriod = new ActualPeriod();
+
+        // Act & Assert
+        var exception = Assert.Throws<DomainException>(() =>
+            task.UpdateCompletely("新タイトル", "新説明", TaskStatus.Todo, scheduledPeriod, actualPeriod, "user456", _dateTimeProvider));
+        Assert.Equal("予定期間は必須です", exception.Message);
+    }
+
+    [Fact(DisplayName = "UpdateCompletelyで実績期間がnullの場合、DomainExceptionをスローする")]
+    public void UpdateCompletely_WhenActualPeriodIsNull_ShouldThrowDomainException()
+    {
+        // Arrange
+        var task = TaskAggregate.Create(Guid.NewGuid(), _projectId, "タスク", "説明", _scheduledPeriod, "user123", _dateTimeProvider);
+        ActualPeriod actualPeriod = null!;
+
+        // Act & Assert
+        var exception = Assert.Throws<DomainException>(() =>
+            task.UpdateCompletely("新タイトル", "新説明", TaskStatus.Todo, _scheduledPeriod, actualPeriod, "user456", _dateTimeProvider));
+        Assert.Equal("実績期間は必須です", exception.Message);
+    }
 }

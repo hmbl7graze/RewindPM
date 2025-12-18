@@ -338,7 +338,7 @@ public class TaskFormModalTests : Bunit.TestContext
         var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
         await cut.InvokeAsync(() => saveButton.Click());
 
-        // Assert - UpdateTaskCompleteCommandが送信されること（変更がなくてもコマンドは送信される）
+        // Assert - UpdateTaskCompleteCommandが送信されること（変更がなくてもコマンドは送信されるが、ドメイン側で変更検出が行われ、変更がない場合はイベントは発行されない）
         await _mediatorMock.Received(1).Send(
             Arg.Any<UpdateTaskCompleteCommand>(),
             Arg.Any<CancellationToken>());
