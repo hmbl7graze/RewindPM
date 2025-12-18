@@ -52,7 +52,7 @@
 }
 
 .gantt-row-odd {
-    background: rgba(0, 0, 0, 0.02);
+    background: var(--bg-subtle);
 }
 
 .gantt-row-even .gantt-task-name-cell,
@@ -62,7 +62,7 @@
 
 .gantt-row-odd .gantt-task-name-cell,
 .gantt-row-odd .gantt-timeline-area {
-    background: rgba(0, 0, 0, 0.02);
+    background: var(--bg-subtle);
 }
 
 .gantt-header-row {

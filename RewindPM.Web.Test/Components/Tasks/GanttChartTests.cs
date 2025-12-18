@@ -1312,6 +1312,83 @@ public class GanttChartTests : Bunit.TestContext
         }
     }
 
+    [Fact(DisplayName = "偶数インデックスの行にgantt-row-evenクラスが適用される")]
+    public void GanttChart_AppliesEvenClass_ToEvenIndexRows()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks));
+
+        // Assert
+        var taskRows = cut.FindAll(".gantt-task-row");
+        Assert.True(taskRows[0].ClassList.Contains("gantt-row-even"), "1番目の行(index 0)はgantt-row-evenクラスを持つべき");
+    }
+
+    [Fact(DisplayName = "奇数インデックスの行にgantt-row-oddクラスが適用される")]
+    public void GanttChart_AppliesOddClass_ToOddIndexRows()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks));
+
+        // Assert
+        var taskRows = cut.FindAll(".gantt-task-row");
+        Assert.True(taskRows[1].ClassList.Contains("gantt-row-odd"), "2番目の行(index 1)はgantt-row-oddクラスを持つべき");
+    }
+
+    [Fact(DisplayName = "複数のタスクがある場合に交互にクラスが適用される")]
+    public void GanttChart_AlternatesClasses_ForMultipleTasks()
+    {
+        // Arrange
+        var tasks = new List<TaskDto>
+        {
+            CreateTaskWithSchedule("Task 1", 1, 5),
+            CreateTaskWithSchedule("Task 2", 3, 8),
+            CreateTaskWithSchedule("Task 3", 6, 10),
+            CreateTaskWithSchedule("Task 4", 9, 15)
+        };
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks));
+
+        // Assert
+        var taskRows = cut.FindAll(".gantt-task-row");
+        Assert.Equal(4, taskRows.Count);
+        Assert.True(taskRows[0].ClassList.Contains("gantt-row-even"), "1番目の行はeven");
+        Assert.True(taskRows[1].ClassList.Contains("gantt-row-odd"), "2番目の行はodd");
+        Assert.True(taskRows[2].ClassList.Contains("gantt-row-even"), "3番目の行はeven");
+        Assert.True(taskRows[3].ClassList.Contains("gantt-row-odd"), "4番目の行はodd");
+    }
+
+    private TaskDto CreateTaskWithSchedule(string title, int startDay, int endDay)
+    {
+        return new TaskDto
+        {
+            Id = Guid.NewGuid(),
+            ProjectId = Guid.NewGuid(),
+            Title = title,
+            Description = "Test",
+            Status = TaskStatus.Todo,
+            ScheduledStartDate = new DateTimeOffset(2024, 1, startDay, 0, 0, 0, TimeSpan.Zero),
+            ScheduledEndDate = new DateTimeOffset(2024, 1, endDay, 0, 0, 0, TimeSpan.Zero),
+            EstimatedHours = 20,
+            ActualStartDate = null,
+            ActualEndDate = null,
+            ActualHours = null,
+            CreatedAt = DateTimeOffset.Now,
+            UpdatedAt = null,
+            CreatedBy = "test-user",
+            UpdatedBy = null
+        };
+    }
+
     private List<TaskDto> CreateTestTasks()
     {
         return new List<TaskDto>
