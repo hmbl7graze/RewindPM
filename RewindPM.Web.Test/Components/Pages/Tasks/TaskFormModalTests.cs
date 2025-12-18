@@ -203,7 +203,7 @@ public class TaskFormModalTests : Bunit.TestContext
         // Arrange
         var existingTask = CreateTestTask();
         _mediatorMock
-            .Send(Arg.Any<UpdateTaskCommand>(), Arg.Any<CancellationToken>())
+            .Send(Arg.Any<UpdateTaskCompleteCommand>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         var onSuccessInvoked = false;
@@ -223,19 +223,19 @@ public class TaskFormModalTests : Bunit.TestContext
         // Assert
         Assert.True(onSuccessInvoked);
         await _mediatorMock.Received(1).Send(
-            Arg.Is<UpdateTaskCommand>(cmd =>
+            Arg.Is<UpdateTaskCompleteCommand>(cmd =>
                 cmd.TaskId == _testTaskId &&
                 cmd.Title == "Updated Task"),
             Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "ステータス変更時にChangeTaskStatusCommandが送信される")]
-    public async Task TaskFormModal_SendsChangeStatusCommand_WhenStatusChanged()
+    [Fact(DisplayName = "ステータス変更時にUpdateTaskCompleteCommandが送信される")]
+    public async Task TaskFormModal_SendsUpdateTaskCompleteCommand_WhenStatusChanged()
     {
         // Arrange
         var existingTask = CreateTestTask();
         _mediatorMock
-            .Send(Arg.Any<ChangeTaskStatusCommand>(), Arg.Any<CancellationToken>())
+            .Send(Arg.Any<UpdateTaskCompleteCommand>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         var cut = RenderComponent<TaskFormModal>(parameters => parameters
@@ -253,9 +253,9 @@ public class TaskFormModalTests : Bunit.TestContext
 
         // Assert
         await _mediatorMock.Received(1).Send(
-            Arg.Is<ChangeTaskStatusCommand>(cmd =>
+            Arg.Is<UpdateTaskCompleteCommand>(cmd =>
                 cmd.TaskId == _testTaskId &&
-                cmd.NewStatus == TaskStatus.InProgress),
+                cmd.Status == TaskStatus.InProgress),
             Arg.Any<CancellationToken>());
     }
 
@@ -325,7 +325,7 @@ public class TaskFormModalTests : Bunit.TestContext
         // Arrange
         var existingTask = CreateTestTask();
         _mediatorMock
-            .Send(Arg.Any<UpdateTaskCommand>(), Arg.Any<CancellationToken>())
+            .Send(Arg.Any<UpdateTaskCompleteCommand>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         var cut = RenderComponent<TaskFormModal>(parameters => parameters
@@ -338,9 +338,9 @@ public class TaskFormModalTests : Bunit.TestContext
         var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
         await cut.InvokeAsync(() => saveButton.Click());
 
-        // Assert - UpdateTaskCommandが送信されないこと（変更がないため）
-        await _mediatorMock.DidNotReceive().Send(
-            Arg.Any<UpdateTaskCommand>(),
+        // Assert - UpdateTaskCompleteCommandが送信されること（変更がなくてもコマンドは送信される）
+        await _mediatorMock.Received(1).Send(
+            Arg.Any<UpdateTaskCompleteCommand>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -526,7 +526,7 @@ public class TaskFormModalTests : Bunit.TestContext
 
         // コマンドが送信されていないことを確認
         await _mediatorMock.DidNotReceive().Send(
-            Arg.Any<ChangeTaskScheduleCommand>(),
+            Arg.Any<UpdateTaskCompleteCommand>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -571,7 +571,7 @@ public class TaskFormModalTests : Bunit.TestContext
 
         // コマンドが送信されていないことを確認
         await _mediatorMock.DidNotReceive().Send(
-            Arg.Any<ChangeTaskScheduleCommand>(),
+            Arg.Any<UpdateTaskCompleteCommand>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -581,7 +581,7 @@ public class TaskFormModalTests : Bunit.TestContext
         // Arrange
         var existingTask = CreateTestTask();
         _mediatorMock
-            .Send(Arg.Any<ChangeTaskScheduleCommand>(), Arg.Any<CancellationToken>())
+            .Send(Arg.Any<UpdateTaskCompleteCommand>(), Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         var cut = RenderComponent<TaskFormModal>(parameters => parameters
@@ -610,9 +610,9 @@ public class TaskFormModalTests : Bunit.TestContext
         var saveButton = cut.FindAll("button").First(b => b.TextContent.Contains("保存"));
         await cut.InvokeAsync(() => saveButton.Click());
 
-        // Assert - ChangeTaskScheduleCommandがEstimatedHours=nullで送信される
+        // Assert - UpdateTaskCompleteCommandがEstimatedHours=nullで送信される
         await _mediatorMock.Received(1).Send(
-            Arg.Is<ChangeTaskScheduleCommand>(cmd =>
+            Arg.Is<UpdateTaskCompleteCommand>(cmd =>
                 cmd.TaskId == _testTaskId &&
                 cmd.EstimatedHours == null),
             Arg.Any<CancellationToken>());

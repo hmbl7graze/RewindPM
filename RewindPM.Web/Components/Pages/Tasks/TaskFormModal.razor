@@ -410,61 +410,21 @@
     {
         if (ExistingTask == null) return;
 
-        // タイトルまたは説明が変更された場合
-        if (title != ExistingTask.Title || description != ExistingTask.Description)
-        {
-            var updateCommand = new UpdateTaskCommand(
-                TaskId: ExistingTask.Id,
-                Title: title,
-                Description: description,
-                UpdatedBy: "admin"
-            );
-            await Mediator.Send(updateCommand);
-        }
-
-        // ステータスが変更された場合
-        if (status != ExistingTask.Status)
-        {
-            var changeStatusCommand = new ChangeTaskStatusCommand(
-                TaskId: ExistingTask.Id,
-                NewStatus: status,
-                ChangedBy: "admin"
-            );
-            await Mediator.Send(changeStatusCommand);
-        }
-
-        // 予定期間が変更された場合（開始日と終了日の両方が設定されている場合のみ）
-        if (scheduledStartDate.HasValue && scheduledEndDate.HasValue)
-        {
-            if (scheduledStartDate != ExistingTask.ScheduledStartDate ||
-                scheduledEndDate != ExistingTask.ScheduledEndDate ||
-                estimatedHours != ExistingTask.EstimatedHours)
-            {
-                var changeScheduleCommand = new ChangeTaskScheduleCommand(
-                    TaskId: ExistingTask.Id,
-                    ScheduledStartDate: scheduledStartDate.Value,
-                    ScheduledEndDate: scheduledEndDate.Value,
-                    EstimatedHours: estimatedHours,
-                    ChangedBy: "admin"
-                );
-                await Mediator.Send(changeScheduleCommand);
-            }
-        }
-
-        // 実績期間が変更された場合
-        if (actualStartDate != ExistingTask.ActualStartDate ||
-            actualEndDate != ExistingTask.ActualEndDate ||
-            actualHours != ExistingTask.ActualHours)
-        {
-            var changeActualCommand = new ChangeTaskActualPeriodCommand(
-                TaskId: ExistingTask.Id,
-                ActualStartDate: actualStartDate,
-                ActualEndDate: actualEndDate,
-                ActualHours: actualHours,
-                ChangedBy: "admin"
-            );
-            await Mediator.Send(changeActualCommand);
-        }
+        // 単一のコマンドで全てのプロパティを更新
+        var updateCompleteCommand = new UpdateTaskCompleteCommand(
+            TaskId: ExistingTask.Id,
+            Title: title,
+            Description: description,
+            Status: status,
+            ScheduledStartDate: scheduledStartDate,
+            ScheduledEndDate: scheduledEndDate,
+            EstimatedHours: estimatedHours,
+            ActualStartDate: actualStartDate,
+            ActualEndDate: actualEndDate,
+            ActualHours: actualHours,
+            UpdatedBy: "admin"
+        );
+        await Mediator.Send(updateCompleteCommand);
     }
 
     private async Task HandleDelete()

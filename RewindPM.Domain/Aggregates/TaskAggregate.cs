@@ -248,6 +248,56 @@ public class TaskAggregate : AggregateRoot
     }
 
     /// <summary>
+    /// タスクの全プロパティを一括更新する
+    /// 変更があったプロパティのみに対応するイベントを発行する
+    /// </summary>
+    /// <param name="title">新しいタイトル</param>
+    /// <param name="description">新しい説明</param>
+    /// <param name="status">新しいステータス</param>
+    /// <param name="scheduledPeriod">新しい予定期間</param>
+    /// <param name="actualPeriod">新しい実績期間</param>
+    /// <param name="updatedBy">更新者のユーザーID</param>
+    /// <param name="dateTimeProvider">時刻プロバイダー</param>
+    public void UpdateCompletely(
+        string title,
+        string description,
+        TaskStatus status,
+        ScheduledPeriod scheduledPeriod,
+        ActualPeriod actualPeriod,
+        string updatedBy,
+        IDateTimeProvider dateTimeProvider)
+    {
+        if (string.IsNullOrWhiteSpace(updatedBy))
+        {
+            throw new DomainException("更新者のユーザーIDは必須です");
+        }
+
+        // タイトルまたは説明が変更された場合
+        if (title != Title || description != Description)
+        {
+            Update(title, description, updatedBy, dateTimeProvider);
+        }
+
+        // ステータスが変更された場合
+        if (status != Status)
+        {
+            ChangeStatus(status, updatedBy, dateTimeProvider);
+        }
+
+        // 予定期間が変更された場合
+        if (!ScheduledPeriod.Equals(scheduledPeriod))
+        {
+            ChangeSchedule(scheduledPeriod, updatedBy, dateTimeProvider);
+        }
+
+        // 実績期間が変更された場合
+        if (!ActualPeriod.Equals(actualPeriod))
+        {
+            ChangeActualPeriod(actualPeriod, updatedBy, dateTimeProvider);
+        }
+    }
+
+    /// <summary>
     /// イベントに応じてAggregateの状態を変更する
     /// </summary>
     /// <param name="event">適用するドメインイベント</param>
