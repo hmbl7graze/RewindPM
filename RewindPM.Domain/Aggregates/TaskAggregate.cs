@@ -249,7 +249,7 @@ public class TaskAggregate : AggregateRoot
 
     /// <summary>
     /// タスクの全プロパティを一括更新する
-    /// 変更があったプロパティのみに対応するイベントを発行する
+    /// 単一の包括的なイベントを発行する
     /// </summary>
     /// <param name="title">新しいタイトル</param>
     /// <param name="description">新しい説明</param>
@@ -267,34 +267,37 @@ public class TaskAggregate : AggregateRoot
         string updatedBy,
         IDateTimeProvider dateTimeProvider)
     {
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            throw new DomainException("タスクのタイトルは必須です");
+        }
+
         if (string.IsNullOrWhiteSpace(updatedBy))
         {
             throw new DomainException("更新者のユーザーIDは必須です");
         }
 
-        // タイトルまたは説明が変更された場合
-        if (title != Title || description != Description)
+        if (scheduledPeriod == null)
         {
-            Update(title, description, updatedBy, dateTimeProvider);
+            throw new DomainException("予定期間は必須です");
         }
 
-        // ステータスが変更された場合
-        if (status != Status)
+        if (actualPeriod == null)
         {
-            ChangeStatus(status, updatedBy, dateTimeProvider);
+            throw new DomainException("実績期間は必須です");
         }
 
-        // 予定期間が変更された場合
-        if (!ScheduledPeriod.Equals(scheduledPeriod))
+        ApplyEvent(new TaskCompletelyUpdated
         {
-            ChangeSchedule(scheduledPeriod, updatedBy, dateTimeProvider);
-        }
-
-        // 実績期間が変更された場合
-        if (!ActualPeriod.Equals(actualPeriod))
-        {
-            ChangeActualPeriod(actualPeriod, updatedBy, dateTimeProvider);
-        }
+            AggregateId = Id,
+            OccurredAt = dateTimeProvider.UtcNow,
+            Title = title,
+            Description = description ?? string.Empty,
+            Status = status,
+            ScheduledPeriod = scheduledPeriod,
+            ActualPeriod = actualPeriod,
+            UpdatedBy = updatedBy
+        });
     }
 
     /// <summary>
@@ -336,6 +339,15 @@ public class TaskAggregate : AggregateRoot
             case TaskActualPeriodChanged e:
                 ActualPeriod = e.ActualPeriod;
                 UpdatedBy = e.ChangedBy;
+                break;
+
+            case TaskCompletelyUpdated e:
+                Title = e.Title;
+                Description = e.Description;
+                Status = e.Status;
+                ScheduledPeriod = e.ScheduledPeriod;
+                ActualPeriod = e.ActualPeriod;
+                UpdatedBy = e.UpdatedBy;
                 break;
 
             case TaskDeleted:
