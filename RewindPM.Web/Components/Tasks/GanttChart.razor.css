@@ -199,7 +199,6 @@
     text-align: center;
     font-size: 0.75rem;
     color: var(--text-muted);
-    min-width: 40px;
     box-sizing: border-box;
     display: flex;
     align-items: center;

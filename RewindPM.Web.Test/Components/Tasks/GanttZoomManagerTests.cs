@@ -295,16 +295,19 @@ public class GanttZoomManagerTests
     }
 
     [Theory]
-    [InlineData(35.0, 0, 1, true)]  // セル幅35px、dayIndex=0、day=1 → 月初は常に表示
-    [InlineData(35.0, 5, 6, true)]  // セル幅35px、全日付表示閾値以上
+    [InlineData(35.0, 0, 1, true)]  // セル幅35px、全日付表示閾値以上、dayIndex=0は表示
+    [InlineData(35.0, 5, 6, true)]  // セル幅35px、全日付表示閾値以上、dayIndex=5も表示
     [InlineData(27.0, 1, 2, false)] // セル幅27px、2日おき、dayIndex=1は非表示
     [InlineData(27.0, 2, 3, true)]  // セル幅27px、2日おき、dayIndex=2は表示
-    [InlineData(20.0, 2, 3, false)] // セル幅20px、3日おき、dayIndex=2は非表示
-    [InlineData(20.0, 3, 4, true)]  // セル幅20px、3日おき、dayIndex=3は表示
-    [InlineData(15.0, 4, 5, false)] // セル幅15px、5日おき、dayIndex=4は非表示
-    [InlineData(15.0, 5, 6, true)]  // セル幅15px、5日おき、dayIndex=5は表示
-    [InlineData(10.0, 9, 10, false)] // セル幅10px、10日おき、dayIndex=9は非表示
-    [InlineData(10.0, 10, 11, true)] // セル幅10px、10日おき、dayIndex=10は表示
+    [InlineData(20.0, 1, 2, false)] // セル幅20px、2日おき、dayIndex=1は非表示
+    [InlineData(20.0, 2, 3, true)]  // セル幅20px、2日おき、dayIndex=2は表示
+    [InlineData(18.0, 2, 3, true)]  // セル幅18.0px、境界値(2日おき閾値)、dayIndex=2は表示
+    [InlineData(17.9, 3, 4, true)]  // セル幅17.9px、2日おき閾値未満、dayIndex=3は表示(3日おきになる)
+    [InlineData(17.9, 6, 7, true)]  // セル幅17.9px、2日おき閾値未満、dayIndex=6は表示(3日おき)
+    [InlineData(15.0, 2, 3, false)] // セル幅15px、2日おき閾値未満、dayIndex=2は非表示
+    [InlineData(15.0, 3, 4, true)]  // セル幅15px、2日おき閾値未満、dayIndex=3は表示(3日おき)
+    [InlineData(9.0, 2, 3, false)]  // セル幅9px、2日おき閾値未満、dayIndex=2は非表示(3日おき)
+    [InlineData(9.0, 3, 4, true)]   // セル幅9px、2日おき閾値未満、dayIndex=3は表示(3日おき)
     public void ShouldDisplayDateLabel_ReturnsCorrectValue(double cellWidth, int dayIndex, int day, bool expected)
     {
         // Arrange

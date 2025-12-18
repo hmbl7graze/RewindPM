@@ -332,15 +332,15 @@ public class CumulativeFlowDiagramTests : Bunit.TestContext
             Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "CumulativeFlowDiagram: 編集日一覧がnullまたは空の場合30日前からのフォールバック期間を使用")]
+    [Fact(DisplayName = "CFD: 編集日一覧が空の場合30日前からのフォールバック期間を使用")]
     public async Task CumulativeFlowDiagram_WithNullOrEmptyEditDates_UsesFallbackPeriod()
     {
         // Arrange
         var projectId = Guid.NewGuid();
 
-        // 編集日一覧がnullを返すモック
+        // 編集日一覧が空を返すモック
         _mediatorMock.Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult<List<DateTimeOffset>?>(null));
+            .Returns(Task.FromResult(new List<DateTimeOffset>()));
 
         var timeSeriesData = new ProjectStatisticsTimeSeriesDto
         {

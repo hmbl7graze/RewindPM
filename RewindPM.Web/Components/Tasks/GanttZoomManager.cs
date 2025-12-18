@@ -232,7 +232,7 @@ public class GanttZoomManager
     /// 日付ラベルを表示すべきかどうかを判定
     /// </summary>
     /// <param name="dayIndex">日のインデックス</param>
-    /// <param name="day">日（1-31）</param>
+    /// <param name="day">日(1-31)</param>
     public bool ShouldDisplayDateLabel(int dayIndex, int day)
     {
         var cellWidth = GetActualCellWidth();
@@ -243,19 +243,11 @@ public class GanttZoomManager
         }
         else if (cellWidth >= GanttConstants.DateLabel.ShowEvery2DaysThreshold)
         {
-            return day == 1 || dayIndex % 2 == 0;
-        }
-        else if (cellWidth >= GanttConstants.DateLabel.ShowEvery3DaysThreshold)
-        {
-            return day == 1 || dayIndex % 3 == 0;
-        }
-        else if (cellWidth >= GanttConstants.DateLabel.ShowEvery5DaysThreshold)
-        {
-            return day == 1 || dayIndex % 5 == 0;
+            return dayIndex % 2 == 0;
         }
         else
         {
-            return day == 1 || dayIndex % 10 == 0;
+            return dayIndex % 3 == 0;
         }
     }
 }
