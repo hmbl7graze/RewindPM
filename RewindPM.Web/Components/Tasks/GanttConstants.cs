@@ -28,7 +28,7 @@ public static class GanttConstants
         /// <summary>
         /// 最小セル幅
         /// </summary>
-        public const double Min = 8.0;
+        public const double Min = 6.0;
 
         /// <summary>
         /// 最大セル幅

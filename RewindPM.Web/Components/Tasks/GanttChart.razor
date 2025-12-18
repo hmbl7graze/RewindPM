@@ -375,12 +375,9 @@
 
     private string GetGridTemplateColumns()
     {
-        // グリッドテンプレートが未初期化または空の場合はここで再計算する
-        if (string.IsNullOrEmpty(_gridTemplateColumns))
-        {
-            UpdateGridTemplateColumns();
-        }
-        return _gridTemplateColumns ?? string.Empty;
+        // 常に最新の値を返す（TotalDaysが変更された場合に対応）
+        var cellWidth = _zoomManager.GetActualCellWidth();
+        return $"repeat({TotalDays}, {cellWidth}px)";
     }
 
     private string GetRowHeightStyle()
