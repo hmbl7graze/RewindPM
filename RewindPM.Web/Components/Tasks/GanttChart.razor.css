@@ -110,7 +110,7 @@
 }
 
 .gantt-task-name-cell:hover {
-    background-color: var(--bg-subtle);
+    background-color: var(--bg-row-hover);
 }
 
 .gantt-task-title {
