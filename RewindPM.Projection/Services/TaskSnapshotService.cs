@@ -27,13 +27,16 @@ public class TaskSnapshotService
     }
 
     /// <summary>
-    /// タスクのスナップショットを作成または更新する
+    /// タスクのスナップショットを作成または更新する準備を行う
     /// 同じ日に複数回更新された場合、その日の最後の状態を保持する
     /// </summary>
+    /// <remarks>
+    /// このメソッドは変更をDbContextに追加するのみで、SaveChangesAsyncは呼び出し側で実行すること
+    /// </remarks>
     /// <param name="taskId">タスクID</param>
     /// <param name="currentState">タスクの現在状態</param>
     /// <param name="occurredAt">イベント発生日時</param>
-    public async Task UpsertTaskSnapshotAsync(Guid taskId, TaskEntity currentState, DateTimeOffset occurredAt)
+    public async Task PrepareTaskSnapshotAsync(Guid taskId, TaskEntity currentState, DateTimeOffset occurredAt)
     {
         ArgumentNullException.ThrowIfNull(currentState);
 

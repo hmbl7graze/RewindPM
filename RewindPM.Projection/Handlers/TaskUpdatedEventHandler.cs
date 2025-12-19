@@ -45,7 +45,7 @@ public class TaskUpdatedEventHandler : IEventHandler<TaskUpdated>
         task.UpdatedBy = @event.UpdatedBy;
 
         // 当日のスナップショットを作成または更新
-        await _snapshotService.UpsertTaskSnapshotAsync(@event.AggregateId, task, @event.OccurredAt);
+        await _snapshotService.PrepareTaskSnapshotAsync(@event.AggregateId, task, @event.OccurredAt);
 
         await _context.SaveChangesAsync();
 

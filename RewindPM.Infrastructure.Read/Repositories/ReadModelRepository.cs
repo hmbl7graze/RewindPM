@@ -132,19 +132,14 @@ public class ReadModelRepository : IReadModelRepository
             .Distinct()
             .ToList();
 
-        var tasks = new List<TaskDto>();
-        foreach (var taskId in taskIds)
-        {
-            var taskHistory = filteredTaskHistories
+        var tasks = taskIds
+            .Select(taskId => filteredTaskHistories
                 .Where(history => history.TaskId == taskId)
                 .OrderByDescending(history => history.SnapshotDate)
-                .FirstOrDefault();
-
-            if (taskHistory != null)
-            {
-                tasks.Add(MapToTaskDto(taskHistory));
-            }
-        }
+                .FirstOrDefault())
+            .Where(taskHistory => taskHistory != null)
+            .Select(taskHistory => MapToTaskDto(taskHistory!))
+            .ToList();
 
         return tasks;
     }

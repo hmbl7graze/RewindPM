@@ -102,6 +102,7 @@ public class ProjectStatisticsRepository : IProjectStatisticsRepository
             .ToListAsync(cancellationToken);
 
         // 指定日時以前のスナップショットから、各タスクの最新状態を取得
+        // SnapshotDateを使用して、その日の時点でのタスクの状態を取得
         var tasksFromHistory = allTaskHistories
             .Where(th => th.SnapshotDate <= asOfDate)
             .GroupBy(th => th.TaskId)
