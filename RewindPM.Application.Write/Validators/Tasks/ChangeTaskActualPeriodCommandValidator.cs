@@ -1,5 +1,6 @@
 using FluentValidation;
 using RewindPM.Application.Write.Commands.Tasks;
+using RewindPM.Application.Write.Validators.Common;
 
 namespace RewindPM.Application.Write.Validators.Tasks;
 
@@ -16,15 +17,11 @@ public class ChangeTaskActualPeriodCommandValidator : AbstractValidator<ChangeTa
 
         // 実績終了日が設定されている場合、実績開始日より後でなければならない
         RuleFor(x => x.ActualEndDate)
-            .GreaterThan(x => x.ActualStartDate)
-            .When(x => x.ActualStartDate.HasValue && x.ActualEndDate.HasValue)
-            .WithMessage("実績終了日は実績開始日より後でなければなりません");
+            .EndDateMustBeAfterStartDate(x => x.ActualStartDate);
 
         // 実績工数が設定されている場合、正の数でなければならない
         RuleFor(x => x.ActualHours)
-            .GreaterThan(0)
-            .When(x => x.ActualHours.HasValue)
-            .WithMessage("実績工数は正の数でなければなりません");
+            .MustBePositiveWhenHasValue();
 
         RuleFor(x => x.ChangedBy)
             .NotEmpty()

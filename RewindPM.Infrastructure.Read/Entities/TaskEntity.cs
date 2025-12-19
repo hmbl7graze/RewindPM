@@ -1,3 +1,4 @@
+using RewindPM.Infrastructure.Read.Contracts;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 
 namespace RewindPM.Infrastructure.Read.Entities;
@@ -6,7 +7,7 @@ namespace RewindPM.Infrastructure.Read.Entities;
 /// タスクの現在状態を保持するエンティティ
 /// ReadModelデータベースに保存される
 /// </summary>
-public class TaskEntity
+public class TaskEntity : ITaskStatisticsData
 {
     /// <summary>
     /// タスクID（主キー）
