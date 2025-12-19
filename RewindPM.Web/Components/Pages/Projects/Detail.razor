@@ -72,9 +72,9 @@ else
                 <button class="view-tab @(_viewType == "Statistics" ? "active" : "")" @onclick='() => ToggleView("Statistics")'>統計</button>
             </div>
             <div class="view-actions">
-                @if (_viewType != StatisticsViewType)
+                @if (_viewType != StatisticsViewType && !_isViewingPast)
                 {
-                    <button class="btn btn-success" @onclick="ShowCreateTaskModal" disabled="@_isViewingPast">+ 新規タスク</button>
+                    <button class="btn btn-success" @onclick="ShowCreateTaskModal">+ 新規タスク</button>
                 }
             </div>
         </div>

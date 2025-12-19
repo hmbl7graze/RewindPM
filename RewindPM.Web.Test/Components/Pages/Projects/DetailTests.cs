@@ -489,8 +489,8 @@ public class DetailTests : Bunit.TestContext
         Assert.Empty(banners);
     }
 
-    [Fact(DisplayName = "初期表示時（最新）は新規タスクボタンが有効化されていること")]
-    public void Detail_AddTaskButtonEnabled_Initially()
+    [Fact(DisplayName = "初期表示時（最新）は新規タスクボタンが表示されていること")]
+    public void Detail_AddTaskButtonVisible_Initially()
     {
         // Arrange
         var project = CreateTestProject();
@@ -508,9 +508,72 @@ public class DetailTests : Bunit.TestContext
         var cut = RenderComponent<ProjectsDetail>(parameters => parameters
             .Add(p => p.Id, _testProjectId));
 
-        // Assert - 新規タスクボタンが有効
-        var addTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("新規タスク"));
-        Assert.False(addTaskButton.HasAttribute("disabled"));
+        // Assert - 新規タスクボタンが表示されている
+        var addTaskButton = cut.FindAll("button").FirstOrDefault(b => b.TextContent.Contains("新規タスク"));
+        Assert.NotNull(addTaskButton);
+    }
+
+    [Fact(DisplayName = "リワインドで過去を表示中は新規タスクボタンが非表示になること")]
+    public async Task Detail_AddTaskButtonHidden_WhenViewingPast()
+    {
+        // Arrange
+        var project = CreateTestProject();
+        var editDates = new List<DateTimeOffset>
+        {
+            new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+            new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero)
+        };
+        var currentTasks = CreateTestTasks();
+        var pastTasks = new List<TaskDto>
+        {
+            new TaskDto
+            {
+                Id = Guid.NewGuid(),
+                ProjectId = _testProjectId,
+                Title = "Past Task",
+                Description = "Past Task Description",
+                Status = TaskStatus.Todo,
+                ScheduledStartDate = new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+                ScheduledEndDate = new DateTimeOffset(new DateTime(2025, 1, 15), TimeSpan.Zero),
+                EstimatedHours = 5,
+                CreatedAt = new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero),
+                CreatedBy = "admin",
+                UpdatedAt = null
+            }
+        };
+
+        _mediatorMock
+            .Send(Arg.Any<GetProjectByIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(project);
+        _mediatorMock
+            .Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(editDates);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdQuery>(), Arg.Any<CancellationToken>())
+            .Returns(currentTasks);
+        _mediatorMock
+            .Send(Arg.Any<GetTasksByProjectIdAtTimeQuery>(), Arg.Any<CancellationToken>())
+            .Returns(pastTasks);
+
+        var cut = RenderComponent<ProjectsDetail>(parameters => parameters
+            .Add(p => p.Id, _testProjectId));
+
+        // リワインドモードを有効化
+        var rewindButton = cut.FindAll("button").First(b => b.TextContent.Contains("過去に戻る"));
+        rewindButton.Click();
+
+        // Act - 過去の日付に変更
+        await cut.InvokeAsync(async () =>
+        {
+            var instance = cut.Instance;
+            var method = instance.GetType()
+                .GetMethod("HandleDateChanged", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            await (method!.Invoke(instance, new object?[] { new DateTimeOffset(new DateTime(2025, 1, 10), TimeSpan.Zero) }) as Task ?? Task.CompletedTask);
+        });
+
+        // Assert - 新規タスクボタンが非表示（存在しない）
+        var addTaskButton = cut.FindAll("button").FirstOrDefault(b => b.TextContent.Contains("新規タスク"));
+        Assert.Null(addTaskButton);
     }
 
     [Fact(DisplayName = "日付変更時にタスクが再読み込みされること")]
@@ -1311,9 +1374,8 @@ public class DetailTests : Bunit.TestContext
         kanbanTab.Click();
 
         // Assert - 新規タスクボタンが表示されていることを確認
-        var newTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("新規タスク"));
+        var newTaskButton = cut.FindAll("button").FirstOrDefault(b => b.TextContent.Contains("新規タスク"));
         Assert.NotNull(newTaskButton);
-        Assert.False(newTaskButton.HasAttribute("disabled")); // 過去表示中でないので有効
     }
 
     [Fact(DisplayName = "Ganttタブ表示時に新規タスクボタンが表示されること")]
@@ -1339,9 +1401,8 @@ public class DetailTests : Bunit.TestContext
         ganttTab.Click();
 
         // Assert - 新規タスクボタンが表示されていることを確認
-        var newTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("新規タスク"));
+        var newTaskButton = cut.FindAll("button").FirstOrDefault(b => b.TextContent.Contains("新規タスク"));
         Assert.NotNull(newTaskButton);
-        Assert.False(newTaskButton.HasAttribute("disabled")); // 過去表示中でないので有効
     }
 
     [Fact(DisplayName = "統計タブから他のタブに切り替えた際に新規タスクボタンが再表示されること")]
@@ -1375,7 +1436,7 @@ public class DetailTests : Bunit.TestContext
         kanbanTab.Click();
 
         // Assert - 新規タスクボタンが再表示されていることを確認
-        var newTaskButton = cut.FindAll("button").First(b => b.TextContent.Contains("新規タスク"));
+        var newTaskButton = cut.FindAll("button").FirstOrDefault(b => b.TextContent.Contains("新規タスク"));
         Assert.NotNull(newTaskButton);
     }
 
