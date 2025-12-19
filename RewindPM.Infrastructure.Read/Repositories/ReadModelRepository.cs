@@ -75,16 +75,16 @@ public class ReadModelRepository : IReadModelRepository
 
         // 指定された時点以前の最新のスナップショットを取得
         // SQLiteはDateTimeOffsetの比較とORDER BYをサポートしないため、クライアント側で処理
-        var histories = await _context.ProjectHistories
-            .Where(h => h.ProjectId == projectId)
+        var projectHistories = await _context.ProjectHistories
+            .Where(history => history.ProjectId == projectId)
             .ToListAsync();
 
-        var history = histories
-            .Where(h => h.SnapshotDate.Date <= targetDate)
-            .OrderByDescending(h => h.SnapshotDate)
+        var projectHistory = projectHistories
+            .Where(history => history.SnapshotDate.Date <= targetDate)
+            .OrderByDescending(history => history.SnapshotDate)
             .FirstOrDefault();
 
-        return history == null ? null : MapToProjectDto(history);
+        return projectHistory == null ? null : MapToProjectDto(projectHistory);
     }
 
     /// <summary>
@@ -97,16 +97,16 @@ public class ReadModelRepository : IReadModelRepository
 
         // 指定された時点以前の最新のスナップショットを取得
         // SQLiteはDateTimeOffsetの比較とORDER BYをサポートしないため、クライアント側で処理
-        var histories = await _context.TaskHistories
-            .Where(h => h.TaskId == taskId)
+        var taskHistories = await _context.TaskHistories
+            .Where(history => history.TaskId == taskId)
             .ToListAsync();
 
-        var history = histories
-            .Where(h => h.SnapshotDate.Date <= targetDate)
-            .OrderByDescending(h => h.SnapshotDate)
+        var taskHistory = taskHistories
+            .Where(history => history.SnapshotDate.Date <= targetDate)
+            .OrderByDescending(history => history.SnapshotDate)
             .FirstOrDefault();
 
-        return history == null ? null : MapToTaskDto(history);
+        return taskHistory == null ? null : MapToTaskDto(taskHistory);
     }
 
     /// <summary>
@@ -119,30 +119,30 @@ public class ReadModelRepository : IReadModelRepository
 
         // 指定された時点以前の各タスクの最新スナップショットを取得
         // SQLiteはDateTimeOffsetの比較とORDER BYをサポートしないため、クライアント側で処理
-        var allHistories = await _context.TaskHistories
-            .Where(h => h.ProjectId == projectId)
+        var allTaskHistories = await _context.TaskHistories
+            .Where(history => history.ProjectId == projectId)
             .ToListAsync();
 
-        var filteredHistories = allHistories
-            .Where(h => h.SnapshotDate.Date <= targetDate)
+        var filteredTaskHistories = allTaskHistories
+            .Where(history => history.SnapshotDate.Date <= targetDate)
             .ToList();
 
-        var taskIds = filteredHistories
-            .Select(h => h.TaskId)
+        var taskIds = filteredTaskHistories
+            .Select(history => history.TaskId)
             .Distinct()
             .ToList();
 
         var tasks = new List<TaskDto>();
         foreach (var taskId in taskIds)
         {
-            var history = filteredHistories
-                .Where(h => h.TaskId == taskId)
-                .OrderByDescending(h => h.SnapshotDate)
+            var taskHistory = filteredTaskHistories
+                .Where(history => history.TaskId == taskId)
+                .OrderByDescending(history => history.SnapshotDate)
                 .FirstOrDefault();
 
-            if (history != null)
+            if (taskHistory != null)
             {
-                tasks.Add(MapToTaskDto(history));
+                tasks.Add(MapToTaskDto(taskHistory));
             }
         }
 
