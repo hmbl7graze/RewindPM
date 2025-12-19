@@ -5,6 +5,7 @@ using RewindPM.Domain.ValueObjects;
 using RewindPM.Infrastructure.Read.Persistence;
 using RewindPM.Infrastructure.Read.Services;
 using RewindPM.Projection.Handlers;
+using RewindPM.Projection.Services;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 
 namespace RewindPM.Projection.Test.Handlers;
@@ -39,6 +40,11 @@ public class ProjectionHandlerTests : IAsyncDisposable
     private ITimeZoneService CreateTimeZoneService()
     {
         return new TestTimeZoneService();
+    }
+
+    private TaskSnapshotService CreateTaskSnapshotService()
+    {
+        return new TaskSnapshotService(_context, CreateTimeZoneService(), CreateLogger<TaskSnapshotService>());
     }
 
     /// <summary>
@@ -287,7 +293,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.Tasks.Add(task);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskUpdatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskUpdatedEventHandler>());
+        var handler = new TaskUpdatedEventHandler(_context, CreateTaskSnapshotService(), CreateLogger<TaskUpdatedEventHandler>());
         var @event = new TaskUpdated
         {
             AggregateId = taskId,
@@ -352,7 +358,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.TaskHistories.Add(existingSnapshot);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskUpdatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskUpdatedEventHandler>());
+        var handler = new TaskUpdatedEventHandler(_context, CreateTaskSnapshotService(), CreateLogger<TaskUpdatedEventHandler>());
         var @event = new TaskUpdated
         {
             AggregateId = taskId,
@@ -402,7 +408,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.Tasks.Add(task);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskStatusChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskStatusChangedEventHandler>());
+        var handler = new TaskStatusChangedEventHandler(_context, CreateTaskSnapshotService(), CreateLogger<TaskStatusChangedEventHandler>());
         var @event = new TaskStatusChanged
         {
             AggregateId = taskId,
@@ -465,7 +471,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.TaskHistories.Add(existingSnapshot);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskStatusChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskStatusChangedEventHandler>());
+        var handler = new TaskStatusChangedEventHandler(_context, CreateTaskSnapshotService(), CreateLogger<TaskStatusChangedEventHandler>());
         var firstChange = new TaskStatusChanged
         {
             AggregateId = taskId,
@@ -508,7 +514,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
     public async Task TaskStatusChangedEventHandler_Should_Handle_Missing_Task_Gracefully()
     {
         // Arrange
-        var handler = new TaskStatusChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskStatusChangedEventHandler>());
+        var handler = new TaskStatusChangedEventHandler(_context, CreateTaskSnapshotService(), CreateLogger<TaskStatusChangedEventHandler>());
         var @event = new TaskStatusChanged
         {
             AggregateId = Guid.NewGuid(), // 存在しないタスク
@@ -556,7 +562,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.Tasks.Add(task);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskScheduledPeriodChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskScheduledPeriodChangedEventHandler>());
+        var handler = new TaskScheduledPeriodChangedEventHandler(_context, CreateTaskSnapshotService(), CreateLogger<TaskScheduledPeriodChangedEventHandler>());
         var newScheduledPeriod = new ScheduledPeriod(
             new DateTime(2025, 12, 12),
             new DateTime(2025, 12, 22),
@@ -633,7 +639,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.TaskHistories.Add(existingSnapshot);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskScheduledPeriodChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskScheduledPeriodChangedEventHandler>());
+        var handler = new TaskScheduledPeriodChangedEventHandler(_context, CreateTaskSnapshotService(), CreateLogger<TaskScheduledPeriodChangedEventHandler>());
         var newScheduledPeriod = new ScheduledPeriod(
             new DateTime(2025, 12, 12),
             new DateTime(2025, 12, 22),
@@ -691,7 +697,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.Tasks.Add(task);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskActualPeriodChangedEventHandler>());
+        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateTaskSnapshotService(), CreateLogger<TaskActualPeriodChangedEventHandler>());
         var newActualPeriod = new ActualPeriod(
             new DateTime(2025, 12, 11),
             new DateTime(2025, 12, 20),
@@ -768,7 +774,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.TaskHistories.Add(existingSnapshot);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskActualPeriodChangedEventHandler>());
+        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateTaskSnapshotService(), CreateLogger<TaskActualPeriodChangedEventHandler>());
         var newActualPeriod = new ActualPeriod(
             new DateTime(2025, 12, 10),
             new DateTime(2025, 12, 15),
@@ -819,7 +825,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         _context.Tasks.Add(task);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskActualPeriodChangedEventHandler>());
+        var handler = new TaskActualPeriodChangedEventHandler(_context, CreateTaskSnapshotService(), CreateLogger<TaskActualPeriodChangedEventHandler>());
 
         // 開始日のみ設定
         var partialActualPeriod = new ActualPeriod(
@@ -1016,7 +1022,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
             OccurredAt = createdAt
         });
 
-        var handler = new TaskCompletelyUpdatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskCompletelyUpdatedEventHandler>());
+        var handler = new TaskCompletelyUpdatedEventHandler(_context, CreateTaskSnapshotService(), CreateLogger<TaskCompletelyUpdatedEventHandler>());
         var newScheduledPeriod = new ScheduledPeriod(
             new DateTimeOffset(2025, 2, 1, 0, 0, 0, TimeSpan.Zero),
             new DateTimeOffset(2025, 2, 15, 0, 0, 0, TimeSpan.Zero),
@@ -1092,7 +1098,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
             OccurredAt = createdAt
         });
 
-        var handler = new TaskCompletelyUpdatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskCompletelyUpdatedEventHandler>());
+        var handler = new TaskCompletelyUpdatedEventHandler(_context, CreateTaskSnapshotService(), CreateLogger<TaskCompletelyUpdatedEventHandler>());
         var @event = new TaskCompletelyUpdated
         {
             AggregateId = taskId,
@@ -1135,7 +1141,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
     public async Task TaskCompletelyUpdatedEventHandler_Should_Handle_Missing_Task_Gracefully()
     {
         // Arrange
-        var handler = new TaskCompletelyUpdatedEventHandler(_context, CreateTimeZoneService(), CreateLogger<TaskCompletelyUpdatedEventHandler>());
+        var handler = new TaskCompletelyUpdatedEventHandler(_context, CreateTaskSnapshotService(), CreateLogger<TaskCompletelyUpdatedEventHandler>());
         var @event = new TaskCompletelyUpdated
         {
             AggregateId = Guid.NewGuid(), // 存在しないタスク
