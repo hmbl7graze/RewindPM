@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using RewindPM.Projection.Handlers;
+using RewindPM.Projection.Services;
 
 namespace RewindPM.Projection;
 
@@ -16,6 +17,9 @@ public static class DependencyInjection
     /// <returns>サービスコレクション</returns>
     public static IServiceCollection AddProjection(this IServiceCollection services)
     {
+        // プロジェクションサービスを登録
+        services.AddScoped<TaskSnapshotService>();
+
         // プロジェクションハンドラーをスコープドで登録
         services.AddScoped<ProjectCreatedEventHandler>();
         services.AddScoped<ProjectUpdatedEventHandler>();

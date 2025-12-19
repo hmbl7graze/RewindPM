@@ -1,5 +1,6 @@
 using FluentValidation;
 using RewindPM.Application.Write.Commands.Tasks;
+using RewindPM.Application.Write.Validators.Common;
 
 namespace RewindPM.Application.Write.Validators.Tasks;
 
@@ -15,13 +16,10 @@ public class ChangeTaskScheduleCommandValidator : AbstractValidator<ChangeTaskSc
             .WithMessage("タスクIDは必須です");
 
         RuleFor(x => x.ScheduledEndDate)
-            .GreaterThan(x => x.ScheduledStartDate)
-            .WithMessage("予定終了日は予定開始日より後でなければなりません");
+            .EndDateMustBeAfterStartDate(x => x.ScheduledStartDate, "予定終了日は予定開始日より後でなければなりません");
 
         RuleFor(x => x.EstimatedHours)
-            .GreaterThan(0)
-            .When(x => x.EstimatedHours.HasValue)
-            .WithMessage("見積工数は正の数でなければなりません");
+            .MustBePositiveWhenHasValue("見積工数は正の数でなければなりません");
 
         RuleFor(x => x.ChangedBy)
             .NotEmpty()

@@ -1,3 +1,4 @@
+using RewindPM.Infrastructure.Read.Contracts;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 
 namespace RewindPM.Infrastructure.Read.Entities;
@@ -6,7 +7,7 @@ namespace RewindPM.Infrastructure.Read.Entities;
 /// タスクの過去状態を保持するエンティティ
 /// タイムトラベル機能のために日単位のスナップショットを保存
 /// </summary>
-public class TaskHistoryEntity
+public class TaskHistoryEntity : ITaskStatisticsData
 {
     /// <summary>
     /// 履歴レコードID（主キー）
