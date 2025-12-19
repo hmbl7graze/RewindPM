@@ -48,6 +48,59 @@
     --color-past-mode-hover: #ef6c00;
     --color-past-mode-light: #fff8e1;
     --color-past-track: #ffc107;
+
+    /* Timeline Control Colors */
+    --timeline-past-bg: #fff8e1;
+    --timeline-past-border: #ffc107;
+    --timeline-control-border: #d0d7de;
+    --timeline-control-bg: #ffffff;
+    --timeline-control-text: #656d76;
+    --timeline-control-hover-bg: #f3f4f6;
+    --timeline-control-hover-text: #1f2328;
+    --timeline-control-active-bg: #ebecf0;
+    --timeline-control-disabled-bg: #f6f8fa;
+    --timeline-control-shadow: rgba(31, 35, 40, 0.12);
+    --timeline-divider: #e1e4e8;
+    --timeline-calendar-text: #24292f;
+    --timeline-reset-color: #ce3a12;
+    --timeline-badge-color: #b45309;
+    --timeline-badge-live: #1a7f37;
+    --timeline-weekday-text: #656d76;
+    --timeline-other-month: #8c959f;
+    --timeline-disabled-text: #d0d7de;
+
+    /* Kanban Colors */
+    --kanban-bg: #f4f5f7;
+    --kanban-border: #ddd;
+    --kanban-header-text: #44546f;
+    --kanban-count-bg: #e0e2e5;
+    --kanban-count-text: #42526e;
+    --kanban-card-shadow: rgba(0, 0, 0, 0.1);
+    --kanban-card-shadow-hover: rgba(0, 0, 0, 0.1);
+    --kanban-card-shadow-active: rgba(0, 0, 0, 0.2);
+    --kanban-focus-outline: #0052cc;
+    --kanban-title-text: #172b4d;
+    --kanban-badge-bg: #dfe1e6;
+    --kanban-badge-text: #42526e;
+
+    /* Gantt Chart Colors */
+    --gantt-status-inprogress-bg: #eff6ff;
+    --gantt-status-inprogress-border: #bfdbfe;
+    --gantt-status-inreview-bg: #fefce8;
+    --gantt-status-inreview-border: #fef08a;
+    --gantt-status-done-bg: #f0fdf4;
+    --gantt-status-done-border: #bbf7d0;
+    --gantt-shadow-rgba: rgba(0, 0, 0, 0.05);
+    --gantt-toolbar-bg: rgba(255, 255, 255, 0.95);
+    --gantt-toolbar-bg-blur: rgba(255, 255, 255, 0.7);
+    --gantt-resize-overlay: rgba(255, 255, 255, 0.3);
+
+    /* Chart Colors */
+    --chart-success: #28a745;
+    --chart-warning: #ffc107;
+    --chart-primary: #007bff;
+    --chart-gray: #6c757d;
+    --chart-gray-light: #adb5bd;
 }
 
 html,

@@ -9,7 +9,7 @@
 }
 
 .kanban-column {
-    background-color: #f4f5f7;
+    background-color: var(--kanban-bg);
     border-radius: 8px;
     width: 300px;
     min-width: 300px;
@@ -21,13 +21,13 @@
 
 .column-header {
     padding: 1rem;
-    border-bottom: 2px solid #ddd;
+    border-bottom: 2px solid var(--kanban-border);
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-weight: bold;
-    color: #44546f;
-    background-color: #f4f5f7;
+    color: var(--kanban-header-text);
+    background-color: var(--kanban-bg);
     /* Keep background opaque */
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
@@ -40,7 +40,7 @@
 }
 
 .task-count {
-    background-color: #e0e2e5;
+    background-color: var(--kanban-count-bg);
     border-radius: 12px;
     padding: 2px 8px;
     font-size: 0.8rem;
@@ -58,7 +58,7 @@
 .task-card {
     background-color: white;
     border-radius: 6px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 2px var(--kanban-card-shadow);
     padding: 0.75rem;
     cursor: pointer;
     transition: box-shadow 0.2s, transform 0.1s;
@@ -66,7 +66,7 @@
 }
 
 .task-card:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px var(--kanban-card-shadow-hover);
 }
 
 .task-card:active {
@@ -75,14 +75,14 @@
 
 .task-card:focus,
 .task-card:focus-visible {
-    outline: 2px solid #0052cc;
+    outline: 2px solid var(--kanban-focus-outline);
     outline-offset: 2px;
 }
 
 .task-title {
     margin-bottom: 0.5rem;
     font-size: 0.95rem;
-    color: #172b4d;
+    color: var(--kanban-title-text);
     word-wrap: break-word;
 }
 
@@ -94,8 +94,8 @@
 }
 
 .badge {
-    background-color: #dfe1e6;
-    color: #42526e;
+    background-color: var(--kanban-badge-bg);
+    color: var(--kanban-badge-text);
     font-size: 0.75rem;
     padding: 2px 6px;
     border-radius: 4px;
@@ -147,7 +147,7 @@
 /* ドラッグ時の効果 */
 .task-card:active {
     transform: rotate(2deg) scale(1.02);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 8px 16px var(--kanban-card-shadow-active);
 }
 /* アクセシビリティ: prefers-reduced-motion対応 */
 @media (prefers-reduced-motion: reduce) {

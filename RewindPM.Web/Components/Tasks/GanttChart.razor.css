@@ -71,7 +71,7 @@
     z-index: 20;
     background: var(--bg-subtle);
     border-bottom: 1px solid var(--border-color);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 2px var(--gantt-shadow-rgba);
 }
 
 /* Cells */
@@ -141,21 +141,21 @@
 }
 
 .gantt-status-inprogress {
-    background: #eff6ff;
+    background: var(--gantt-status-inprogress-bg);
     color: var(--primary);
-    border: 1px solid #bfdbfe;
+    border: 1px solid var(--gantt-status-inprogress-border);
 }
 
 .gantt-status-inreview {
-    background: #fefce8;
+    background: var(--gantt-status-inreview-bg);
     color: var(--warning);
-    border: 1px solid #fef08a;
+    border: 1px solid var(--gantt-status-inreview-border);
 }
 
 .gantt-status-done {
-    background: #f0fdf4;
+    background: var(--gantt-status-done-bg);
     color: var(--success);
-    border: 1px solid #bbf7d0;
+    border: 1px solid var(--gantt-status-done-border);
 }
 
 /* Timeline Area */
@@ -294,7 +294,7 @@
 }
 
 .gantt-resize-handle:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--gantt-resize-overlay);
 }
 
 /* Styling during resize */
@@ -402,7 +402,7 @@
     gap: 8px;
     padding: 8px 12px;
     /* フォールバック: blur 非対応環境でも十分なコントラストを確保 */
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--gantt-toolbar-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-md);
@@ -414,7 +414,7 @@
 /* blur サポート環境向けの強化スタイル */
 @supports (backdrop-filter: blur(8px)) or (-webkit-backdrop-filter: blur(8px)) {
     .gantt-zoom-toolbar {
-        background: rgba(255, 255, 255, 0.7);
+        background: var(--gantt-toolbar-bg-blur);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
     }
