@@ -247,8 +247,82 @@ public class TaskSnapshotServiceTest : IDisposable
             await _service.PrepareTaskSnapshotAsync(taskId, null!, occurredAt));
     }
 
+    [Fact]
+    public async Task PrepareTaskSnapshotAsync_Should_Create_New_Snapshot_On_Different_Date()
+    {
+        // Arrange
+        var taskId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+
+        // 初日のスナップショット
+        var firstSnapshot = new TaskHistoryEntity
+        {
+            Id = Guid.NewGuid(),
+            TaskId = taskId,
+            ProjectId = projectId,
+            SnapshotDate = new DateTimeOffset(2025, 12, 15, 0, 0, 0, TimeSpan.Zero),
+            Title = "初日のタイトル",
+            Description = "説明",
+            Status = TaskStatus.Todo,
+            EstimatedHours = 10,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+            CreatedBy = "test-user",
+            UpdatedBy = "test-user",
+            SnapshotCreatedAt = DateTimeOffset.UtcNow
+        };
+
+        _context.TaskHistories.Add(firstSnapshot);
+
+        var task = new TaskEntity
+        {
+            Id = taskId,
+            ProjectId = projectId,
+            Title = "2日目のタイトル",
+            Description = "新しい説明",
+            Status = TaskStatus.InProgress,
+            EstimatedHours = 8,
+            ActualHours = 4,
+            CreatedAt = DateTimeOffset.UtcNow,
+            UpdatedAt = DateTimeOffset.UtcNow,
+            CreatedBy = "test-user",
+            UpdatedBy = "test-user"
+        };
+
+        _context.Tasks.Add(task);
+        await _context.SaveChangesAsync();
+
+        // 翌日のイベント
+        var occurredAt = new DateTimeOffset(2025, 12, 16, 10, 0, 0, TimeSpan.Zero);
+
+        // Act
+        await _service.PrepareTaskSnapshotAsync(taskId, task, occurredAt);
+        await _context.SaveChangesAsync();
+
+        // Assert
+        var snapshots = await _context.TaskHistories
+            .Where(h => h.TaskId == taskId)
+            .OrderBy(h => h.SnapshotDate)
+            .ToListAsync();
+
+        // 2つのスナップショットが存在することを確認
+        Assert.Equal(2, snapshots.Count);
+
+        // 初日のスナップショットは変更されていないことを確認
+        Assert.Equal("初日のタイトル", snapshots[0].Title);
+        Assert.Equal(TaskStatus.Todo, snapshots[0].Status);
+        Assert.Equal(new DateTimeOffset(2025, 12, 15, 0, 0, 0, TimeSpan.Zero).Date, snapshots[0].SnapshotDate.Date);
+
+        // 2日目のスナップショットが新規作成されたことを確認
+        Assert.Equal("2日目のタイトル", snapshots[1].Title);
+        Assert.Equal(TaskStatus.InProgress, snapshots[1].Status);
+        Assert.Equal(8, snapshots[1].EstimatedHours);
+        Assert.Equal(4, snapshots[1].ActualHours);
+        Assert.Equal(new DateTimeOffset(2025, 12, 16, 0, 0, 0, TimeSpan.Zero).Date, snapshots[1].SnapshotDate.Date);
+    }
+
     /// <summary>
-    /// テスト用のTimeZoneService実装（UTCを使用）
+    /// テスト用のTimeZoneService実装(UTCを使用)
     /// </summary>
     private class TestTimeZoneService : ITimeZoneService
     {
