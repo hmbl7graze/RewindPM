@@ -224,6 +224,40 @@ app.MapGet("/weatherforecast", () =>
 })
 .WithName("GetWeatherForecast");
 
+// アプリケーション起動時にブラウザを自動的に開く
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    try
+    {
+        // アプリケーションのURLを取得
+        var addresses = app.Urls;
+        if (addresses.Any())
+        {
+            var url = addresses.First();
+            Console.WriteLine($"[Web] ブラウザを開きます: {url}");
+            
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = url,
+                UseShellExecute = true
+            };
+            var process = System.Diagnostics.Process.Start(psi);
+            if (process == null)
+            {
+                Console.WriteLine("[Web] ブラウザの起動に失敗しました: Process.Startがnullを返しました");
+            }
+        }
+        else
+        {
+            Console.WriteLine("[Web] アプリケーションのURLが見つかりません");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[Web] ブラウザの起動に失敗しました: {ex.Message}");
+    }
+});
+
 app.Run();
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
