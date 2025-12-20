@@ -134,7 +134,9 @@ using (var scope = app.Services.CreateScope())
 
             Console.WriteLine("[Startup] ReadModel rebuild from EventStore completed.");
 
-            // リプレイ後、タイムゾーンメタデータが存在しない場合は初期化（トランザクション付きで実行）
+            // リプレイ後、タイムゾーンメタデータが存在しない場合は初期化
+            // 注: この処理は意図的にif (hasEvents)ブロック内にある
+            // EventStoreが空の場合、タイムゾーンメタデータの初期化は後のシードデータ実行時に行われる
             var storedTimeZone = await readModelRebuildService.GetStoredTimeZoneIdAsync();
             if (storedTimeZone == null)
             {
