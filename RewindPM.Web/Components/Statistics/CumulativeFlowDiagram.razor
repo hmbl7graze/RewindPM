@@ -28,7 +28,7 @@ else if (_chartData != null && _chartData.Any())
                              SeriesType="SeriesType.Area"
                              XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
-                             Color="var(--chart-done)" />
+                             Color="#80cbc4" />
 
             <ApexPointSeries TItem="ChartDataPoint"
                              Items="_inReviewData"
@@ -36,7 +36,7 @@ else if (_chartData != null && _chartData.Any())
                              SeriesType="SeriesType.Area"
                              XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
-                             Color="var(--chart-inreview)" />
+                             Color="#FACC15" />
 
             <ApexPointSeries TItem="ChartDataPoint"
                              Items="_inProgressData"
@@ -44,7 +44,7 @@ else if (_chartData != null && _chartData.Any())
                              SeriesType="SeriesType.Area"
                              XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
-                             Color="var(--chart-inprogress)" />
+                             Color="#90caf9" />
 
             <ApexPointSeries TItem="ChartDataPoint"
                              Items="_todoData"
@@ -52,7 +52,7 @@ else if (_chartData != null && _chartData.Any())
                              SeriesType="SeriesType.Area"
                              XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
-                             Color="var(--chart-todo)" />
+                             Color="#ce93d8" />
         </ApexChart>
     </div>
 }
@@ -103,7 +103,7 @@ else
                     Gradient = new FillGradient
                     {
                         Type = GradientType.Vertical,
-                        GradientToColors = new List<string> { "var(--chart-gradient-white)", "var(--chart-gradient-white)", "var(--chart-gradient-white)", "var(--chart-gradient-white)" },
+                        GradientToColors = new List<string> { "#ffffff", "#ffffff", "#ffffff", "#ffffff" },
                         OpacityFrom = 0.9,
                         OpacityTo = 0.3,
                     }
