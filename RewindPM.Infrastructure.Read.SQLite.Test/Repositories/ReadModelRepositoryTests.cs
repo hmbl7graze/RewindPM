@@ -4,7 +4,7 @@ using RewindPM.Infrastructure.Read.SQLite.Persistence;
 using RewindPM.Infrastructure.Read.SQLite.Repositories;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 
-namespace RewindPM.Infrastructure.Read.Test.Repositories;
+namespace RewindPM.Infrastructure.Read.SQLite.Test.Repositories;
 
 public class ReadModelRepositoryTests : IDisposable
 {

@@ -7,7 +7,7 @@ using RewindPM.Infrastructure.Read.Services;
 using RewindPM.Infrastructure.Read.SQLite.Services;
 using Xunit;
 
-namespace RewindPM.Infrastructure.Read.Test.Services;
+namespace RewindPM.Infrastructure.Read.SQLite.Test.Services;
 
 /// <summary>
 /// ReadModelRebuildServiceのテスト

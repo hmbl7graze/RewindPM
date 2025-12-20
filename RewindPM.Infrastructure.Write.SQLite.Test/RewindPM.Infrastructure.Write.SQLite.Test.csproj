@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="NSubstitute" />
@@ -23,6 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\RewindPM.Domain\RewindPM.Domain.csproj" />
     <ProjectReference Include="..\RewindPM.Infrastructure.Write\RewindPM.Infrastructure.Write.csproj" />
+    <ProjectReference Include="..\RewindPM.Infrastructure.Write.SQLite\RewindPM.Infrastructure.Write.SQLite.csproj" />
   </ItemGroup>
 
 </Project>

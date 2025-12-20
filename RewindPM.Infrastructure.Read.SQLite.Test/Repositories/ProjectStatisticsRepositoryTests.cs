@@ -5,7 +5,7 @@ using RewindPM.Infrastructure.Read.SQLite.Repositories;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 using Xunit;
 
-namespace RewindPM.Infrastructure.Read.Test.Repositories;
+namespace RewindPM.Infrastructure.Read.SQLite.Test.Repositories;
 
 public class ProjectStatisticsRepositoryTests : IDisposable
 {

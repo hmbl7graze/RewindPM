@@ -11,8 +11,10 @@
   <Project Path="RewindPM.Domain.Test/RewindPM.Domain.Test.csproj" />
   <Project Path="RewindPM.Application.Write.Test/RewindPM.Application.Write.Test.csproj" />
   <Project Path="RewindPM.Application.Read.Test/RewindPM.Application.Read.Test.csproj" />
+  <Project Path="RewindPM.Infrastructure.Write.SQLite.Test/RewindPM.Infrastructure.Write.SQLite.Test.csproj" />
   <Project Path="RewindPM.Infrastructure.Write.SQLite/RewindPM.Infrastructure.Write.SQLite.csproj" />
   <Project Path="RewindPM.Infrastructure.Write.Test/RewindPM.Infrastructure.Write.Test.csproj" />
+  <Project Path="RewindPM.Infrastructure.Read.SQLite.Test/RewindPM.Infrastructure.Read.SQLite.Test.csproj" />
   <Project Path="RewindPM.Infrastructure.Read.SQLite/RewindPM.Infrastructure.Read.SQLite.csproj" />
   <Project Path="RewindPM.Infrastructure.Read.Test/RewindPM.Infrastructure.Read.Test.csproj" />
   <Project Path="RewindPM.Projection.Test/RewindPM.Projection.Test.csproj" />

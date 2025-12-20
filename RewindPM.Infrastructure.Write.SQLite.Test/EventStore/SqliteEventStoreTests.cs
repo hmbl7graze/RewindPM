@@ -7,7 +7,7 @@ using RewindPM.Infrastructure.Write.SQLite.Persistence;
 using RewindPM.Infrastructure.Write.Serialization;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 
-namespace RewindPM.Infrastructure.Write.Test.EventStore;
+namespace RewindPM.Infrastructure.Write.SQLite.Test.EventStore;
 
 /// <summary>
 /// SqliteEventStoreのテスト
