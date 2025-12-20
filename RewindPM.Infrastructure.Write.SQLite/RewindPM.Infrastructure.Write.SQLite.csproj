@@ -19,7 +19,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="RewindPM.Infrastructure.Write.Test" />
+    <InternalsVisibleTo Include="RewindPM.Infrastructure.Write.SQLite.Test" />
   </ItemGroup>
 
 </Project>
