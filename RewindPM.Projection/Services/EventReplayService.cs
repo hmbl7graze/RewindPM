@@ -94,7 +94,34 @@ public class EventReplayService : IEventReplayService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to replay event of type {EventType}", eventType);
+                // ログに残すため、eventData の一部をサマリとして保持する（長すぎる場合はトリム）
+                var maxLogLength = 200;
+                var eventDataSummary = eventData.Length <= maxLogLength
+                    ? eventData
+                    : eventData[..maxLogLength] + "...";
+
+                // 重要イベントの失敗は ReadModel の整合性に重大な影響を与えるため、処理を中断する
+                var isCriticalEvent =
+                    string.Equals(eventType, "ProjectCreated", StringComparison.Ordinal) ||
+                    string.Equals(eventType, "TaskCreated", StringComparison.Ordinal);
+
+                if (isCriticalEvent)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Failed to replay critical event of type {EventType}. EventData (partial): {EventData}",
+                        eventType,
+                        eventDataSummary);
+
+                    // 重要イベントの欠落を無視すると ReadModel が恒久的に不完全になるため、例外を再スローしてリプレイ処理を中断する
+                    throw;
+                }
+
+                _logger.LogWarning(
+                    ex,
+                    "Failed to replay event of type {EventType}. EventData (partial): {EventData}",
+                    eventType,
+                    eventDataSummary);
             }
         }
 
@@ -140,8 +167,24 @@ public class EventReplayService : IEventReplayService
         {
             // 新しいスコープを作成してハンドラーを解決
             using var scope = _serviceProvider.CreateScope();
-            var handler = scope.ServiceProvider.GetRequiredService<THandler>();
-            await handler.HandleAsync(@event);
+            var logger = scope.ServiceProvider.GetService<ILogger<THandler>>();
+
+            try
+            {
+                var handler = scope.ServiceProvider.GetRequiredService<THandler>();
+                await handler.HandleAsync(@event);
+            }
+            catch (Exception ex)
+            {
+                // どのイベントをどのハンドラーで処理中に失敗したかをログ出力
+                logger?.LogError(
+                    ex,
+                    "Error while handling event of type {EventType} with handler {HandlerType}.",
+                    typeof(TEvent).FullName,
+                    typeof(THandler).FullName);
+
+                throw;
+            }
         }
     }
 }

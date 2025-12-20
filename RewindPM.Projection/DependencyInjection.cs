@@ -16,23 +16,21 @@ public static class DependencyInjection
     /// EventPublisherへのハンドラー登録はProjectionInitializerによってアプリケーション起動時に行われる
     /// </summary>
     /// <param name="services">サービスコレクション</param>
-    /// <param name="hasEventsAsyncFunc">EventStoreにイベントが存在するかチェックする関数</param>
+    /// <param name="hasEventsAsyncFunc">EventStoreにイベントが存在するかチェックする関数（必須）</param>
     /// <returns>サービスコレクション</returns>
     public static IServiceCollection AddProjection(
         this IServiceCollection services,
-        Func<IServiceProvider, Task<bool>>? hasEventsAsyncFunc = null)
+        Func<IServiceProvider, Task<bool>> hasEventsAsyncFunc)
     {
         // プロジェクションサービスを登録
         services.AddScoped<TaskSnapshotService>();
 
         // イベントリプレイサービスを登録
-        // hasEventsAsyncFuncが指定されていない場合はデフォルトでfalseを返す
         services.AddScoped<IEventReplayService>(sp =>
         {
             var eventPublisher = sp.GetRequiredService<IEventPublisher>();
             var logger = sp.GetRequiredService<ILogger<EventReplayService>>();
-            var func = hasEventsAsyncFunc ?? ((_) => Task.FromResult(false));
-            return new EventReplayService(eventPublisher, sp, logger, func);
+            return new EventReplayService(eventPublisher, sp, logger, hasEventsAsyncFunc);
         });
 
         // プロジェクションハンドラーをスコープドで登録

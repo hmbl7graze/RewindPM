@@ -115,6 +115,8 @@ using (var scope = app.Services.CreateScope())
     Console.WriteLine($"[Startup] ReadModel empty: {readModelIsEmpty}, ReadModel cleared by timezone change: {readModelWasCleared}");
 
     // ReadModelが空で、EventStoreにイベントがある場合はプロジェクションをリプレイしてReadModelを再構築する
+    // 注: readModelWasClearedが真の場合、readModelIsEmptyも必ず真になるが、
+    // 可読性のため両方の状態を明示的にチェックする
     if (readModelIsEmpty || readModelWasCleared)
     {
         var eventReplayService = services.GetRequiredService<RewindPM.Projection.Services.IEventReplayService>();
@@ -127,7 +129,6 @@ using (var scope = app.Services.CreateScope())
             eventReplayService.RegisterAllEventHandlers();
 
             // EventStoreからイベントデータを取得してリプレイ
-            var serializer = services.GetRequiredService<RewindPM.Infrastructure.Write.Serialization.DomainEventSerializer>();
             await eventReplayService.ReplayAllEventsAsync(async (ct) =>
             {
                 var events = await eventStoreContext.Events
@@ -140,23 +141,12 @@ using (var scope = app.Services.CreateScope())
 
             Console.WriteLine("[Startup] ReadModel rebuild from EventStore completed.");
 
-            // リプレイ後、タイムゾーンメタデータが存在しない場合は初期化
+            // リプレイ後、タイムゾーンメタデータが存在しない場合は初期化（トランザクション付きで実行）
             var storedTimeZone = await readModelRebuildService.GetStoredTimeZoneIdAsync();
             if (storedTimeZone == null)
             {
-                var timeZoneService = services.GetRequiredService<RewindPM.Infrastructure.Read.Services.ITimeZoneService>();
-                var currentTimeZone = timeZoneService.TimeZone.Id;
-                
-                // メタデータのみ追加（データはクリアしない）
-                var metadataEntity = new RewindPM.Infrastructure.Read.Entities.SystemMetadataEntity
-                {
-                    Key = RewindPM.Infrastructure.Read.Entities.SystemMetadataEntity.TimeZoneMetadataKey,
-                    Value = currentTimeZone
-                };
-                readModelContext.SystemMetadata.Add(metadataEntity);
-                await readModelContext.SaveChangesAsync();
-                
-                Console.WriteLine($"[Startup] Initialized timezone metadata: {currentTimeZone}");
+                await readModelRebuildService.InitializeTimeZoneMetadataAsync();
+                Console.WriteLine("[Startup] Initialized timezone metadata.");
             }
         }
 
@@ -188,7 +178,7 @@ using (var scope = app.Services.CreateScope())
                 var eventReplayService = services.GetRequiredService<RewindPM.Projection.Services.IEventReplayService>();
                 eventReplayService.RegisterAllEventHandlers();
 
-                // Projectionハンドラーは既にProjectionInitializerで登録済みのため、直接シード実行
+                // ハンドラー登録後、シードデータを実行してイベントをReadModelに反映する
                 var seedData = new SeedData(app.Services);
                 await seedData.SeedAsync();
                 Console.WriteLine("[Startup] Sample data seeded successfully.");

@@ -97,10 +97,53 @@ public class ReadModelRebuildService : IReadModelRebuildService
 
             return transaction;
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(
+                ex,
+                "Failed to clear read model and update time zone to {NewTimeZoneId}. Transaction has been rolled back.",
+                newTimeZoneId);
             throw;
         }
+    }
+
+    /// <inheritdoc/>
+    public async Task InitializeTimeZoneMetadataAsync(CancellationToken cancellationToken = default)
+    {
+        var currentTimeZone = _timeZoneService.TimeZone.Id;
+        
+        // トランザクション内でメタデータを初期化
+        var executionStrategy = _context.Database.CreateExecutionStrategy();
+        await executionStrategy.ExecuteAsync(async () =>
+        {
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+
+            try
+            {
+                // メタデータのみ追加（データはクリアしない）
+                var metadataEntity = new SystemMetadataEntity
+                {
+                    Key = SystemMetadataEntity.TimeZoneMetadataKey,
+                    Value = currentTimeZone
+                };
+
+                _context.SystemMetadata.Add(metadataEntity);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                await transaction.CommitAsync(cancellationToken);
+                
+                _logger.LogInformation("Initialized timezone metadata: {TimeZoneId}", currentTimeZone);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                _logger.LogError(
+                    ex,
+                    "Failed to initialize timezone metadata with {TimeZoneId}. Transaction has been rolled back.",
+                    currentTimeZone);
+                throw;
+            }
+        });
     }
 }

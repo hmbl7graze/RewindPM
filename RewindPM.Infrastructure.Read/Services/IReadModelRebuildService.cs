@@ -28,4 +28,10 @@ public interface IReadModelRebuildService
     /// <param name="cancellationToken">キャンセルトークン</param>
     /// <returns>保存されているタイムゾーンID (未設定の場合はnull)</returns>
     Task<string?> GetStoredTimeZoneIdAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// タイムゾーンメタデータを初期化する（トランザクション付き）
+    /// </summary>
+    /// <param name="cancellationToken">キャンセルトークン</param>
+    Task InitializeTimeZoneMetadataAsync(CancellationToken cancellationToken = default);
 }

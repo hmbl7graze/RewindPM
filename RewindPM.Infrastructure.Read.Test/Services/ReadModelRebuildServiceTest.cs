@@ -11,10 +11,11 @@ namespace RewindPM.Infrastructure.Read.Test.Services;
 /// <summary>
 /// ReadModelRebuildServiceのテスト
 /// </summary>
-public class ReadModelRebuildServiceTest
+public class ReadModelRebuildServiceTest : IDisposable
 {
     private readonly ITimeZoneService _mockTimeZoneService;
     private readonly ILogger<ReadModelRebuildService> _mockLogger;
+    private readonly List<Microsoft.Data.Sqlite.SqliteConnection> _connections = new();
 
     public ReadModelRebuildServiceTest()
     {
@@ -27,6 +28,7 @@ public class ReadModelRebuildServiceTest
         // SQLiteのInMemoryモードを使用(生SQLとトランザクションに対応)
         var connection = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:");
         connection.Open();
+        _connections.Add(connection); // Dispose用に記録
 
         var options = new DbContextOptionsBuilder<ReadModelDbContext>()
             .UseSqlite(connection)
@@ -35,6 +37,17 @@ public class ReadModelRebuildServiceTest
         var context = new ReadModelDbContext(options);
         context.Database.EnsureCreated();
         return context;
+    }
+
+    public void Dispose()
+    {
+        // すべての接続をクローズして破棄
+        foreach (var connection in _connections)
+        {
+            connection.Close();
+            connection.Dispose();
+        }
+        _connections.Clear();
     }
 
     [Fact]
@@ -203,5 +216,22 @@ public class ReadModelRebuildServiceTest
         // Assert
         var storedTimeZone = await service.GetStoredTimeZoneIdAsync(TestContext.Current.CancellationToken);
         Assert.Equal("UTC", storedTimeZone);
+    }
+
+    [Fact]
+    public async Task InitializeTimeZoneMetadataAsync_タイムゾーンメタデータを初期化する()
+    {
+        // Arrange
+        using var context = CreateInMemoryContext();
+        var mockTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo");
+        _mockTimeZoneService.TimeZone.Returns(mockTimeZoneInfo);
+        var service = new ReadModelRebuildService(context, _mockTimeZoneService, _mockLogger);
+
+        // Act
+        await service.InitializeTimeZoneMetadataAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        var storedTimeZone = await service.GetStoredTimeZoneIdAsync(TestContext.Current.CancellationToken);
+        Assert.Equal("Asia/Tokyo", storedTimeZone);
     }
 }

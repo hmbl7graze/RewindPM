@@ -166,7 +166,7 @@ public class EventReplayServiceTest
     }
 
     [Fact]
-    public async Task ReplayAllEventsAsync_イベントのデシリアライズに失敗した場合_ログを出力して続行する()
+    public async Task ReplayAllEventsAsync_非重要イベントのデシリアライズに失敗した場合_ログを出力して続行する()
     {
         // Arrange
         Func<IServiceProvider, Task<bool>> hasEventsFunc = (_) => Task.FromResult(true);
@@ -176,15 +176,38 @@ public class EventReplayServiceTest
             _mockLogger,
             hasEventsFunc);
 
-        // 無効なJSONを持つイベントを追加
+        // 無効なJSONを持つ非重要イベントを追加
         var eventDataList = new List<(string EventType, string EventData)>
         {
-            ("ProjectCreated", "invalid json")
+            ("ProjectUpdated", "invalid json")
         };
 
         // Act & Assert (例外がスローされないことを確認)
         await service.ReplayAllEventsAsync(_ => Task.FromResult(eventDataList), TestContext.Current.CancellationToken);
 
-        // 警告ログが出力されることを確認 (NSubstituteではLogger検証が難しいため省略)
+        // PublishAsyncは呼ばれていないことを確認
+        await _mockEventPublisher.DidNotReceive().PublishAsync(Arg.Any<IDomainEvent>());
+    }
+
+    [Fact]
+    public async Task ReplayAllEventsAsync_重要イベントのデシリアライズに失敗した場合_例外をスローする()
+    {
+        // Arrange
+        Func<IServiceProvider, Task<bool>> hasEventsFunc = (_) => Task.FromResult(true);
+        var service = new EventReplayService(
+            _mockEventPublisher,
+            _mockServiceProvider,
+            _mockLogger,
+            hasEventsFunc);
+
+        // 無効なJSONを持つ重要イベントを追加
+        var eventDataList = new List<(string EventType, string EventData)>
+        {
+            ("ProjectCreated", "invalid json")
+        };
+
+        // Act & Assert (例外がスローされることを確認)
+        await Assert.ThrowsAsync<System.Text.Json.JsonException>(
+            async () => await service.ReplayAllEventsAsync(_ => Task.FromResult(eventDataList), TestContext.Current.CancellationToken));
     }
 }
