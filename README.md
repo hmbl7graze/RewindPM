@@ -48,14 +48,16 @@ SQLiteを使用し、複雑なデータベースサーバーのセットアッ�
 
 ## インストール・セットアップ
 
-### 1. リポジトリのクローン
+### ソースからのビルド
+
+#### 1. リポジトリのクローン
 
 ```bash
 git clone https://github.com/hmbl7graze/RewindPM.git
 cd RewindPM
 ```
 
-### 2. アプリケーションの起動
+#### 2. アプリケーションの起動
 
 ```bash
 dotnet run --project RewindPM.Web
@@ -70,7 +72,7 @@ dotnet run
 
 アプリケーションが起動すると、コンソールにURLが表示されます（例：`http://localhost:5000`）。ブラウザでそのURLにアクセスしてください。
 
-### 3. タイムゾーンの設定（任意）
+#### 3. タイムゾーンの設定（任意）
 
 `RewindPM.Web/appsettings.json` でタイムゾーンを設定できます。詳細は[タイムゾーン設定](#タイムゾーン設定)を参照してください。
 
@@ -83,6 +85,22 @@ dotnet run --project RewindPM.AppHost
 ```
 
 .NET Aspireのダッシュボードが起動し、そこからフロントエンドにアクセスできます。
+
+### バイナリ版
+
+[Releases](https://github.com/hmbl7graze/RewindPM/releases)ページから最新版をダウンロードできます。
+
+#### セキュリティ警告について
+
+現在のリリースバイナリは**コード署名を行っていません**。初回起動時に以下の警告が表示される場合がありますが、これは正常な動作です：
+
+**Windows の場合:**
+- Windows SmartScreenによる「WindowsによってPCが保護されました」という警告が表示されます
+- 「詳細情報」をクリック → 「実行」ボタンで起動できます
+
+**macOS の場合:**
+- Gatekeeperによる警告が表示されます
+- 「システム設定」→「プライバシーとセキュリティ」から実行を許可できます
 
 ## 使い方
 
