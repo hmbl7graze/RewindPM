@@ -82,7 +82,7 @@ dotnet run
 dotnet run --project RewindPM.AppHost
 ```
 
-.NET Aspireのダッシュボードが起動し、そこからフロントエンドにアクセスできます。
+.NET Aspireのダッシュボードが起動し、アプリケーションが準備できると自動的にブラウザでフロントエンドが開きます。
 
 ## 使い方
 
