@@ -112,11 +112,11 @@
     --gantt-resize-overlay: rgba(255, 229, 95, 0.2);
 
     /* Chart Colors */
-    --chart-success: #46A0A6;
-    --chart-warning: #FFE55F;
-    --chart-primary: #2F97D4;
-    --chart-gray: #757575;
-    --chart-gray-light: #9e9e9e;
+    --chart-done: #80cbc4;
+    --chart-inreview: #FFE55F;
+    --chart-inprogress: #90caf9;
+    --chart-todo: #bdbdbd;
+    --chart-ideal: #e0e0e0;
 }
 
 html,
