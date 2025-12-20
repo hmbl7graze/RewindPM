@@ -37,10 +37,6 @@ RewindPMは、過去の任意の時点にさかのぼってプロジェクトの
 
 コマンド（書き込み）とクエリ（読み取り）を分離したアーキテクチャにより、高速な読み取りと履歴の完全な記録を両立しています。
 
-### シンプルで軽量
-
-SQLiteを使用し、複雑なデータベースサーバーのセットアップは不要です。個人や小規模チームでの利用に最適化されています。
-
 ## 動作環境
 
 - .NET 10 SDK 以上
@@ -186,7 +182,7 @@ Linux/macOS環境（IANA形式）：
   - すべての変更をイベントとして永続化
   - イベント履歴から任意の時点の状態を再現可能
 - レイヤードアーキテクチャ
-  - Presentation層、Application層、Domain層、Infrastructure層、Projection層
+  - Presentation層、Application層、Domain層、Infrastructure層
 - DDD (Domain-Driven Design)
   - Aggregate、Value Object、Domain Eventパターンの採用
 
@@ -218,13 +214,24 @@ RewindPM/
 │   ├── ValueObjects/              # 値オブジェクト
 │   └── Events/                    # ドメインイベント
 │
-├── RewindPM.Infrastructure.Write/ # Write側 Infrastructure層
-│   ├── EventStore/                # イベントストア実装
-│   └── Repositories/              # リポジトリ実装
+├── RewindPM.Infrastructure.Write/ # Write側 Infrastructure層（DB非依存）
+│   ├── Services/                  # 共通サービス（インターフェース）
+│   ├── EventPublishing/           # イベント発行機能
+│   └── Repositories/              # リポジトリインターフェース
 │
-├── RewindPM.Infrastructure.Read/  # Read側 Infrastructure層
-│   ├── ReadModel/                 # 読み取りモデル
-│   └── Repositories/              # クエリ実装
+├── RewindPM.Infrastructure.Write.SQLite/ # Write側 SQLite実装
+│   ├── EventStore/                # イベントストア実装
+│   ├── Services/                  # マイグレーション管理など
+│   └── Persistence/               # EventStoreDbContext
+│
+├── RewindPM.Infrastructure.Read/  # Read側 Infrastructure層（DB非依存）
+│   ├── Services/                  # 共通サービス（インターフェース）
+│   └── Entities/                  # エンティティ定義
+│
+├── RewindPM.Infrastructure.Read.SQLite/ # Read側 SQLite実装
+│   ├── Repositories/              # リポジトリ実装
+│   ├── Services/                  # マイグレーション管理など
+│   └── Persistence/               # ReadModelDbContext
 │
 ├── RewindPM.Projection/           # Projection層
 │   └── EventHandlers/             # イベントハンドラー（EventStore → ReadModel）
@@ -270,7 +277,7 @@ graph TB
 
 ### データフロー図
 
-上記の図は**データフロー（処理の流れ）**を表現しています。
+上記の図はデータフロー（処理の流れ）を表現しています。
 
 - コマンド実行: `UI → Application.Write → Domain → EventStore`
 - イベント通知: `Domain → Projection → ReadModel`
@@ -285,33 +292,39 @@ graph TB
     subgraph "WriteModel（Command）"
         AppWrite[Application.Write<br/>Command/Handler]
         Domain[Domain<br/>Aggregate/ValueObject<br/>IEventPublisher]
-        InfraWrite[Infrastructure.Write<br/>EventStore/Repository]
+        InfraWrite[Infrastructure.Write<br/>Interfaces/Services]
+        InfraWriteSQL[Infrastructure.Write.SQLite<br/>EventStoreDbContext<br/>MigrationService]
 
         AppWrite --> Domain
         InfraWrite --> AppWrite
+        InfraWriteSQL --> InfraWrite
     end
 
     UI --> AppWrite
-    UI --> InfraWrite
+    UI --> InfraWriteSQL
 
     Projection[Projection<br/>EventHandler]
     Projection --> Domain
 
     subgraph "ReadModel（Query）"
-        InfraRead[Infrastructure.Read<br/>ReadModel/Repository]
+        InfraRead[Infrastructure.Read<br/>Interfaces/Services]
+        InfraReadSQL[Infrastructure.Read.SQLite<br/>ReadModelDbContext<br/>MigrationService]
         AppRead[Application.Read<br/>Query/Handler/DTO]
 
         Projection --> InfraRead
+        InfraReadSQL --> InfraRead
         InfraRead --> AppRead
     end
 
     UI --> AppRead
-    UI --> InfraRead
+    UI --> InfraReadSQL
     UI --> Projection
 
     style Domain fill:#d4edda
     style InfraWrite fill:#e1f5ff
+    style InfraWriteSQL fill:#b3d9ff
     style InfraRead fill:#fff4e1
+    style InfraReadSQL fill:#ffe4b3
     style Projection fill:#f0f0f0
 ```
 
