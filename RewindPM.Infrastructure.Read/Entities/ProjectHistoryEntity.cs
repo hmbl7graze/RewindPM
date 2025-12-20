@@ -1,34 +1,33 @@
-namespace RewindPM.Infrastructure.Read.SQLite.Entities;
+namespace RewindPM.Infrastructure.Read.Entities;
 
 /// <summary>
-/// プロジェクトの過去状態を保持するエンティティ
-/// タイムトラベル機能のために日単位のスナップショットを保存
+/// プロジェクトの日次スナップショットを保持するエンティティ
+/// 過去の任意の時点の状態を確認するために使用
 /// </summary>
 public class ProjectHistoryEntity
 {
     /// <summary>
-    /// 履歴レコードID（主キー）
+    /// スナップショットID（主キー）
     /// </summary>
     public Guid Id { get; set; }
 
     /// <summary>
-    /// 元のプロジェクトID
+    /// プロジェクトID
     /// </summary>
     public Guid ProjectId { get; set; }
 
     /// <summary>
-    /// スナップショット日付（日単位、UTC）
-    /// この日の最後の状態を保存
+    /// スナップショットの基準日（ローカルタイムゾーンの日付の00:00:00 UTC）
     /// </summary>
     public DateTimeOffset SnapshotDate { get; set; }
 
     /// <summary>
-    /// プロジェクト名
+    /// プロジェクト名（この日の最終状態）
     /// </summary>
     public string Title { get; set; } = string.Empty;
 
     /// <summary>
-    /// プロジェクトの説明
+    /// プロジェクトの説明（この日の最終状態）
     /// </summary>
     public string Description { get; set; } = string.Empty;
 
@@ -39,7 +38,6 @@ public class ProjectHistoryEntity
 
     /// <summary>
     /// 更新日時（UTC）
-    /// この時点での最終更新日時
     /// </summary>
     public DateTimeOffset? UpdatedAt { get; set; }
 
@@ -50,13 +48,11 @@ public class ProjectHistoryEntity
 
     /// <summary>
     /// 更新者
-    /// この時点での最終更新者
     /// </summary>
     public string? UpdatedBy { get; set; }
 
     /// <summary>
     /// スナップショット作成日時（UTC）
-    /// このレコードがいつ作成されたか
     /// </summary>
     public DateTimeOffset SnapshotCreatedAt { get; set; }
 }

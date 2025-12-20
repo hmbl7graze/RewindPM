@@ -1,9 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
-using RewindPM.Infrastructure.Read.SQLite.Entities;
-using RewindPM.Infrastructure.Read.SQLite.Persistence;
+using RewindPM.Infrastructure.Read.Entities;
 using RewindPM.Infrastructure.Read.Services;
 
 namespace RewindPM.Projection.Handlers;
@@ -13,12 +11,12 @@ namespace RewindPM.Projection.Handlers;
 /// </summary>
 public class ProjectUpdatedEventHandler : IEventHandler<ProjectUpdated>
 {
-    private readonly ReadModelDbContext _context;
+    private readonly IReadModelContext _context;
     private readonly ITimeZoneService _timeZoneService;
     private readonly ILogger<ProjectUpdatedEventHandler> _logger;
 
     public ProjectUpdatedEventHandler(
-        ReadModelDbContext context,
+        IReadModelContext context,
         ITimeZoneService timeZoneService,
         ILogger<ProjectUpdatedEventHandler> logger)
     {
@@ -33,11 +31,13 @@ public class ProjectUpdatedEventHandler : IEventHandler<ProjectUpdated>
 
         _logger.LogInformation("Handling ProjectUpdated event for project {AggregateId}", @event.AggregateId);
 
-        // 現在の状態を更新
-        var project = await _context.Projects.FindAsync(@event.AggregateId);
+        // Projectsテーブルの現在の状態を更新
+        var project = _context.Projects
+            .FirstOrDefault(p => p.Id == @event.AggregateId);
+
         if (project == null)
         {
-            _logger.LogWarning("Project {ProjectId} not found in ReadModel", @event.AggregateId);
+            _logger.LogWarning("Project {AggregateId} not found for update", @event.AggregateId);
             return;
         }
 
@@ -46,14 +46,14 @@ public class ProjectUpdatedEventHandler : IEventHandler<ProjectUpdated>
         project.UpdatedAt = @event.OccurredAt;
         project.UpdatedBy = @event.UpdatedBy;
 
-        // 当日のスナップショットを作成または更新
+        // スナップショットを作成または更新
         var snapshotDate = _timeZoneService.GetSnapshotDate(@event.OccurredAt);
-        var snapshot = await _context.ProjectHistories
-            .FirstOrDefaultAsync(h => h.ProjectId == @event.AggregateId && h.SnapshotDate == snapshotDate);
+        var snapshot = _context.ProjectHistories
+            .FirstOrDefault(h => h.ProjectId == @event.AggregateId && h.SnapshotDate == snapshotDate);
 
         if (snapshot != null)
         {
-            // 既存のスナップショットを更新
+            // 既存のスナップショットを更新（同じ日に複数回更新された場合）
             snapshot.Title = @event.Title;
             snapshot.Description = @event.Description;
             snapshot.UpdatedAt = @event.OccurredAt;
@@ -79,7 +79,7 @@ public class ProjectUpdatedEventHandler : IEventHandler<ProjectUpdated>
                 SnapshotCreatedAt = DateTimeOffset.UtcNow
             };
 
-            _context.ProjectHistories.Add(snapshot);
+            _context.AddProjectHistory(snapshot);
 
             _logger.LogDebug("Created new snapshot for project {ProjectId} on {SnapshotDate}",
                 @event.AggregateId, snapshotDate);
@@ -87,7 +87,6 @@ public class ProjectUpdatedEventHandler : IEventHandler<ProjectUpdated>
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation("Successfully updated project {ProjectId} and snapshot for {SnapshotDate}",
-            @event.AggregateId, snapshotDate);
+        _logger.LogInformation("Successfully updated project {ProjectId}", @event.AggregateId);
     }
 }

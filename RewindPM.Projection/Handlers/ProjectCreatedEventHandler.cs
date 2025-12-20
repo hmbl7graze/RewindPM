@@ -1,9 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
-using RewindPM.Infrastructure.Read.SQLite.Entities;
-using RewindPM.Infrastructure.Read.SQLite.Persistence;
+using RewindPM.Infrastructure.Read.Entities;
 using RewindPM.Infrastructure.Read.Services;
 
 namespace RewindPM.Projection.Handlers;
@@ -13,12 +11,12 @@ namespace RewindPM.Projection.Handlers;
 /// </summary>
 public class ProjectCreatedEventHandler : IEventHandler<ProjectCreated>
 {
-    private readonly ReadModelDbContext _context;
+    private readonly IReadModelContext _context;
     private readonly ITimeZoneService _timeZoneService;
     private readonly ILogger<ProjectCreatedEventHandler> _logger;
 
     public ProjectCreatedEventHandler(
-        ReadModelDbContext context,
+        IReadModelContext context,
         ITimeZoneService timeZoneService,
         ILogger<ProjectCreatedEventHandler> logger)
     {
@@ -45,7 +43,7 @@ public class ProjectCreatedEventHandler : IEventHandler<ProjectCreated>
             UpdatedBy = null
         };
 
-        _context.Projects.Add(project);
+        _context.AddProject(project);
 
         // 初回スナップショットをProjectHistoriesテーブルに追加
         var snapshotDate = _timeZoneService.GetSnapshotDate(@event.OccurredAt);
@@ -63,7 +61,7 @@ public class ProjectCreatedEventHandler : IEventHandler<ProjectCreated>
             SnapshotCreatedAt = DateTimeOffset.UtcNow
         };
 
-        _context.ProjectHistories.Add(snapshot);
+        _context.AddProjectHistory(snapshot);
 
         await _context.SaveChangesAsync();
 

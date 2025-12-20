@@ -1,8 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
-using RewindPM.Infrastructure.Read.SQLite.Persistence;
+using RewindPM.Infrastructure.Read.Services;
 
 namespace RewindPM.Projection.Handlers;
 
@@ -11,11 +10,11 @@ namespace RewindPM.Projection.Handlers;
 /// </summary>
 public class TaskDeletedEventHandler : IEventHandler<TaskDeleted>
 {
-    private readonly ReadModelDbContext _context;
+    private readonly IReadModelContext _context;
     private readonly ILogger<TaskDeletedEventHandler> _logger;
 
     public TaskDeletedEventHandler(
-        ReadModelDbContext context,
+        IReadModelContext context,
         ILogger<TaskDeletedEventHandler> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -29,7 +28,7 @@ public class TaskDeletedEventHandler : IEventHandler<TaskDeleted>
         _logger.LogInformation("Handling TaskDeleted event for task {AggregateId}", @event.AggregateId);
 
         // Read Modelの削除フラグを更新
-        var task = await _context.Tasks.FindAsync(@event.AggregateId);
+        var task = _context.Tasks.FirstOrDefault(t => t.Id == @event.AggregateId);
         if (task != null)
         {
             task.IsDeleted = true;

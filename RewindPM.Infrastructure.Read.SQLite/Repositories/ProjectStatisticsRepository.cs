@@ -1,8 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RewindPM.Application.Read.DTOs;
 using RewindPM.Application.Read.Repositories;
-using RewindPM.Infrastructure.Read.SQLite.Contracts;
-using RewindPM.Infrastructure.Read.SQLite.Entities;
+using RewindPM.Infrastructure.Read.Contracts;
 using RewindPM.Infrastructure.Read.SQLite.Persistence;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 

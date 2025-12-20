@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using RewindPM.Infrastructure.Read.Entities;
+using RewindPM.Infrastructure.Read.Services;
 using RewindPM.Infrastructure.Read.SQLite.Entities;
 
 namespace RewindPM.Infrastructure.Read.SQLite.Persistence;
@@ -7,7 +9,7 @@ namespace RewindPM.Infrastructure.Read.SQLite.Persistence;
 /// ReadModel用のDbContext
 /// 現在の状態と過去の状態（タイムトラベル用）を管理
 /// </summary>
-public class ReadModelDbContext : DbContext
+public class ReadModelDbContext : DbContext, IReadModelContext
 {
     /// <summary>
     /// プロジェクト（現在の状態）
@@ -33,6 +35,32 @@ public class ReadModelDbContext : DbContext
     /// システムメタデータ（設定情報の保存）
     /// </summary>
     public DbSet<SystemMetadataEntity> SystemMetadata => Set<SystemMetadataEntity>();
+
+    // IReadModelContextインターフェース実装
+    IQueryable<ProjectEntity> IReadModelContext.Projects => Projects;
+    IQueryable<ProjectHistoryEntity> IReadModelContext.ProjectHistories => ProjectHistories;
+    IQueryable<TaskEntity> IReadModelContext.Tasks => Tasks;
+    IQueryable<TaskHistoryEntity> IReadModelContext.TaskHistories => TaskHistories;
+
+    void IReadModelContext.AddProject(ProjectEntity project)
+    {
+        Projects.Add(project);
+    }
+
+    void IReadModelContext.AddProjectHistory(ProjectHistoryEntity projectHistory)
+    {
+        ProjectHistories.Add(projectHistory);
+    }
+
+    void IReadModelContext.AddTask(TaskEntity task)
+    {
+        Tasks.Add(task);
+    }
+
+    void IReadModelContext.AddTaskHistory(TaskHistoryEntity taskHistory)
+    {
+        TaskHistories.Add(taskHistory);
+    }
 
     public ReadModelDbContext(DbContextOptions<ReadModelDbContext> options)
         : base(options)

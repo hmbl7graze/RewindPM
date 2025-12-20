@@ -1,4 +1,4 @@
-namespace RewindPM.Infrastructure.Read.SQLite.Entities;
+namespace RewindPM.Infrastructure.Read.Entities;
 
 /// <summary>
 /// プロジェクトの現在状態を保持するエンティティ

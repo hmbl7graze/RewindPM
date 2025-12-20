@@ -3,7 +3,6 @@
   <ItemGroup>
     <ProjectReference Include="..\RewindPM.Domain\RewindPM.Domain.csproj" />
     <ProjectReference Include="..\RewindPM.Infrastructure.Read\RewindPM.Infrastructure.Read.csproj" />
-    <ProjectReference Include="..\RewindPM.Infrastructure.Read.SQLite\RewindPM.Infrastructure.Read.SQLite.csproj" />
   </ItemGroup>
 
   <ItemGroup>

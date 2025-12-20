@@ -1,7 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using RewindPM.Infrastructure.Read.SQLite.Entities;
-using RewindPM.Infrastructure.Read.SQLite.Persistence;
+using RewindPM.Infrastructure.Read.Entities;
 using RewindPM.Infrastructure.Read.Services;
 
 namespace RewindPM.Projection.Services;
@@ -12,12 +10,12 @@ namespace RewindPM.Projection.Services;
 /// </summary>
 public class TaskSnapshotService
 {
-    private readonly ReadModelDbContext _context;
+    private readonly IReadModelContext _context;
     private readonly ITimeZoneService _timeZoneService;
     private readonly ILogger<TaskSnapshotService> _logger;
 
     public TaskSnapshotService(
-        ReadModelDbContext context,
+        IReadModelContext context,
         ITimeZoneService timeZoneService,
         ILogger<TaskSnapshotService> logger)
     {
@@ -41,8 +39,8 @@ public class TaskSnapshotService
         ArgumentNullException.ThrowIfNull(currentState);
 
         var snapshotDate = _timeZoneService.GetSnapshotDate(occurredAt);
-        var snapshot = await _context.TaskHistories
-            .FirstOrDefaultAsync(h => h.TaskId == taskId && h.SnapshotDate == snapshotDate);
+        var snapshot = _context.TaskHistories
+            .FirstOrDefault(h => h.TaskId == taskId && h.SnapshotDate == snapshotDate);
 
         if (snapshot != null)
         {
@@ -56,11 +54,13 @@ public class TaskSnapshotService
         {
             // 新規スナップショットを作成
             snapshot = CreateSnapshot(taskId, currentState, snapshotDate, occurredAt);
-            _context.TaskHistories.Add(snapshot);
+            _context.AddTaskHistory(snapshot);
 
             _logger.LogDebug("Created new snapshot for task {TaskId} on {SnapshotDate}",
                 taskId, snapshotDate);
         }
+
+        await Task.CompletedTask;
     }
 
     /// <summary>

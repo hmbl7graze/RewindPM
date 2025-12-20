@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using RewindPM.Application.Read.DTOs;
 using RewindPM.Application.Read.Repositories;
-using RewindPM.Infrastructure.Read.SQLite.Entities;
+using RewindPM.Infrastructure.Read.Entities;
 using RewindPM.Infrastructure.Read.SQLite.Persistence;
 
 namespace RewindPM.Infrastructure.Read.SQLite.Repositories;

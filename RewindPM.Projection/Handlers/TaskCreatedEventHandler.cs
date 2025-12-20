@@ -1,9 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
-using RewindPM.Infrastructure.Read.SQLite.Entities;
-using RewindPM.Infrastructure.Read.SQLite.Persistence;
+using RewindPM.Infrastructure.Read.Entities;
 using RewindPM.Infrastructure.Read.Services;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 
@@ -14,12 +12,12 @@ namespace RewindPM.Projection.Handlers;
 /// </summary>
 public class TaskCreatedEventHandler : IEventHandler<TaskCreated>
 {
-    private readonly ReadModelDbContext _context;
+    private readonly IReadModelContext _context;
     private readonly ITimeZoneService _timeZoneService;
     private readonly ILogger<TaskCreatedEventHandler> _logger;
 
     public TaskCreatedEventHandler(
-        ReadModelDbContext context,
+        IReadModelContext context,
         ITimeZoneService timeZoneService,
         ILogger<TaskCreatedEventHandler> logger)
     {
@@ -54,7 +52,7 @@ public class TaskCreatedEventHandler : IEventHandler<TaskCreated>
             UpdatedBy = null
         };
 
-        _context.Tasks.Add(task);
+        _context.AddTask(task);
 
         // 初回スナップショットをTaskHistoriesテーブルに追加
         var snapshotDate = _timeZoneService.GetSnapshotDate(@event.OccurredAt);
@@ -80,7 +78,7 @@ public class TaskCreatedEventHandler : IEventHandler<TaskCreated>
             SnapshotCreatedAt = DateTimeOffset.UtcNow
         };
 
-        _context.TaskHistories.Add(snapshot);
+        _context.AddTaskHistory(snapshot);
 
         await _context.SaveChangesAsync();
 

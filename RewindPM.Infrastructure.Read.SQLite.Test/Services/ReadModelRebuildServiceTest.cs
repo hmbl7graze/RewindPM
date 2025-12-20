@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
+using RewindPM.Infrastructure.Read.Entities;
 using RewindPM.Infrastructure.Read.SQLite.Entities;
 using RewindPM.Infrastructure.Read.SQLite.Persistence;
 using RewindPM.Infrastructure.Read.Services;

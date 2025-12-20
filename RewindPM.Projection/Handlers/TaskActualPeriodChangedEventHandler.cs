@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
-using RewindPM.Infrastructure.Read.SQLite.Persistence;
+using RewindPM.Infrastructure.Read.Services;
 using RewindPM.Projection.Services;
 
 namespace RewindPM.Projection.Handlers;
@@ -11,12 +11,12 @@ namespace RewindPM.Projection.Handlers;
 /// </summary>
 public class TaskActualPeriodChangedEventHandler : IEventHandler<TaskActualPeriodChanged>
 {
-    private readonly ReadModelDbContext _context;
+    private readonly IReadModelContext _context;
     private readonly TaskSnapshotService _snapshotService;
     private readonly ILogger<TaskActualPeriodChangedEventHandler> _logger;
 
     public TaskActualPeriodChangedEventHandler(
-        ReadModelDbContext context,
+        IReadModelContext context,
         TaskSnapshotService snapshotService,
         ILogger<TaskActualPeriodChangedEventHandler> logger)
     {
@@ -32,7 +32,7 @@ public class TaskActualPeriodChangedEventHandler : IEventHandler<TaskActualPerio
         _logger.LogInformation("Handling TaskActualPeriodChanged event for task {AggregateId}", @event.AggregateId);
 
         // 現在の状態を更新
-        var task = await _context.Tasks.FindAsync(@event.AggregateId);
+        var task = _context.Tasks.FirstOrDefault(t => t.Id == @event.AggregateId);
         if (task == null)
         {
             _logger.LogWarning("Task {TaskId} not found in ReadModel", @event.AggregateId);

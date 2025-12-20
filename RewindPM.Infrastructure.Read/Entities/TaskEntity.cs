@@ -1,34 +1,23 @@
-using RewindPM.Infrastructure.Read.SQLite.Contracts;
+using RewindPM.Infrastructure.Read.Contracts;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 
-namespace RewindPM.Infrastructure.Read.SQLite.Entities;
+namespace RewindPM.Infrastructure.Read.Entities;
 
 /// <summary>
-/// タスクの過去状態を保持するエンティティ
-/// タイムトラベル機能のために日単位のスナップショットを保存
+/// タスクの現在状態を保持するエンティティ
+/// ReadModelデータベースに保存される
 /// </summary>
-public class TaskHistoryEntity : ITaskStatisticsData
+public class TaskEntity : ITaskStatisticsData
 {
     /// <summary>
-    /// 履歴レコードID（主キー）
+    /// タスクID（主キー）
     /// </summary>
     public Guid Id { get; set; }
-
-    /// <summary>
-    /// 元のタスクID
-    /// </summary>
-    public Guid TaskId { get; set; }
 
     /// <summary>
     /// 所属するプロジェクトのID
     /// </summary>
     public Guid ProjectId { get; set; }
-
-    /// <summary>
-    /// スナップショット日付（日単位、UTC）
-    /// この日の最後の状態を保存
-    /// </summary>
-    public DateTimeOffset SnapshotDate { get; set; }
 
     /// <summary>
     /// タスク名
@@ -84,7 +73,6 @@ public class TaskHistoryEntity : ITaskStatisticsData
 
     /// <summary>
     /// 更新日時（UTC）
-    /// この時点での最終更新日時
     /// </summary>
     public DateTimeOffset? UpdatedAt { get; set; }
 
@@ -95,13 +83,21 @@ public class TaskHistoryEntity : ITaskStatisticsData
 
     /// <summary>
     /// 更新者
-    /// この時点での最終更新者
     /// </summary>
     public string? UpdatedBy { get; set; }
 
     /// <summary>
-    /// スナップショット作成日時（UTC）
-    /// このレコードがいつ作成されたか
+    /// 削除フラグ（論理削除）
     /// </summary>
-    public DateTimeOffset SnapshotCreatedAt { get; set; }
+    public bool IsDeleted { get; set; }
+
+    /// <summary>
+    /// 削除日時（UTC）
+    /// </summary>
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    /// <summary>
+    /// 削除者
+    /// </summary>
+    public string? DeletedBy { get; set; }
 }
