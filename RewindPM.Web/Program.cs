@@ -2,8 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using RewindPM.Web.Components;
 using RewindPM.Infrastructure.Write;
 using RewindPM.Infrastructure.Write.SQLite;
+using RewindPM.Infrastructure.Write.Services;
 using RewindPM.Infrastructure.Read;
 using RewindPM.Infrastructure.Read.SQLite;
+using RewindPM.Infrastructure.Read.Services;
 using RewindPM.Application.Write;
 using RewindPM.Application.Read;
 using RewindPM.Projection;
@@ -68,14 +70,13 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
 
     // ReadModelデータベースの処理
-    var readModelContext = services.GetRequiredService<RewindPM.Infrastructure.Read.SQLite.Persistence.ReadModelDbContext>();
-    var pendingReadModelMigrations = await readModelContext.Database.GetPendingMigrationsAsync();
-    var hasPendingReadModelMigrations = pendingReadModelMigrations.Any();
+    var readModelMigrationService = services.GetRequiredService<IReadModelMigrationService>();
+    var hasPendingReadModelMigrations = await readModelMigrationService.HasPendingMigrationsAsync();
 
     if (hasPendingReadModelMigrations)
     {
         Console.WriteLine($"[Startup] Applying ReadModel migrations...");
-        await readModelContext.Database.MigrateAsync();
+        await readModelMigrationService.ApplyMigrationsAsync();
         Console.WriteLine($"[Startup] ReadModel migrations applied.");
     }
     else
@@ -83,19 +84,18 @@ using (var scope = app.Services.CreateScope())
         var autoMigrate = builder.Configuration.GetValue<bool>("AUTO_MIGRATE_DATABASE", app.Environment.IsDevelopment());
         if (autoMigrate)
         {
-            await readModelContext.Database.MigrateAsync();
+            await readModelMigrationService.ApplyMigrationsAsync();
         }
     }
 
-    // EventStoreデータベースの処理（マイグレーションは直接アクセスが必要）
-    var eventStoreContext = services.GetRequiredService<RewindPM.Infrastructure.Write.SQLite.Persistence.EventStoreDbContext>();
-    var pendingEventStoreMigrations = await eventStoreContext.Database.GetPendingMigrationsAsync();
-    var hasPendingEventStoreMigrations = pendingEventStoreMigrations.Any();
+    // EventStoreデータベースの処理
+    var eventStoreMigrationService = services.GetRequiredService<IEventStoreMigrationService>();
+    var hasPendingEventStoreMigrations = await eventStoreMigrationService.HasPendingMigrationsAsync();
 
     if (hasPendingEventStoreMigrations)
     {
         Console.WriteLine($"[Startup] Applying EventStore migrations...");
-        await eventStoreContext.Database.MigrateAsync();
+        await eventStoreMigrationService.ApplyMigrationsAsync();
         Console.WriteLine($"[Startup] EventStore migrations applied.");
     }
     else
@@ -103,7 +103,7 @@ using (var scope = app.Services.CreateScope())
         var autoMigrate = builder.Configuration.GetValue<bool>("AUTO_MIGRATE_DATABASE", app.Environment.IsDevelopment());
         if (autoMigrate)
         {
-            await eventStoreContext.Database.MigrateAsync();
+            await eventStoreMigrationService.ApplyMigrationsAsync();
         }
     }
 
@@ -115,11 +115,11 @@ using (var scope = app.Services.CreateScope())
     if (readModelWasCleared)
     {
         // 変更を確実に反映するため、DbContextをリフレッシュ
-        readModelContext.ChangeTracker.Clear();
+        readModelMigrationService.ClearChangeTracking();
     }
 
     // ReadModelが空かどうかを確認（初回起動またはクリア後）
-    var readModelIsEmpty = !await readModelContext.Projects.AnyAsync();
+    var readModelIsEmpty = await readModelMigrationService.IsEmptyAsync();
     Console.WriteLine($"[Startup] ReadModel empty: {readModelIsEmpty}, ReadModel cleared by timezone change: {readModelWasCleared}");
 
     // ReadModelが空の場合、EventStoreからイベントをリプレイしてReadModelを再構築する

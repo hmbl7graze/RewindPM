@@ -36,6 +36,9 @@ public static class DependencyInjection
         // IReadModelRebuildServiceの実装としてReadModelRebuildServiceを登録
         services.AddScoped<IReadModelRebuildService, ReadModelRebuildService>();
 
+        // IReadModelMigrationServiceの実装としてReadModelMigrationServiceを登録
+        services.AddScoped<IReadModelMigrationService, ReadModelMigrationService>();
+
         return services;
     }
 }

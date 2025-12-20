@@ -135,11 +135,19 @@ $RECYCLE.BIN/
 # ===========================
 # SQLite Database Files
 # ===========================
-*.db
+# データベースファイルのみを除外（ソースコードは除外しない）
+# プロジェクトルートとWebプロジェクト内のデータベースファイル
+/*.db
+/*.sqlite
+/*.sqlite3
+**/RewindPM.Web/*.db
+**/RewindPM.Web/*.sqlite
+**/RewindPM.Web/*.sqlite3
+[Dd]ata/*.db
+[Dd]ata/*.sqlite
+[Dd]ata/*.sqlite3
 *.db-shm
 *.db-wal
-*.sqlite
-*.sqlite3
 
 # ===========================
 # .NET Aspire specific
@@ -192,14 +200,8 @@ appsettings.Local.json
 # Application specific
 # ===========================
 # イベントストア用のデータベースファイル（ソースコードは除外しない）
-# SQLiteデータベースファイル
-**/*.db
-**/*.sqlite
-**/*.sqlite3
 # SQLite関連の一時ファイル
-**/*.db-shm
-**/*.db-wal
-**/*.db-journal
+*.db-journal
 # イベントファイル
 *.events
 # データディレクトリ（実行時に生成されるデータのみ）

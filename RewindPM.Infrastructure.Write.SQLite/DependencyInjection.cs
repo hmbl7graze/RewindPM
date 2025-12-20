@@ -2,8 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using RewindPM.Domain.Common;
 using RewindPM.Infrastructure.Write.EventPublishing;
+using RewindPM.Infrastructure.Write.Services;
 using RewindPM.Infrastructure.Write.SQLite.EventStore;
 using RewindPM.Infrastructure.Write.SQLite.Persistence;
+using RewindPM.Infrastructure.Write.SQLite.Services;
 
 namespace RewindPM.Infrastructure.Write.SQLite;
 
@@ -43,6 +45,9 @@ public static class DependencyInjection
         // SqliteEventStoreはIEventStoreを実装しており、IEventStoreはIEventStoreReaderを継承しているため、
         // IEventStoreReaderとしても使用可能
         services.AddScoped<IEventStoreReader>(sp => sp.GetRequiredService<IEventStore>());
+
+        // IEventStoreMigrationServiceの実装としてEventStoreMigrationServiceを登録
+        services.AddScoped<IEventStoreMigrationService, EventStoreMigrationService>();
 
         return services;
     }
