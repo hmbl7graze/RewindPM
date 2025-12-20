@@ -226,8 +226,7 @@ graph TB
         EventStore[(EventStore)]
 
         AppWrite --> Domain
-        AppWrite --> 
-        EventStore -->|Publish| Domain
+        Domain --> EventStore
     end
 
     UI -->|Command| AppWrite
@@ -241,7 +240,7 @@ graph TB
         AppRead[Application.Read<br/>Query/Handler/DTO]
 
         Projection --> ReadModel
-        ReadModel --> AppRead
+        AppRead -->ReadModel
     end
 
     UI -->|Query| AppRead
@@ -251,9 +250,52 @@ graph TB
     style Projection fill:#f0f0f0
 ```
 
-Domain層は他のどの層にも依存しません（依存関係逆転の原則）。
-EventStoreはイベント保存後、Domain層のIEventPublisherにイベントをPublishします。
-ProjectionはIEventPublisherにSubscribeし、イベント通知を受け取ってReadModelを更新します。
+### データフロー図
+
+上記の図は**データフロー（処理の流れ）**を表現しています。
+
+- コマンド実行: `UI → Application.Write → Domain → EventStore`
+- イベント通知: `Domain → Projection → ReadModel`
+- クエリ実行: `UI → Application.Read → ReadModel`
+
+### 依存関係図（プロジェクト参照）
+
+```mermaid
+graph TB
+    UI[Presentation<br/>RewindPM.Web]
+
+    subgraph "WriteModel（Command）"
+        AppWrite[Application.Write<br/>Command/Handler]
+        Domain[Domain<br/>Aggregate/ValueObject<br/>IEventPublisher]
+        InfraWrite[Infrastructure.Write<br/>EventStore/Repository]
+
+        AppWrite --> Domain
+        InfraWrite --> AppWrite
+    end
+
+    UI --> AppWrite
+    UI --> InfraWrite
+
+    Projection[Projection<br/>EventHandler]
+    Projection --> Domain
+
+    subgraph "ReadModel（Query）"
+        InfraRead[Infrastructure.Read<br/>ReadModel/Repository]
+        AppRead[Application.Read<br/>Query/Handler/DTO]
+
+        Projection --> InfraRead
+        InfraRead --> AppRead
+    end
+
+    UI --> AppRead
+    UI --> InfraRead
+    UI --> Projection
+
+    style Domain fill:#d4edda
+    style InfraWrite fill:#e1f5ff
+    style InfraRead fill:#fff4e1
+    style Projection fill:#f0f0f0
+```
 
 ## 開発方針
 
