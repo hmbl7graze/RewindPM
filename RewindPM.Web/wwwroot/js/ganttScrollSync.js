@@ -53,16 +53,25 @@ window.ganttScrollSync = {
             const taskNameCell = row.querySelector('.gantt-task-name-cell');
             const timelineArea = row.querySelector('.gantt-timeline-area');
 
-            if (taskNameCell && timelineArea) {
+            // イベントリスナーの重複登録を防ぐため、data属性でチェック
+            // Blazorの再レンダリング時は新しいDOM要素が作成されるため、data属性もリセットされる
+            if (taskNameCell && timelineArea && !taskNameCell.dataset.highlightListenerAttached) {
                 // マウスオーバー時にタイムラインエリアをハイライト
-                taskNameCell.addEventListener('mouseenter', () => {
+                const mouseenterHandler = () => {
                     timelineArea.classList.add('highlighted');
-                });
+                };
+                taskNameCell.addEventListener('mouseenter', mouseenterHandler);
 
                 // マウスアウト時にハイライトを解除
-                taskNameCell.addEventListener('mouseleave', () => {
+                const mouseleaveHandler = () => {
                     timelineArea.classList.remove('highlighted');
-                });
+                };
+                taskNameCell.addEventListener('mouseleave', mouseleaveHandler);
+
+                // dispose時のクリーンアップのため、ハンドラを要素に保存
+                taskNameCell._mouseenterHandler = mouseenterHandler;
+                taskNameCell._mouseleaveHandler = mouseleaveHandler;
+                taskNameCell.dataset.highlightListenerAttached = 'true';
             }
         });
     },
@@ -181,6 +190,19 @@ window.ganttScrollSync = {
             document.body.style.userSelect = '';
             this.resizeState = null;
         }
+
+        // 行ハイライトのイベントリスナーを削除
+        const taskNameCells = document.querySelectorAll('.gantt-task-name-cell[data-highlight-listener-attached]');
+        taskNameCells.forEach((cell) => {
+            if (cell._mouseenterHandler) {
+                cell.removeEventListener('mouseenter', cell._mouseenterHandler);
+                delete cell._mouseenterHandler;
+            }
+            if (cell._mouseleaveHandler) {
+                cell.removeEventListener('mouseleave', cell._mouseleaveHandler);
+                delete cell._mouseleaveHandler;
+            }
+        });
 
         this.timelineScroll = null;
         this.wheelHandler = null;
