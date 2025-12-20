@@ -147,43 +147,40 @@ using (var scope = app.Services.CreateScope())
 
     }
 
-    // 開発環境でサンプルデータを追加
-    if (app.Environment.IsDevelopment())
+    // 初回起動時にサンプルデータを追加
+    var mediator = services.GetRequiredService<IMediator>();
+    var projects = await mediator.Send(new GetAllProjectsQuery());
+    Console.WriteLine($"[Startup] ReadModel project count: {projects.Count}");
+
+    if (projects.Count == 0)
     {
-        var mediator = services.GetRequiredService<IMediator>();
-        var projects = await mediator.Send(new GetAllProjectsQuery());
-        Console.WriteLine($"[Startup] ReadModel project count: {projects.Count}");
-        
-        if (projects.Count == 0)
+        // ReadModelが空でもEventStoreに既存イベントがある場合、
+        // シードでEventStoreへ書き込むのは避ける（タイムゾーン変更でReadModelのみ再構築したいケース）
+        var eventStoreReader = services.GetRequiredService<RewindPM.Domain.Common.IEventStoreReader>();
+        var hasEventStoreEvents = await eventStoreReader.HasEventsAsync();
+        Console.WriteLine($"[Startup] EventStore has events: {hasEventStoreEvents}");
+
+        if (hasEventStoreEvents)
         {
-            // ReadModelが空でもEventStoreに既存イベントがある場合、
-            // シードでEventStoreへ書き込むのは避ける（タイムゾーン変更でReadModelのみ再構築したいケース）
-            var eventStoreReader = services.GetRequiredService<RewindPM.Domain.Common.IEventStoreReader>();
-            var hasEventStoreEvents = await eventStoreReader.HasEventsAsync();
-            Console.WriteLine($"[Startup] EventStore has events: {hasEventStoreEvents}");
-
-            if (hasEventStoreEvents)
-            {
-                Console.WriteLine("[Startup] ReadModel empty but EventStore contains events. Skipping seed to avoid writing to EventStore.");
-            }
-            else
-            {
-                Console.WriteLine("[Startup] Seeding sample data...");
-
-                // SeedData実行前にProjectionハンドラーを登録（イベントをReadModelに反映するため）
-                var eventReplayService = services.GetRequiredService<RewindPM.Projection.Services.IEventReplayService>();
-                eventReplayService.RegisterAllEventHandlers();
-
-                // ハンドラー登録後、シードデータを実行してイベントをReadModelに反映する
-                var seedData = new SeedData(app.Services);
-                await seedData.SeedAsync();
-                Console.WriteLine("[Startup] Sample data seeded successfully.");
-            }
+            Console.WriteLine("[Startup] ReadModel empty but EventStore contains events. Skipping seed to avoid writing to EventStore.");
         }
         else
         {
-            Console.WriteLine($"[Startup] Database already contains {projects.Count} project(s). Skipping seed data.");
+            Console.WriteLine("[Startup] Seeding sample data...");
+
+            // SeedData実行前にProjectionハンドラーを登録（イベントをReadModelに反映するため）
+            var eventReplayService = services.GetRequiredService<RewindPM.Projection.Services.IEventReplayService>();
+            eventReplayService.RegisterAllEventHandlers();
+
+            // ハンドラー登録後、シードデータを実行してイベントをReadModelに反映する
+            var seedData = new SeedData(app.Services);
+            await seedData.SeedAsync();
+            Console.WriteLine("[Startup] Sample data seeded successfully.");
         }
+    }
+    else
+    {
+        Console.WriteLine($"[Startup] Database already contains {projects.Count} project(s). Skipping seed data.");
     }
 }
 
