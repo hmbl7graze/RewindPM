@@ -17,6 +17,11 @@ namespace RewindPM.Web.Data;
 /// </summary>
 public class SeedData
 {
+    /// <summary>
+    /// 1日あたりの作業時間（時間）
+    /// </summary>
+    private const int HoursPerDay = 8;
+
     private readonly IServiceProvider _serviceProvider;
     private readonly FixedDateTimeProvider _dateTimeProvider;
     private readonly DateTime _projectStartDate;
@@ -185,7 +190,7 @@ public class SeedData
             { 12, 6 },  // フロントエンド購入フロー: 5日→6日
         };
 
-        await RescheduleTasksSimple(repository, taskIds, 8, phase2RevisedDurations);
+        await RescheduleTasksWithRevisedDurations(repository, taskIds, 8, phase2RevisedDurations);
 
         Console.WriteLine($"[SeedData] Rescheduled Phase2 tasks with revised durations");
 
@@ -216,7 +221,7 @@ public class SeedData
         // Phase3タスク（13-14）は期間を維持（バッファなし）
         var phase3RevisedDurations = new Dictionary<int, int>();
 
-        await RescheduleTasksSimple(repository, taskIds, 13, phase3RevisedDurations);
+        await RescheduleTasksWithRevisedDurations(repository, taskIds, 13, phase3RevisedDurations);
 
         Console.WriteLine($"[SeedData] Rescheduled Phase3 tasks");
 
@@ -303,10 +308,13 @@ public class SeedData
     }
 
     /// <summary>
-    /// 月次見直し: タスクの予定期間を見直してスケジュールを再設定する（シンプル版）
+    /// 月次見直し: タスクの予定期間を見直してスケジュールを再設定する
     /// </summary>
-    /// <param name="revisedDurations">見直し後の予定期間（タスクインデックス → 日数）</param>
-    private async Task RescheduleTasksSimple(
+    /// <param name="repository">アグリゲートリポジトリ</param>
+    /// <param name="taskIds">タスクIDのリスト</param>
+    /// <param name="startIndex">スケジュール再設定を開始するタスクのインデックス</param>
+    /// <param name="revisedDurations">見直し後の予定期間（タスクインデックス → 日数）。指定がない場合は元の期間を維持</param>
+    private async Task RescheduleTasksWithRevisedDurations(
         IAggregateRepository repository,
         List<Guid> taskIds,
         int startIndex,
@@ -324,30 +332,25 @@ public class SeedData
 
             // 新しい期間を取得（指定がない場合は元の期間を維持）
             int newDuration;
-            if (revisedDurations.ContainsKey(i))
+            if (!revisedDurations.TryGetValue(i, out newDuration))
             {
-                newDuration = revisedDurations[i];
-            }
-            else
-            {
-                newDuration = ((task.ScheduledPeriod.EndDate - task.ScheduledPeriod.StartDate)?.Days + 1) ?? 0;
+                // 元の計画期間から日数を再計算する。開始・終了が未設定の場合は異常として扱う。
+                if (task.ScheduledPeriod.StartDate is null || task.ScheduledPeriod.EndDate is null)
+                {
+                    throw new InvalidOperationException(
+                        $"タスク '{task.Id}' の ScheduledPeriod に StartDate または EndDate が設定されていません。"
+                    );
+                }
+
+                var scheduledDuration = task.ScheduledPeriod.EndDate.Value - task.ScheduledPeriod.StartDate.Value;
+                newDuration = scheduledDuration.Days + 1;
             }
 
-            // 開始日を計算
-            DateTimeOffset newScheduledStart;
-            if (previousTaskEnd.HasValue)
-            {
-                // 前のタスクの終了日の翌日から開始（シーケンシャル実行）
-                newScheduledStart = previousTaskEnd.Value.AddDays(1);
-            }
-            else
-            {
-                // 最初のタスクは現在時刻から開始（外部で事前に時刻設定されている前提）
-                newScheduledStart = _dateTimeProvider.UtcNow;
-            }
+            // 開始日を計算（前のタスクがあれば翌日から、なければ現在時刻から開始）
+            var newScheduledStart = previousTaskEnd?.AddDays(1) ?? _dateTimeProvider.UtcNow;
 
             var newScheduledEnd = newScheduledStart.AddDays(newDuration - 1);
-            var newEstimatedHours = newDuration * 8;
+            var newEstimatedHours = newDuration * HoursPerDay;
 
             var newScheduledPeriod = new ScheduledPeriod(
                 newScheduledStart,
