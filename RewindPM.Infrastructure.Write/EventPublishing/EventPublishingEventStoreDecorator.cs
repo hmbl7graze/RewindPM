@@ -86,7 +86,7 @@ public class EventPublishingEventStoreDecorator : IEventStore
     /// <summary>
     /// EventStoreから全イベントを時系列順に取得する（委譲、IEventStoreReaderの実装）
     /// </summary>
-    public Task<List<(string EventType, string EventData)>> GetAllEventsAsync(CancellationToken cancellationToken = default)
+    public Task<List<IDomainEvent>> GetAllEventsAsync(CancellationToken cancellationToken = default)
     {
         return _innerEventStore.GetAllEventsAsync(cancellationToken);
     }

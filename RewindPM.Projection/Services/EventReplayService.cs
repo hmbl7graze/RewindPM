@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Common;
@@ -16,39 +15,13 @@ public class EventReplayService : IEventReplayService
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<EventReplayService> _logger;
     private readonly Func<IServiceProvider, Task<bool>> _hasEventsAsyncFunc;
-
-    /// <summary>
-    /// EventStoreとの整合性を保つため、Write側と同じシリアライズオプションを使用
-    /// </summary>
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false,
-        PropertyNameCaseInsensitive = true
-    };
-
-    /// <summary>
-    /// イベント名から型へのマッピング辞書（型安全性とメンテナンス性の向上）
-    /// </summary>
-    private static readonly Dictionary<string, Type> EventTypeMapping = new()
-    {
-        ["ProjectCreated"] = typeof(ProjectCreated),
-        ["ProjectUpdated"] = typeof(ProjectUpdated),
-        ["ProjectDeleted"] = typeof(ProjectDeleted),
-        ["TaskCreated"] = typeof(TaskCreated),
-        ["TaskUpdated"] = typeof(TaskUpdated),
-        ["TaskCompletelyUpdated"] = typeof(TaskCompletelyUpdated),
-        ["TaskStatusChanged"] = typeof(TaskStatusChanged),
-        ["TaskScheduledPeriodChanged"] = typeof(TaskScheduledPeriodChanged),
-        ["TaskActualPeriodChanged"] = typeof(TaskActualPeriodChanged),
-        ["TaskDeleted"] = typeof(TaskDeleted)
-    };
+    private bool _handlersRegistered = false;
 
     /// <summary>
     /// ReadModelの整合性に重大な影響を与える重要イベントのセット
-    /// これらのイベントのデシリアライズに失敗した場合、リプレイ処理を中断する
+    /// これらのイベントの処理に失敗した場合、リプレイ処理を中断する
     /// </summary>
-    private static readonly HashSet<string> CriticalEvents = new()
+    private static readonly HashSet<string> _criticalEvents = new()
     {
         "ProjectCreated",
         "TaskCreated"
@@ -69,12 +42,20 @@ public class EventReplayService : IEventReplayService
     /// <inheritdoc/>
     public async Task<bool> HasEventsAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         return await _hasEventsAsyncFunc(_serviceProvider);
     }
 
     /// <inheritdoc/>
     public void RegisterAllEventHandlers()
     {
+        // 重複登録を防ぐため、既に登録済みの場合はスキップ
+        if (_handlersRegistered)
+        {
+            _logger.LogDebug("Event handlers already registered. Skipping duplicate registration.");
+            return;
+        }
+
         _logger.LogInformation("Registering all event handlers for replay...");
 
         _eventPublisher.Subscribe<ProjectCreated>(
@@ -98,12 +79,13 @@ public class EventReplayService : IEventReplayService
         _eventPublisher.Subscribe<TaskDeleted>(
             new ScopedEventHandlerAdapter<TaskDeleted, TaskDeletedEventHandler>(_serviceProvider));
 
+        _handlersRegistered = true;
         _logger.LogInformation("All event handlers registered.");
     }
 
     /// <inheritdoc/>
     public async Task ReplayAllEventsAsync(
-        Func<CancellationToken, Task<List<(string EventType, string EventData)>>> getEventsAsync,
+        Func<CancellationToken, Task<List<IDomainEvent>>> getEventsAsync,
         CancellationToken cancellationToken = default)
     {
         _logger.LogInformation("Starting event replay from EventStore...");
@@ -112,29 +94,24 @@ public class EventReplayService : IEventReplayService
 
         _logger.LogInformation("Replaying {EventCount} events...", events.Count);
 
-        foreach (var (eventType, eventData) in events)
+        foreach (var domainEvent in events)
         {
             try
             {
-                var domainEvent = DeserializeEvent(eventType, eventData);
                 await _eventPublisher.PublishAsync(domainEvent);
             }
             catch (Exception ex)
             {
-                // ログに残すため、eventData の一部をサマリとして保持する（長すぎる場合はトリム）
-                var maxLogLength = 200;
-                var eventDataSummary = eventData.Length <= maxLogLength
-                    ? eventData
-                    : eventData[..maxLogLength] + "...";
+                var eventType = domainEvent.GetType().Name;
 
                 // 重要イベントの失敗は ReadModel の整合性に重大な影響を与えるため、処理を中断する
-                if (CriticalEvents.Contains(eventType))
+                if (_criticalEvents.Contains(eventType))
                 {
                     _logger.LogError(
                         ex,
-                        "Failed to replay critical event of type {EventType}. EventData (partial): {EventData}",
+                        "Failed to replay critical event of type {EventType}. AggregateId: {AggregateId}",
                         eventType,
-                        eventDataSummary);
+                        domainEvent.AggregateId);
 
                     // 重要イベントの欠落を無視すると ReadModel が恒久的に不完全になるため、例外を再スローしてリプレイ処理を中断する
                     throw;
@@ -142,33 +119,13 @@ public class EventReplayService : IEventReplayService
 
                 _logger.LogWarning(
                     ex,
-                    "Failed to replay event of type {EventType}. EventData (partial): {EventData}",
+                    "Failed to replay event of type {EventType}. AggregateId: {AggregateId}",
                     eventType,
-                    eventDataSummary);
+                    domainEvent.AggregateId);
             }
         }
 
         _logger.LogInformation("Event replay completed.");
-    }
-
-    /// <summary>
-    /// イベントデータを型情報に基づいてデシリアライズする
-    /// 型マッピング辞書を使用して型安全性とメンテナンス性を確保
-    /// </summary>
-    private IDomainEvent DeserializeEvent(string eventType, string eventData)
-    {
-        if (!EventTypeMapping.TryGetValue(eventType, out var type))
-        {
-            throw new InvalidOperationException($"Unknown event type: {eventType}");
-        }
-
-        var domainEvent = JsonSerializer.Deserialize(eventData, type, JsonOptions) as IDomainEvent;
-        if (domainEvent == null)
-        {
-            throw new InvalidOperationException($"Failed to deserialize event: {eventType}");
-        }
-
-        return domainEvent;
     }
 
     /// <summary>

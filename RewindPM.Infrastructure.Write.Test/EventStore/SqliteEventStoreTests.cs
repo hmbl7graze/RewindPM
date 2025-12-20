@@ -554,18 +554,14 @@ public class SqliteEventStoreTests : IDisposable
         // Assert
         Assert.Equal(3, allEvents.Count);
 
-        // イベントタイプとデータが正しく取得されていることを確認
-        Assert.Equal("TaskCreated", allEvents[0].EventType);
-        Assert.Equal("TaskCreated", allEvents[1].EventType);
-        Assert.Equal("TaskStatusChanged", allEvents[2].EventType);
+        // デシリアライズ済みのイベントとして返されることを確認
+        Assert.IsType<TaskCreated>(allEvents[0]);
+        Assert.IsType<TaskCreated>(allEvents[1]);
+        Assert.IsType<TaskStatusChanged>(allEvents[2]);
 
-        // 時系列順であることを確認（イベントデータから再デシリアライズして確認）
-        var deserializedEvent1 = _serializer.Deserialize(allEvents[0].EventType, allEvents[0].EventData);
-        var deserializedEvent2 = _serializer.Deserialize(allEvents[1].EventType, allEvents[1].EventData);
-        var deserializedEvent3 = _serializer.Deserialize(allEvents[2].EventType, allEvents[2].EventData);
-
-        Assert.True(deserializedEvent1.OccurredAt <= deserializedEvent2.OccurredAt);
-        Assert.True(deserializedEvent2.OccurredAt <= deserializedEvent3.OccurredAt);
+        // 時系列順であることを確認
+        Assert.True(allEvents[0].OccurredAt <= allEvents[1].OccurredAt);
+        Assert.True(allEvents[1].OccurredAt <= allEvents[2].OccurredAt);
     }
 
     [Fact(DisplayName = "GetAllEventsAsync - イベントがない場合は空のリストを返す")]

@@ -115,7 +115,7 @@ using (var scope = app.Services.CreateScope())
     Console.WriteLine($"[Startup] ReadModel empty: {readModelIsEmpty}, ReadModel cleared by timezone change: {readModelWasCleared}");
 
     // ReadModelが空の場合、EventStoreからイベントをリプレイしてReadModelを再構築する
-    // 注: タイムゾーン変更によってReadModelがクリアされた場合も、このフラグによりReadModelは空になっている想定
+    // 注: タイムゾーン変更によってReadModelがクリアされた場合、readModelIsEmptyも必ず真になる
     if (readModelIsEmpty)
     {
         var eventReplayService = services.GetRequiredService<RewindPM.Projection.Services.IEventReplayService>();

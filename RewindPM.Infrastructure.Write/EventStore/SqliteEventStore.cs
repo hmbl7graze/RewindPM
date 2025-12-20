@@ -176,15 +176,22 @@ public class SqliteEventStore : IEventStore
 
     /// <summary>
     /// EventStoreから全イベントを時系列順に取得する（IEventStoreReaderの実装）
-    /// リプレイ処理で使用される
+    /// リプレイ処理で使用される。デシリアライズ済みのドメインイベントとして返す
     /// </summary>
-    public async Task<List<(string EventType, string EventData)>> GetAllEventsAsync(CancellationToken cancellationToken = default)
+    public async Task<List<IDomainEvent>> GetAllEventsAsync(CancellationToken cancellationToken = default)
     {
         var events = await _context.Events
             .OrderBy(e => e.OccurredAt)
             .Select(e => new { e.EventType, e.EventData })
             .ToListAsync(cancellationToken);
 
-        return events.Select(e => (e.EventType, e.EventData)).ToList();
+        var domainEvents = new List<IDomainEvent>();
+        foreach (var e in events)
+        {
+            var domainEvent = _serializer.Deserialize(e.EventType, e.EventData);
+            domainEvents.Add(domainEvent);
+        }
+
+        return domainEvents;
     }
 }

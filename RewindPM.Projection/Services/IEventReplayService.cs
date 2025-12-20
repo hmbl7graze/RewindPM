@@ -21,9 +21,9 @@ public interface IEventReplayService
 
     /// <summary>
     /// EventStoreからすべてのイベントをリプレイしてReadModelを再構築する
-    /// イベントデータの取得は外部から提供される関数を使用し、デシリアライズは内部で実行される
+    /// デシリアライズ済みのドメインイベントを受け取る
     /// </summary>
-    /// <param name="getEventsAsync">EventStoreからイベントデータを取得する関数</param>
+    /// <param name="getEventsAsync">EventStoreからデシリアライズ済みイベントを取得する関数</param>
     /// <param name="cancellationToken">キャンセルトークン</param>
-    Task ReplayAllEventsAsync(Func<CancellationToken, Task<List<(string EventType, string EventData)>>> getEventsAsync, CancellationToken cancellationToken = default);
+    Task ReplayAllEventsAsync(Func<CancellationToken, Task<List<IDomainEvent>>> getEventsAsync, CancellationToken cancellationToken = default);
 }

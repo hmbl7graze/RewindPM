@@ -15,8 +15,9 @@ public interface IEventStoreReader
 
     /// <summary>
     /// EventStoreから全イベントを時系列順に取得する（リプレイ用）
+    /// デシリアライズ済みのドメインイベントとして返す
     /// </summary>
     /// <param name="cancellationToken">キャンセルトークン</param>
-    /// <returns>イベントタイプとイベントデータのリスト</returns>
-    Task<List<(string EventType, string EventData)>> GetAllEventsAsync(CancellationToken cancellationToken = default);
+    /// <returns>デシリアライズ済みのドメインイベントのリスト</returns>
+    Task<List<IDomainEvent>> GetAllEventsAsync(CancellationToken cancellationToken = default);
 }

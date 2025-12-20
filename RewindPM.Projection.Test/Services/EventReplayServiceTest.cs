@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using RewindPM.Domain.Common;
@@ -16,16 +15,6 @@ public class EventReplayServiceTest
     private readonly IEventPublisher _mockEventPublisher;
     private readonly ILogger<EventReplayService> _mockLogger;
     private readonly IServiceProvider _mockServiceProvider;
-
-    /// <summary>
-    /// EventReplayServiceと同じシリアライズオプションを使用
-    /// </summary>
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        WriteIndented = false,
-        PropertyNameCaseInsensitive = true
-    };
 
     public EventReplayServiceTest()
     {
@@ -131,14 +120,10 @@ public class EventReplayServiceTest
             UpdatedBy = "test-user"
         };
 
-        var eventDataList = new List<(string EventType, string EventData)>
-        {
-            ("ProjectCreated", JsonSerializer.Serialize(event1, JsonOptions)),
-            ("ProjectUpdated", JsonSerializer.Serialize(event2, JsonOptions))
-        };
+        var eventList = new List<IDomainEvent> { event1, event2 };
 
         // Act
-        await service.ReplayAllEventsAsync(_ => Task.FromResult(eventDataList), TestContext.Current.CancellationToken);
+        await service.ReplayAllEventsAsync(_ => Task.FromResult(eventList), TestContext.Current.CancellationToken);
 
         // Assert
         // PublishAsyncが2回呼ばれたことを確認
@@ -156,7 +141,7 @@ public class EventReplayServiceTest
             _mockLogger,
             hasEventsFunc);
 
-        var emptyEventList = new List<(string EventType, string EventData)>();
+        var emptyEventList = new List<IDomainEvent>();
 
         // Act
         await service.ReplayAllEventsAsync(_ => Task.FromResult(emptyEventList), TestContext.Current.CancellationToken);
@@ -166,7 +151,7 @@ public class EventReplayServiceTest
     }
 
     [Fact]
-    public async Task ReplayAllEventsAsync_非重要イベントのデシリアライズに失敗した場合_ログを出力して続行する()
+    public async Task ReplayAllEventsAsync_非重要イベントの処理に失敗した場合_ログを出力して続行する()
     {
         // Arrange
         Func<IServiceProvider, Task<bool>> hasEventsFunc = (_) => Task.FromResult(true);
@@ -176,21 +161,28 @@ public class EventReplayServiceTest
             _mockLogger,
             hasEventsFunc);
 
-        // 無効なJSONを持つ非重要イベントを追加
-        var eventDataList = new List<(string EventType, string EventData)>
+        var projectId = Guid.NewGuid();
+        var event1 = new ProjectUpdated
         {
-            ("ProjectUpdated", "invalid json")
+            AggregateId = projectId,
+            Title = "Test Project",
+            Description = "Test Description",
+            OccurredAt = DateTimeOffset.UtcNow,
+            UpdatedBy = "test-user"
         };
 
-        // Act & Assert (例外がスローされないことを確認)
-        await service.ReplayAllEventsAsync(_ => Task.FromResult(eventDataList), TestContext.Current.CancellationToken);
+        var eventList = new List<IDomainEvent> { event1 };
 
-        // PublishAsyncは呼ばれていないことを確認
-        await _mockEventPublisher.DidNotReceive().PublishAsync(Arg.Any<IDomainEvent>());
+        // PublishAsyncが例外をスローするように設定
+        _mockEventPublisher.PublishAsync(Arg.Any<IDomainEvent>())
+            .Returns<Task>(_ => throw new InvalidOperationException("Test exception"));
+
+        // Act & Assert (例外がスローされないことを確認)
+        await service.ReplayAllEventsAsync(_ => Task.FromResult(eventList), TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task ReplayAllEventsAsync_重要イベントのデシリアライズに失敗した場合_例外をスローする()
+    public async Task ReplayAllEventsAsync_重要イベントの処理に失敗した場合_例外をスローする()
     {
         // Arrange
         Func<IServiceProvider, Task<bool>> hasEventsFunc = (_) => Task.FromResult(true);
@@ -200,14 +192,24 @@ public class EventReplayServiceTest
             _mockLogger,
             hasEventsFunc);
 
-        // 無効なJSONを持つ重要イベントを追加
-        var eventDataList = new List<(string EventType, string EventData)>
+        var projectId = Guid.NewGuid();
+        var event1 = new ProjectCreated
         {
-            ("ProjectCreated", "invalid json")
+            AggregateId = projectId,
+            Title = "Test Project",
+            Description = "Test Description",
+            OccurredAt = DateTimeOffset.UtcNow,
+            CreatedBy = "test-user"
         };
 
+        var eventList = new List<IDomainEvent> { event1 };
+
+        // PublishAsyncが例外をスローするように設定
+        _mockEventPublisher.PublishAsync(Arg.Any<IDomainEvent>())
+            .Returns<Task>(_ => throw new InvalidOperationException("Test exception"));
+
         // Act & Assert (例外がスローされることを確認)
-        await Assert.ThrowsAsync<System.Text.Json.JsonException>(
-            async () => await service.ReplayAllEventsAsync(_ => Task.FromResult(eventDataList), TestContext.Current.CancellationToken));
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await service.ReplayAllEventsAsync(_ => Task.FromResult(eventList), TestContext.Current.CancellationToken));
     }
 }
