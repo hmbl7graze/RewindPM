@@ -14,8 +14,8 @@
 }
 
 .timeline-toolbar.viewing-past {
-    background-color: #fff8e1;
-    border: 1px solid #ffc107;
+    background-color: var(--timeline-past-bg);
+    border: 1px solid var(--timeline-past-border);
 }
 
 /* ========================================
@@ -28,30 +28,30 @@
     width: 32px;
     height: 32px;
     padding: 0;
-    border: 1px solid #d0d7de;
+    border: 1px solid var(--timeline-control-border);
     border-radius: 6px;
-    background-color: #ffffff;
-    color: #656d76;
+    background-color: var(--timeline-control-bg);
+    color: var(--timeline-control-text);
     cursor: pointer;
     transition: all 0.2s ease;
     font-size: 0.875rem;
 }
 
 .timeline-btn:hover:not(:disabled) {
-    background-color: #f3f4f6;
-    color: #1f2328;
-    border-color: #1f2328;
+    background-color: var(--timeline-control-hover-bg);
+    color: var(--timeline-control-hover-text);
+    border-color: var(--timeline-control-hover-text);
 }
 
 .timeline-btn:active:not(:disabled) {
-    background-color: #ebecf0;
+    background-color: var(--timeline-control-active-bg);
 }
 
 .timeline-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    background-color: #f6f8fa;
-    border-color: #d0d7de;
+    background-color: var(--timeline-control-disabled-bg);
+    border-color: var(--timeline-control-border);
 }
 
 /* ========================================
@@ -67,9 +67,9 @@
 }
 
 .timeline-btn-calendar:hover:not(:disabled) {
-    background-color: #f3f4f6;
-    color: #1f2328;
-    border-color: #1f2328;
+    background-color: var(--timeline-control-hover-bg);
+    color: var(--timeline-control-hover-text);
+    border-color: var(--timeline-control-hover-text);
     transform: scale(1.05);
 }
 
@@ -78,10 +78,10 @@
     position: absolute;
     top: calc(100% + 4px);
     left: 0;
-    background-color: #ffffff;
-    border: 1px solid #d0d7de;
+    background-color: var(--timeline-control-bg);
+    border: 1px solid var(--timeline-control-border);
     border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(31, 35, 40, 0.12);
+    box-shadow: 0 8px 24px var(--timeline-control-shadow);
     padding: 12px;
     z-index: 1000;
     min-width: 280px;
@@ -94,13 +94,13 @@
     justify-content: space-between;
     margin-bottom: 12px;
     padding-bottom: 8px;
-    border-bottom: 1px solid #e1e4e8;
+    border-bottom: 1px solid var(--timeline-divider);
 }
 
 .calendar-month-year {
     font-size: 0.95rem;
     font-weight: 600;
-    color: #24292f;
+    color: var(--timeline-calendar-text);
 }
 
 .calendar-nav-btn {
@@ -109,18 +109,18 @@
     justify-content: center;
     width: 28px;
     height: 28px;
-    border: 1px solid #d0d7de;
+    border: 1px solid var(--timeline-control-border);
     border-radius: 6px;
-    background-color: #ffffff;
-    color: #656d76;
+    background-color: var(--timeline-control-bg);
+    color: var(--timeline-control-text);
     cursor: pointer;
     transition: all 0.2s ease;
     font-size: 0.75rem;
 }
 
 .calendar-nav-btn:hover {
-    background-color: #f3f4f6;
-    border-color: #1f2328;
+    background-color: var(--timeline-control-hover-bg);
+    border-color: var(--timeline-control-hover-text);
 }
 
 /* カレンダーグリッド */
@@ -139,7 +139,7 @@
     text-align: center;
     font-size: 0.75rem;
     font-weight: 600;
-    color: #656d76;
+    color: var(--timeline-weekday-text);
     padding: 4px;
 }
 
@@ -158,45 +158,45 @@
     border-radius: 6px;
     background-color: transparent;
     font-size: 0.85rem;
-    color: #24292f;
+    color: var(--timeline-calendar-text);
     cursor: pointer;
     transition: all 0.15s ease;
     padding: 4px;
 }
 
 .calendar-day:not(:disabled):hover {
-    background-color: #f3f4f6;
-    border-color: #d0d7de;
+    background-color: var(--timeline-control-hover-bg);
+    border-color: var(--timeline-control-border);
 }
 
 .calendar-day.selected {
-    background-color: #0969da;
-    color: #ffffff;
+    background-color: var(--color-accent);
+    color: var(--timeline-control-bg);
     font-weight: 600;
-    border-color: #0969da;
+    border-color: var(--color-accent);
 }
 
 .calendar-day.selected:hover {
-    background-color: #0860ca;
+    background-color: var(--color-accent-hover);
 }
 
 .calendar-day.today {
-    border-color: #0969da;
+    border-color: var(--color-accent);
     font-weight: 600;
 }
 
 .calendar-day.other-month {
-    color: #8c959f;
+    color: var(--timeline-other-month);
 }
 
 .calendar-day:disabled {
-    color: #d0d7de;
+    color: var(--timeline-disabled-text);
     cursor: not-allowed;
-    background-color: #f6f8fa;
+    background-color: var(--timeline-control-disabled-bg);
 }
 
 .calendar-day:disabled:hover {
-    background-color: #f6f8fa;
+    background-color: var(--timeline-control-disabled-bg);
     border-color: transparent;
 }
 
@@ -213,12 +213,12 @@
     transform: translateX(-50%);
     width: 4px;
     height: 4px;
-    background-color: #0969da;
+    background-color: var(--color-accent);
     border-radius: 50%;
 }
 
 .calendar-day.edit-date.selected::after {
-    background-color: #ffffff;
+    background-color: var(--timeline-control-bg);
 }
 
 /* ========================================
@@ -229,10 +229,10 @@
     padding: 0 12px;
     font-size: 0.8rem;
     font-weight: 500;
-    color: #ce3a12;
+    color: var(--timeline-reset-color);
     /* Warning/Action color */
-    border-color: #ce3a12;
-    background-color: #fff;
+    border-color: var(--timeline-reset-color);
+    background-color: var(--timeline-control-bg);
     position: absolute;
     right: 12px;
 }
@@ -242,8 +242,8 @@
 }
 
 .timeline-btn-reset:hover {
-    background-color: #ce3a12;
-    color: #fff;
+    background-color: var(--timeline-reset-color);
+    color: var(--timeline-control-bg);
 }
 
 /* ========================================
@@ -261,24 +261,24 @@
 .timeline-date {
     font-size: 1rem;
     font-weight: 600;
-    color: #1f2328;
+    color: var(--timeline-control-hover-text);
     font-family: monospace;
     /* For stable width */
     line-height: 1.2;
 }
 
 .timeline-toolbar.viewing-past .timeline-date {
-    color: #b45309;
+    color: var(--timeline-badge-color);
 }
 
 .timeline-badge {
     font-size: 0.75rem;
     font-weight: 500;
-    color: #b45309;
+    color: var(--timeline-badge-color);
 }
 
 .badge-live {
-    color: #1a7f37;
+    color: var(--timeline-badge-live);
     /* Green */
 }
 

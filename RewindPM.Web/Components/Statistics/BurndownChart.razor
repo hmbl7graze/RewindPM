@@ -23,15 +23,15 @@ else if (_actualData != null && _actualData.Any())
                    Options="options"
                    Height="400">
 
-            @* 理想線（予定） *@
+            @* 予定線 *@
             <ApexPointSeries TItem="ChartDataPoint"
                              Items="_idealData"
-                             Name="理想線"
+                             Name="予定"
                              SeriesType="SeriesType.Line"
                              XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
                              OrderBy="e => e.X"
-                             Color="#adb5bd" />
+                             Color="#e0e0e0" />
 
             @* 実績線 *@
             <ApexPointSeries TItem="ChartDataPoint"
@@ -41,7 +41,7 @@ else if (_actualData != null && _actualData.Any())
                              XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
                              OrderBy="e => e.X"
-                             Color="#007bff" />
+                             Color="#90caf9" />
         </ApexChart>
     </div>
 }

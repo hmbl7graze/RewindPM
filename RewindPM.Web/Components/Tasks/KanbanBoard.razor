@@ -11,7 +11,7 @@
              aria-label="@GetStatusLabel(status)"
              ondragover="event.preventDefault();"
              @ondrop="() => HandleDrop(status)">
-            <div class="column-header">
+            <div class="column-header @GetHeaderClass(status)">
                 <h3>@GetStatusLabel(status)</h3>
                 <span class="task-count">@GetTaskCountByStatus(status)</span>
             </div>
@@ -193,6 +193,15 @@
         TaskStatus.InReview => "レビュー中",
         TaskStatus.Done => "完了",
         _ => status.ToString()
+    };
+
+    private string GetHeaderClass(TaskStatus status) => status switch
+    {
+        TaskStatus.Todo => "column-header-todo",
+        TaskStatus.InProgress => "column-header-inprogress",
+        TaskStatus.InReview => "column-header-inreview",
+        TaskStatus.Done => "column-header-done",
+        _ => ""
     };
 
     private void HandleDragStart(TaskDto task)
