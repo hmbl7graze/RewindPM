@@ -1431,4 +1431,49 @@ public class GanttChartTests : Bunit.TestContext
             }
         };
     }
+
+    [Fact(DisplayName = "ガントチャート初期化時にJSInteropが正しく呼ばれる")]
+    public void GanttChart_CallsJSInterop_OnInitialization()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+        
+        // JSInteropのセットアップ
+        JSInterop.SetupVoid("ganttScrollSync.initialize", _ => true);
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks));
+
+        // Assert
+        var invocations = JSInterop.Invocations["ganttScrollSync.initialize"];
+        Assert.Single(invocations);
+    }
+
+    [Fact(DisplayName = "行ハイライト機能が初期化される")]
+    public void GanttChart_InitializesRowHighlight_OnRender()
+    {
+        // Arrange
+        var tasks = CreateTestTasks();
+        
+        // JSInteropのセットアップ（initializeメソッドが呼ばれることを確認）
+        JSInterop.SetupVoid("ganttScrollSync.initialize", _ => true);
+
+        // Act
+        var cut = RenderComponent<GanttChart>(parameters => parameters
+            .Add(p => p.Tasks, tasks));
+
+        // Assert
+        // ganttScrollSync.initializeが呼ばれることで、内部的にinitializeRowHighlightも呼ばれる
+        var invocations = JSInterop.Invocations["ganttScrollSync.initialize"];
+        Assert.Single(invocations);
+        
+        // タスク行が存在することを確認
+        var taskRows = cut.FindAll(".gantt-task-row");
+        Assert.Equal(2, taskRows.Count);
+        
+        // タイムラインエリアが存在することを確認（タスク行内のもののみ）
+        var timelineAreas = cut.FindAll(".gantt-task-row .gantt-timeline-area");
+        Assert.Equal(2, timelineAreas.Count);
+    }
 }
