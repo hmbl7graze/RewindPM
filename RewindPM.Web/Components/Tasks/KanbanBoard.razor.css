@@ -27,10 +27,29 @@
     align-items: center;
     font-weight: bold;
     color: var(--kanban-header-text);
-    background-color: var(--kanban-bg);
-    /* Keep background opaque */
+    /* Background color is set dynamically via inline style */
     border-top-left-radius: 8px;
     border-top-right-radius: 8px;
+}
+
+.column-header-todo {
+    background-color: var(--kanban-header-todo-bg);
+    border-bottom-color: var(--kanban-header-todo-border);
+}
+
+.column-header-inprogress {
+    background-color: var(--kanban-header-inprogress-bg);
+    border-bottom-color: var(--kanban-header-inprogress-border);
+}
+
+.column-header-inreview {
+    background-color: var(--kanban-header-inreview-bg);
+    border-bottom-color: var(--kanban-header-inreview-border);
+}
+
+.column-header-done {
+    background-color: var(--kanban-header-done-bg);
+    border-bottom-color: var(--kanban-header-done-border);
 }
 
 .column-header h3 {

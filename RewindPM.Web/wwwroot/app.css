@@ -80,6 +80,14 @@
     --kanban-bg: #fafafa;
     --kanban-border: #e0e0e0;
     --kanban-header-text: #424242;
+    --kanban-header-todo-bg: #fafafa;
+    --kanban-header-todo-border: #e0e0e0;
+    --kanban-header-inprogress-bg: #e3f2fd;
+    --kanban-header-inprogress-border: #90caf9;
+    --kanban-header-inreview-bg: #fffbf0;
+    --kanban-header-inreview-border: #FFE55F;
+    --kanban-header-done-bg: #e0f2f1;
+    --kanban-header-done-border: #80cbc4;
     --kanban-count-bg: #f0f0f0;
     --kanban-count-text: #424242;
     --kanban-card-shadow: rgba(14, 0, 0, 0.1);
