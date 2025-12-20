@@ -170,6 +170,10 @@
     background-color: var(--bg-row-hover);
 }
 
+.gantt-task-row .gantt-task-name-cell.highlighted {
+    background-color: var(--bg-row-hover);
+}
+
 /* Header Subrows (Month/Date) */
 .gantt-timeline-subrow {
     height: 32px;

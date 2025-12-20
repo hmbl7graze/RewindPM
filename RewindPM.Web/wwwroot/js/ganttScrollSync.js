@@ -53,25 +53,48 @@ window.ganttScrollSync = {
             const taskNameCell = row.querySelector('.gantt-task-name-cell');
             const timelineArea = row.querySelector('.gantt-timeline-area');
 
-            // イベントリスナーの重複登録を防ぐため、data属性でチェック
-            // Blazorの再レンダリング時は新しいDOM要素が作成されるため、data属性もリセットされる
-            if (taskNameCell && timelineArea && !taskNameCell.dataset.highlightListenerAttached) {
-                // マウスオーバー時にタイムラインエリアをハイライト
-                const mouseenterHandler = () => {
-                    timelineArea.classList.add('highlighted');
-                };
-                taskNameCell.addEventListener('mouseenter', mouseenterHandler);
+            if (taskNameCell && timelineArea) {
+                // タスク名セル: マウスオーバー時にタイムラインエリアをハイライト
+                // イベントリスナーの重複登録を防ぐため、data属性でチェック
+                // Blazorの再レンダリング時は新しいDOM要素が作成されるため、data属性もリセットされる
+                if (!taskNameCell.dataset.highlightListenerAttached) {
+                    const mouseenterHandler = () => {
+                        timelineArea.classList.add('highlighted');
+                    };
+                    taskNameCell.addEventListener('mouseenter', mouseenterHandler);
 
-                // マウスアウト時にハイライトを解除
-                const mouseleaveHandler = () => {
-                    timelineArea.classList.remove('highlighted');
-                };
-                taskNameCell.addEventListener('mouseleave', mouseleaveHandler);
+                    // マウスアウト時にハイライトを解除
+                    const mouseleaveHandler = () => {
+                        timelineArea.classList.remove('highlighted');
+                    };
+                    taskNameCell.addEventListener('mouseleave', mouseleaveHandler);
 
-                // dispose時のクリーンアップのため、ハンドラを要素に保存
-                taskNameCell._mouseenterHandler = mouseenterHandler;
-                taskNameCell._mouseleaveHandler = mouseleaveHandler;
-                taskNameCell.dataset.highlightListenerAttached = 'true';
+                    // dispose時のクリーンアップのため、ハンドラを要素に保存
+                    taskNameCell._mouseenterHandler = mouseenterHandler;
+                    taskNameCell._mouseleaveHandler = mouseleaveHandler;
+                    taskNameCell.dataset.highlightListenerAttached = 'true';
+                }
+
+                // タイムラインエリア自体: マウスオーバー時に自身とタスク名セルをハイライト
+                if (!timelineArea.dataset.highlightListenerAttached) {
+                    const mouseenterHandlerTimeline = () => {
+                        timelineArea.classList.add('highlighted');
+                        taskNameCell.classList.add('highlighted');
+                    };
+                    timelineArea.addEventListener('mouseenter', mouseenterHandlerTimeline);
+
+                    // マウスアウト時にハイライトを解除
+                    const mouseleaveHandlerTimeline = () => {
+                        timelineArea.classList.remove('highlighted');
+                        taskNameCell.classList.remove('highlighted');
+                    };
+                    timelineArea.addEventListener('mouseleave', mouseleaveHandlerTimeline);
+
+                    // dispose時のクリーンアップのため、ハンドラを要素に保存
+                    timelineArea._mouseenterHandler = mouseenterHandlerTimeline;
+                    timelineArea._mouseleaveHandler = mouseleaveHandlerTimeline;
+                    timelineArea.dataset.highlightListenerAttached = 'true';
+                }
             }
         });
     },
@@ -202,6 +225,22 @@ window.ganttScrollSync = {
                 cell.removeEventListener('mouseleave', cell._mouseleaveHandler);
                 delete cell._mouseleaveHandler;
             }
+            // data 属性も削除して再初期化時の不整合を防ぐ
+            delete cell.dataset.highlightListenerAttached;
+        });
+
+        const timelineAreas = document.querySelectorAll('.gantt-timeline-area[data-highlight-listener-attached]');
+        timelineAreas.forEach((area) => {
+            if (area._mouseenterHandler) {
+                area.removeEventListener('mouseenter', area._mouseenterHandler);
+                delete area._mouseenterHandler;
+            }
+            if (area._mouseleaveHandler) {
+                area.removeEventListener('mouseleave', area._mouseleaveHandler);
+                delete area._mouseleaveHandler;
+            }
+            // data 属性も削除して再初期化時の不整合を防ぐ
+            delete area.dataset.highlightListenerAttached;
         });
 
         this.timelineScroll = null;
