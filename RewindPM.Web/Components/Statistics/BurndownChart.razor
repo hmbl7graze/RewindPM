@@ -23,10 +23,10 @@ else if (_actualData != null && _actualData.Any())
                    Options="options"
                    Height="400">
 
-            @* 理想線（予定） *@
+            @* 予定線 *@
             <ApexPointSeries TItem="ChartDataPoint"
                              Items="_idealData"
-                             Name="理想"
+                             Name="予定"
                              SeriesType="SeriesType.Line"
                              XValue="@(e => e.X.ToUnixTimeMilliseconds())"
                              YAggregate="@(e => e.Sum(y => y.Y))"
