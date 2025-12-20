@@ -44,7 +44,8 @@ jobs:
           --runtime ${{ matrix.runtime }} \
           --self-contained true \
           -p:PublishSingleFile=true \
-          -p:PublishTrimmed=true \
+          -p:PublishReadyToRun=true \
+          -p:IncludeNativeLibrariesForSelfExtract=true \
           --output ./publish/${{ matrix.runtime }}
 
     - name: Create Archive (Windows)
