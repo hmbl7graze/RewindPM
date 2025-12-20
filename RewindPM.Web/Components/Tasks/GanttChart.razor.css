@@ -194,7 +194,7 @@
     font-size: 0.875rem;
     font-weight: 600;
     color: var(--text-secondary);
-    border-right: 1px solid var(--border-subtle);
+    /* 月セルの区切り線は不要なため削除 */
     box-sizing: border-box;
     display: flex;
     align-items: center;
@@ -204,7 +204,7 @@
 }
 
 .gantt-date-cell {
-    border-right: 1px solid var(--border-subtle);
+    /* 日付セルの区切り線（縦線）は不要なため削除 */
     text-align: center;
     font-size: 0.75rem;
     color: var(--text-muted);
