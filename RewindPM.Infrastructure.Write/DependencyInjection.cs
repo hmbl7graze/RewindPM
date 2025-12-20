@@ -55,6 +55,11 @@ public static class DependencyInjection
         // IAggregateRepositoryの実装としてAggregateRepositoryを登録（スコープド：IEventStoreを使用するため）
         services.AddScoped<IAggregateRepository, AggregateRepository>();
 
+        // IEventStoreReaderの実装をIEventStoreから取得できるように登録
+        // SqliteEventStoreはIEventStoreを実装しており、IEventStoreはIEventStoreReaderを継承しているため、
+        // IEventStoreReaderとしても使用可能
+        services.AddScoped<IEventStoreReader>(sp => sp.GetRequiredService<IEventStore>());
+
         return services;
     }
 }

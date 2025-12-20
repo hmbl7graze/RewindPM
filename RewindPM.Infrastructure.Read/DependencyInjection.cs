@@ -44,6 +44,9 @@ public static class DependencyInjection
         // IProjectStatisticsRepositoryの実装としてProjectStatisticsRepositoryを登録
         services.AddScoped<IProjectStatisticsRepository, ProjectStatisticsRepository>();
 
+        // IReadModelRebuildServiceの実装としてReadModelRebuildServiceを登録
+        services.AddScoped<IReadModelRebuildService, ReadModelRebuildService>();
+
         return services;
     }
 }

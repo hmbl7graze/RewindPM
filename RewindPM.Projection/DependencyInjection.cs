@@ -1,4 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using RewindPM.Domain.Common;
 using RewindPM.Projection.Handlers;
 using RewindPM.Projection.Services;
 
@@ -14,11 +16,24 @@ public static class DependencyInjection
     /// EventPublisherへのハンドラー登録はProjectionInitializerによってアプリケーション起動時に行われる
     /// </summary>
     /// <param name="services">サービスコレクション</param>
+    /// <param name="hasEventsAsyncFunc">EventStoreにイベントが存在するかチェックする関数（必須）</param>
     /// <returns>サービスコレクション</returns>
-    public static IServiceCollection AddProjection(this IServiceCollection services)
+    public static IServiceCollection AddProjection(
+        this IServiceCollection services,
+        Func<IServiceProvider, Task<bool>> hasEventsAsyncFunc)
     {
+         ArgumentNullException.ThrowIfNull(hasEventsAsyncFunc);
+         
         // プロジェクションサービスを登録
         services.AddScoped<TaskSnapshotService>();
+
+        // イベントリプレイサービスを登録
+        services.AddScoped<IEventReplayService>(sp =>
+        {
+            var eventPublisher = sp.GetRequiredService<IEventPublisher>();
+            var logger = sp.GetRequiredService<ILogger<EventReplayService>>();
+            return new EventReplayService(eventPublisher, sp, logger, hasEventsAsyncFunc);
+        });
 
         // プロジェクションハンドラーをスコープドで登録
         services.AddScoped<ProjectCreatedEventHandler>();

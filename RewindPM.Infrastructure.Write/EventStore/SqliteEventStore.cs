@@ -165,4 +165,33 @@ public class SqliteEventStore : IEventStore
         // 削除されていないタスクIDを返す
         return createdTasks.Except(deletedTasks).ToList();
     }
+
+    /// <summary>
+    /// EventStoreにイベントが存在するかチェックする（IEventStoreReaderの実装）
+    /// </summary>
+    public async Task<bool> HasEventsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Events.AnyAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// EventStoreから全イベントを時系列順に取得する（IEventStoreReaderの実装）
+    /// リプレイ処理で使用される。デシリアライズ済みのドメインイベントとして返す
+    /// </summary>
+    public async Task<List<IDomainEvent>> GetAllEventsAsync(CancellationToken cancellationToken = default)
+    {
+        var events = await _context.Events
+            .OrderBy(e => e.OccurredAt)
+            .Select(e => new { e.EventType, e.EventData })
+            .ToListAsync(cancellationToken);
+
+        var domainEvents = new List<IDomainEvent>();
+        foreach (var e in events)
+        {
+            var domainEvent = _serializer.Deserialize(e.EventType, e.EventData);
+            domainEvents.Add(domainEvent);
+        }
+
+        return domainEvents;
+    }
 }

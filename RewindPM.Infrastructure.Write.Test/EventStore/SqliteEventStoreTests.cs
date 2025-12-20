@@ -464,4 +464,113 @@ public class SqliteEventStoreTests : IDisposable
         // Assert
         Assert.Empty(taskIds);
     }
+
+    [Fact(DisplayName = "HasEventsAsync - イベントが存在しない場合はfalseを返す")]
+    public async Task HasEventsAsync_WhenNoEvents_ReturnsFalse()
+    {
+        // Act
+        var hasEvents = await _eventStore.HasEventsAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.False(hasEvents);
+    }
+
+    [Fact(DisplayName = "HasEventsAsync - イベントが存在する場合はtrueを返す")]
+    public async Task HasEventsAsync_WhenEventsExist_ReturnsTrue()
+    {
+        // Arrange
+        var aggregateId = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+
+        var event1 = new TaskCreated
+        {
+            AggregateId = aggregateId,
+            ProjectId = projectId,
+            Title = "Test Task",
+            Description = "Description",
+            ScheduledPeriod = new ScheduledPeriod(now, now.AddDays(7), 40),
+            CreatedBy = "user1"
+        };
+
+        await _eventStore.SaveEventsAsync(aggregateId, new[] { event1 }, -1);
+
+        // Act
+        var hasEvents = await _eventStore.HasEventsAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.True(hasEvents);
+    }
+
+    [Fact(DisplayName = "GetAllEventsAsync - 全イベントを時系列順に取得できる")]
+    public async Task GetAllEventsAsync_ReturnsAllEventsInChronologicalOrder()
+    {
+        // Arrange
+        var aggregateId1 = Guid.NewGuid();
+        var aggregateId2 = Guid.NewGuid();
+        var projectId = Guid.NewGuid();
+        var time1 = DateTimeOffset.UtcNow.AddHours(-2);
+        var time2 = DateTimeOffset.UtcNow.AddHours(-1);
+        var time3 = DateTimeOffset.UtcNow;
+
+        var event1 = new TaskCreated
+        {
+            AggregateId = aggregateId1,
+            ProjectId = projectId,
+            Title = "Task 1",
+            Description = "Description",
+            ScheduledPeriod = new ScheduledPeriod(time1, time1.AddDays(7), 40),
+            CreatedBy = "user1",
+            OccurredAt = time1
+        };
+
+        var event2 = new TaskCreated
+        {
+            AggregateId = aggregateId2,
+            ProjectId = projectId,
+            Title = "Task 2",
+            Description = "Description",
+            ScheduledPeriod = new ScheduledPeriod(time2, time2.AddDays(7), 40),
+            CreatedBy = "user1",
+            OccurredAt = time2
+        };
+
+        var event3 = new TaskStatusChanged
+        {
+            AggregateId = aggregateId1,
+            OldStatus = TaskStatus.Todo,
+            NewStatus = TaskStatus.InProgress,
+            ChangedBy = "user1",
+            OccurredAt = time3
+        };
+
+        await _eventStore.SaveEventsAsync(aggregateId1, new[] { event1 }, -1);
+        await _eventStore.SaveEventsAsync(aggregateId2, new[] { event2 }, -1);
+        await _eventStore.SaveEventsAsync(aggregateId1, new[] { event3 }, 0);
+
+        // Act
+        var allEvents = await _eventStore.GetAllEventsAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(3, allEvents.Count);
+
+        // デシリアライズ済みのイベントとして返されることを確認
+        Assert.IsType<TaskCreated>(allEvents[0]);
+        Assert.IsType<TaskCreated>(allEvents[1]);
+        Assert.IsType<TaskStatusChanged>(allEvents[2]);
+
+        // 時系列順であることを確認
+        Assert.True(allEvents[0].OccurredAt <= allEvents[1].OccurredAt);
+        Assert.True(allEvents[1].OccurredAt <= allEvents[2].OccurredAt);
+    }
+
+    [Fact(DisplayName = "GetAllEventsAsync - イベントがない場合は空のリストを返す")]
+    public async Task GetAllEventsAsync_WhenNoEvents_ReturnsEmptyList()
+    {
+        // Act
+        var allEvents = await _eventStore.GetAllEventsAsync(TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Empty(allEvents);
+    }
 }

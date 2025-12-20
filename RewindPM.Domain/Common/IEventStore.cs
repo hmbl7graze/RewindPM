@@ -3,8 +3,9 @@ namespace RewindPM.Domain.Common;
 /// <summary>
 /// イベントストアのインターフェース
 /// イベントソーシングの永続化層を抽象化する
+/// IEventStoreReaderを継承することで、読み取り専用操作も提供する
 /// </summary>
-public interface IEventStore
+public interface IEventStore : IEventStoreReader
 {
     /// <summary>
     /// イベントを保存する

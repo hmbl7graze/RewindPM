@@ -8,9 +8,6 @@ using RewindPM.Projection;
 using RewindPM.Web.Data;
 using MediatR;
 using RewindPM.Application.Read.Queries.Projects;
-using RewindPM.Domain.Common;
-using RewindPM.Domain.Events;
-using RewindPM.Projection.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,7 +42,13 @@ builder.Services.AddApplicationRead();
 
 // Projection層の登録（Event Handlers）
 // ProjectionInitializerがHostedServiceとしてアプリケーション起動時にイベントハンドラーを登録
-builder.Services.AddProjection();
+// EventStoreへのアクセスをサービス経由で抽象化（CQRS境界を維持）
+builder.Services.AddProjection(async (serviceProvider) =>
+{
+    using var scope = serviceProvider.CreateScope();
+    var eventStoreReader = scope.ServiceProvider.GetRequiredService<RewindPM.Domain.Common.IEventStoreReader>();
+    return await eventStoreReader.HasEventsAsync();
+});
 
 var app = builder.Build();
 
@@ -76,63 +79,7 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
-    // タイムゾーン変更の検出とReadModel再構築
-    var timeZoneService = services.GetRequiredService<RewindPM.Infrastructure.Read.Services.ITimeZoneService>();
-
-    // 現在保存されているタイムゾーンIDを取得
-    var storedTimeZone = await readModelContext.SystemMetadata
-        .Where(m => m.Key == RewindPM.Infrastructure.Read.Entities.SystemMetadataEntity.TimeZoneMetadataKey)
-        .Select(m => m.Value)
-        .FirstOrDefaultAsync();
-
-    var configuredTimeZone = timeZoneService.TimeZone.Id;
-
-    if (storedTimeZone != configuredTimeZone)
-    {
-        Console.WriteLine($"[Startup] TimeZone changed: {storedTimeZone ?? "none"} -> {configuredTimeZone}");
-        Console.WriteLine($"[Startup] Rebuilding ReadModel database...");
-
-        // トランザクション内でReadModelのクリアとメタデータ更新を実行
-        using var transaction = await readModelContext.Database.BeginTransactionAsync();
-        try
-        {
-            // ReadModelのデータをクリア(テーブル構造は維持)
-            await readModelContext.Database.ExecuteSqlRawAsync("DELETE FROM TaskHistories");
-            await readModelContext.Database.ExecuteSqlRawAsync("DELETE FROM ProjectHistories");
-            await readModelContext.Database.ExecuteSqlRawAsync("DELETE FROM Tasks");
-            await readModelContext.Database.ExecuteSqlRawAsync("DELETE FROM Projects");
-
-            // タイムゾーンIDを更新
-            var metadata = await readModelContext.SystemMetadata
-                .FirstOrDefaultAsync(m => m.Key == RewindPM.Infrastructure.Read.Entities.SystemMetadataEntity.TimeZoneMetadataKey);
-
-            if (metadata == null)
-            {
-                readModelContext.SystemMetadata.Add(new RewindPM.Infrastructure.Read.Entities.SystemMetadataEntity
-                {
-                    Key = RewindPM.Infrastructure.Read.Entities.SystemMetadataEntity.TimeZoneMetadataKey,
-                    Value = configuredTimeZone
-                });
-            }
-            else
-            {
-                metadata.Value = configuredTimeZone;
-            }
-
-            await readModelContext.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            Console.WriteLine($"[Startup] ReadModel cleared. Please re-create your data or import from EventStore.");
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            Console.WriteLine($"[Startup ERROR] Failed to rebuild ReadModel: {ex.Message}");
-            throw;
-        }
-    }
-
-    // EventStoreデータベースの処理
+    // EventStoreデータベースの処理（マイグレーションは直接アクセスが必要）
     var eventStoreContext = services.GetRequiredService<RewindPM.Infrastructure.Write.Persistence.EventStoreDbContext>();
     var pendingEventStoreMigrations = await eventStoreContext.Database.GetPendingMigrationsAsync();
     var hasPendingEventStoreMigrations = pendingEventStoreMigrations.Any();
@@ -152,37 +99,86 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
+    // タイムゾーン変更の検出とReadModel再構築
+    var readModelRebuildService = services.GetRequiredService<RewindPM.Infrastructure.Read.Services.IReadModelRebuildService>();
+    var readModelWasCleared = await readModelRebuildService.CheckAndRebuildIfTimeZoneChangedAsync();
+
+    // タイムゾーン変更でデータがクリアされた場合、DbContextの変更を確実に反映させる
+    if (readModelWasCleared)
+    {
+        // 変更を確実に反映するため、DbContextをリフレッシュ
+        readModelContext.ChangeTracker.Clear();
+    }
+
+    // ReadModelが空かどうかを確認（初回起動またはクリア後）
+    var readModelIsEmpty = !await readModelContext.Projects.AnyAsync();
+    Console.WriteLine($"[Startup] ReadModel empty: {readModelIsEmpty}, ReadModel cleared by timezone change: {readModelWasCleared}");
+
+    // ReadModelが空の場合、EventStoreからイベントをリプレイしてReadModelを再構築する
+    // 注: タイムゾーン変更によってReadModelがクリアされた場合、readModelIsEmptyも必ず真になる
+    if (readModelIsEmpty)
+    {
+        var eventReplayService = services.GetRequiredService<RewindPM.Projection.Services.IEventReplayService>();
+        var hasEvents = await eventReplayService.HasEventsAsync();
+        Console.WriteLine($"[Startup] EventStore has events: {hasEvents}");
+
+        if (hasEvents)
+        {
+            Console.WriteLine("[Startup] Replaying events from EventStore to rebuild ReadModel...");
+            eventReplayService.RegisterAllEventHandlers();
+
+            // EventStoreからイベントデータを取得してリプレイ（サービス経由でCQRS境界を維持）
+            var eventStoreReader = services.GetRequiredService<RewindPM.Domain.Common.IEventStoreReader>();
+            await eventReplayService.ReplayAllEventsAsync(
+                async (ct) => await eventStoreReader.GetAllEventsAsync(ct));
+
+            Console.WriteLine("[Startup] ReadModel rebuild from EventStore completed.");
+
+            // リプレイ後、タイムゾーンメタデータが存在しない場合は初期化
+            // 注: この処理は意図的にif (hasEvents)ブロック内にある
+            // EventStoreが空の場合、タイムゾーンメタデータの初期化は後のシードデータ実行時に行われる
+            var storedTimeZone = await readModelRebuildService.GetStoredTimeZoneIdAsync();
+            if (storedTimeZone == null)
+            {
+                await readModelRebuildService.InitializeTimeZoneMetadataAsync();
+                Console.WriteLine("[Startup] Initialized timezone metadata.");
+            }
+        }
+
+    }
+
     // 開発環境でサンプルデータを追加
     if (app.Environment.IsDevelopment())
     {
         var mediator = services.GetRequiredService<IMediator>();
         var projects = await mediator.Send(new GetAllProjectsQuery());
-
+        Console.WriteLine($"[Startup] ReadModel project count: {projects.Count}");
+        
         if (projects.Count == 0)
         {
-            Console.WriteLine("[Startup] Seeding sample data...");
+            // ReadModelが空でもEventStoreに既存イベントがある場合、
+            // シードでEventStoreへ書き込むのは避ける（タイムゾーン変更でReadModelのみ再構築したいケース）
+            var eventStoreReader = services.GetRequiredService<RewindPM.Domain.Common.IEventStoreReader>();
+            var hasEventStoreEvents = await eventStoreReader.HasEventsAsync();
+            Console.WriteLine($"[Startup] EventStore has events: {hasEventStoreEvents}");
 
-            // Projectionハンドラーを登録してからシードデータを実行
-            // EventPublisherにすべてのプロジェクションハンドラーを登録
-            var eventPublisher = services.GetRequiredService<IEventPublisher>();
-            eventPublisher.Subscribe<ProjectCreated>(
-                new ScopedEventHandlerAdapter<ProjectCreated, ProjectCreatedEventHandler>(services));
-            eventPublisher.Subscribe<ProjectUpdated>(
-                new ScopedEventHandlerAdapter<ProjectUpdated, ProjectUpdatedEventHandler>(services));
-            eventPublisher.Subscribe<TaskCreated>(
-                new ScopedEventHandlerAdapter<TaskCreated, TaskCreatedEventHandler>(services));
-            eventPublisher.Subscribe<TaskUpdated>(
-                new ScopedEventHandlerAdapter<TaskUpdated, TaskUpdatedEventHandler>(services));
-            eventPublisher.Subscribe<TaskStatusChanged>(
-                new ScopedEventHandlerAdapter<TaskStatusChanged, TaskStatusChangedEventHandler>(services));
-            eventPublisher.Subscribe<TaskScheduledPeriodChanged>(
-                new ScopedEventHandlerAdapter<TaskScheduledPeriodChanged, TaskScheduledPeriodChangedEventHandler>(services));
-            eventPublisher.Subscribe<TaskActualPeriodChanged>(
-                new ScopedEventHandlerAdapter<TaskActualPeriodChanged, TaskActualPeriodChangedEventHandler>(services));
+            if (hasEventStoreEvents)
+            {
+                Console.WriteLine("[Startup] ReadModel empty but EventStore contains events. Skipping seed to avoid writing to EventStore.");
+            }
+            else
+            {
+                Console.WriteLine("[Startup] Seeding sample data...");
 
-            var seedData = new SeedData(app.Services);
-            await seedData.SeedAsync();
-            Console.WriteLine("[Startup] Sample data seeded successfully.");
+                // SeedData実行前にProjectionハンドラーを登録（イベントをReadModelに反映するため）
+                var eventReplayService = services.GetRequiredService<RewindPM.Projection.Services.IEventReplayService>();
+                eventReplayService.RegisterAllEventHandlers();
+
+                // ハンドラー登録後、シードデータを実行してイベントをReadModelに反映する
+                var seedData = new SeedData(app.Services);
+                await seedData.SeedAsync();
+                Console.WriteLine("[Startup] Sample data seeded successfully.");
+            }
         }
         else
         {
@@ -233,28 +229,4 @@ app.Run();
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
-
-/// <summary>
-/// スコープドハンドラーをシングルトンEventPublisherから呼び出すためのアダプター
-/// 各イベント処理時に新しいスコープを作成してハンドラーを解決
-/// </summary>
-file class ScopedEventHandlerAdapter<TEvent, THandler> : IEventHandler<TEvent>
-    where TEvent : class, IDomainEvent
-    where THandler : IEventHandler<TEvent>
-{
-    private readonly IServiceProvider _serviceProvider;
-
-    public ScopedEventHandlerAdapter(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
-    public async Task HandleAsync(TEvent @event)
-    {
-        // 新しいスコープを作成してハンドラーを解決
-        using var scope = _serviceProvider.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<THandler>();
-        await handler.HandleAsync(@event);
-    }
 }
