@@ -163,6 +163,11 @@
     flex-grow: 1;
     display: flex;
     flex-direction: column;
+    transition: background-color 0.1s ease;
+}
+
+.gantt-timeline-area.highlighted {
+    background-color: var(--bg-row-hover) !important;
 }
 
 /* Header Subrows (Month/Date) */

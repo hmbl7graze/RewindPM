@@ -14,6 +14,7 @@ window.ganttScrollSync = {
         this.dispose();
         this.dotNetRef = dotNetReference;
         this.initializeResizeHandles();
+        this.initializeRowHighlight();
     },
 
     initializeResizeHandles: function () {
@@ -37,10 +38,32 @@ window.ganttScrollSync = {
     },
 
     reinitializeResizeHandles: function () {
-        // 再レンダリング後にリサイズハンドルを再初期化
+        // 再レンダリング後にリサイズハンドルと行ハイライトを再初期化
         // ブラウザのレンダリングサイクルが完了するまで待機
         requestAnimationFrame(() => {
             this.initializeResizeHandles();
+            this.initializeRowHighlight();
+        });
+    },
+
+    initializeRowHighlight: function () {
+        const taskRows = document.querySelectorAll('.gantt-task-row');
+
+        taskRows.forEach((row) => {
+            const taskNameCell = row.querySelector('.gantt-task-name-cell');
+            const timelineArea = row.querySelector('.gantt-timeline-area');
+
+            if (taskNameCell && timelineArea) {
+                // マウスオーバー時にタイムラインエリアをハイライト
+                taskNameCell.addEventListener('mouseenter', () => {
+                    timelineArea.classList.add('highlighted');
+                });
+
+                // マウスアウト時にハイライトを解除
+                taskNameCell.addEventListener('mouseleave', () => {
+                    timelineArea.classList.remove('highlighted');
+                });
+            }
         });
     },
 
