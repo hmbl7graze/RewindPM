@@ -38,7 +38,7 @@ public class EventReplayServiceTest
     public async Task HasEventsAsync_イベントが存在しない場合_Falseを返す()
     {
         // Arrange
-        Func<Task<bool>> hasEventsFunc = () => Task.FromResult(false);
+        Func<IServiceProvider, Task<bool>> hasEventsFunc = (_) => Task.FromResult(false);
         var service = new EventReplayService(
             _mockEventPublisher,
             _mockServiceProvider,
@@ -56,7 +56,7 @@ public class EventReplayServiceTest
     public async Task HasEventsAsync_イベントが存在する場合_Trueを返す()
     {
         // Arrange
-        Func<Task<bool>> hasEventsFunc = () => Task.FromResult(true);
+        Func<IServiceProvider, Task<bool>> hasEventsFunc = (_) => Task.FromResult(true);
         var service = new EventReplayService(
             _mockEventPublisher,
             _mockServiceProvider,
@@ -74,7 +74,7 @@ public class EventReplayServiceTest
     public void RegisterAllEventHandlers_すべてのイベントハンドラーを登録する()
     {
         // Arrange
-        Func<Task<bool>> hasEventsFunc = () => Task.FromResult(false);
+        Func<IServiceProvider, Task<bool>> hasEventsFunc = (_) => Task.FromResult(false);
         var service = new EventReplayService(
             _mockEventPublisher,
             _mockServiceProvider,
@@ -102,7 +102,7 @@ public class EventReplayServiceTest
     public async Task ReplayAllEventsAsync_すべてのイベントを時系列でリプレイする()
     {
         // Arrange
-        Func<Task<bool>> hasEventsFunc = () => Task.FromResult(true);
+        Func<IServiceProvider, Task<bool>> hasEventsFunc = (_) => Task.FromResult(true);
         var service = new EventReplayService(
             _mockEventPublisher,
             _mockServiceProvider,
@@ -149,7 +149,7 @@ public class EventReplayServiceTest
     public async Task ReplayAllEventsAsync_イベントが存在しない場合_何もしない()
     {
         // Arrange
-        Func<Task<bool>> hasEventsFunc = () => Task.FromResult(false);
+        Func<IServiceProvider, Task<bool>> hasEventsFunc = (_) => Task.FromResult(false);
         var service = new EventReplayService(
             _mockEventPublisher,
             _mockServiceProvider,
@@ -169,7 +169,7 @@ public class EventReplayServiceTest
     public async Task ReplayAllEventsAsync_イベントのデシリアライズに失敗した場合_ログを出力して続行する()
     {
         // Arrange
-        Func<Task<bool>> hasEventsFunc = () => Task.FromResult(true);
+        Func<IServiceProvider, Task<bool>> hasEventsFunc = (_) => Task.FromResult(true);
         var service = new EventReplayService(
             _mockEventPublisher,
             _mockServiceProvider,

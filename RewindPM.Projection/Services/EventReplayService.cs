@@ -15,7 +15,7 @@ public class EventReplayService : IEventReplayService
     private readonly IEventPublisher _eventPublisher;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<EventReplayService> _logger;
-    private readonly Func<Task<bool>> _hasEventsAsyncFunc;
+    private readonly Func<IServiceProvider, Task<bool>> _hasEventsAsyncFunc;
 
     /// <summary>
     /// EventStoreとの整合性を保つため、Write側と同じシリアライズオプションを使用
@@ -31,7 +31,7 @@ public class EventReplayService : IEventReplayService
         IEventPublisher eventPublisher,
         IServiceProvider serviceProvider,
         ILogger<EventReplayService> logger,
-        Func<Task<bool>> hasEventsAsyncFunc)
+        Func<IServiceProvider, Task<bool>> hasEventsAsyncFunc)
     {
         _eventPublisher = eventPublisher;
         _serviceProvider = serviceProvider;
@@ -42,7 +42,7 @@ public class EventReplayService : IEventReplayService
     /// <inheritdoc/>
     public async Task<bool> HasEventsAsync(CancellationToken cancellationToken = default)
     {
-        return await _hasEventsAsyncFunc();
+        return await _hasEventsAsyncFunc(_serviceProvider);
     }
 
     /// <inheritdoc/>

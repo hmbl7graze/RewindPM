@@ -43,9 +43,9 @@ builder.Services.AddApplicationRead();
 // Projection層の登録（Event Handlers）
 // ProjectionInitializerがHostedServiceとしてアプリケーション起動時にイベントハンドラーを登録
 // EventStoreへのアクセスを提供するファクトリ関数を渡す
-builder.Services.AddProjection(async () =>
+builder.Services.AddProjection(async (serviceProvider) =>
 {
-    using var scope = builder.Services.BuildServiceProvider().CreateScope();
+    using var scope = serviceProvider.CreateScope();
     var eventStoreContext = scope.ServiceProvider.GetRequiredService<RewindPM.Infrastructure.Write.Persistence.EventStoreDbContext>();
     return await eventStoreContext.Events.AnyAsync();
 });

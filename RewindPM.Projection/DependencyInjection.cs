@@ -20,7 +20,7 @@ public static class DependencyInjection
     /// <returns>サービスコレクション</returns>
     public static IServiceCollection AddProjection(
         this IServiceCollection services,
-        Func<Task<bool>>? hasEventsAsyncFunc = null)
+        Func<IServiceProvider, Task<bool>>? hasEventsAsyncFunc = null)
     {
         // プロジェクションサービスを登録
         services.AddScoped<TaskSnapshotService>();
@@ -31,7 +31,7 @@ public static class DependencyInjection
         {
             var eventPublisher = sp.GetRequiredService<IEventPublisher>();
             var logger = sp.GetRequiredService<ILogger<EventReplayService>>();
-            var func = hasEventsAsyncFunc ?? (() => Task.FromResult(false));
+            var func = hasEventsAsyncFunc ?? ((_) => Task.FromResult(false));
             return new EventReplayService(eventPublisher, sp, logger, func);
         });
 
