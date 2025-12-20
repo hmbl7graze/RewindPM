@@ -51,28 +51,26 @@ public class ReadModelRebuildService : IReadModelRebuildService
             configuredTimeZone);
         _logger.LogInformation("[Startup] Rebuilding ReadModel database...");
 
-        var transaction = await ClearReadModelAndUpdateTimeZoneAsync(configuredTimeZone, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-        await transaction.DisposeAsync();
+        await ClearReadModelAndUpdateTimeZoneAsync(configuredTimeZone, cancellationToken);
 
         _logger.LogInformation("[Startup] ReadModel cleared. Please re-create your data or import from EventStore.");
         return true;
     }
 
     /// <inheritdoc/>
-    public async Task<IDbContextTransaction> ClearReadModelAndUpdateTimeZoneAsync(
+    public async Task ClearReadModelAndUpdateTimeZoneAsync(
         string newTimeZoneId,
         CancellationToken cancellationToken = default)
     {
-        var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
         try
         {
             // ReadModelのデータをクリア(テーブル構造は維持)
-            await _context.Database.ExecuteSqlRawAsync("DELETE FROM TaskHistories", cancellationToken);
-            await _context.Database.ExecuteSqlRawAsync("DELETE FROM ProjectHistories", cancellationToken);
-            await _context.Database.ExecuteSqlRawAsync("DELETE FROM Tasks", cancellationToken);
-            await _context.Database.ExecuteSqlRawAsync("DELETE FROM Projects", cancellationToken);
+            await _context.TaskHistories.ExecuteDeleteAsync(cancellationToken);
+            await _context.ProjectHistories.ExecuteDeleteAsync(cancellationToken);
+            await _context.Tasks.ExecuteDeleteAsync(cancellationToken);
+            await _context.Projects.ExecuteDeleteAsync(cancellationToken);
 
             // タイムゾーンIDを更新
             var metadata = await _context.SystemMetadata
@@ -94,8 +92,7 @@ public class ReadModelRebuildService : IReadModelRebuildService
             }
 
             await _context.SaveChangesAsync(cancellationToken);
-
-            return transaction;
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (Exception ex)
         {

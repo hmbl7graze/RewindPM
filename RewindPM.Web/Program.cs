@@ -42,12 +42,12 @@ builder.Services.AddApplicationRead();
 
 // Projection層の登録（Event Handlers）
 // ProjectionInitializerがHostedServiceとしてアプリケーション起動時にイベントハンドラーを登録
-// EventStoreへのアクセスを提供するファクトリ関数を渡す
+// EventStoreへのアクセスをサービス経由で抽象化（CQRS境界を維持）
 builder.Services.AddProjection(async (serviceProvider) =>
 {
     using var scope = serviceProvider.CreateScope();
-    var eventStoreContext = scope.ServiceProvider.GetRequiredService<RewindPM.Infrastructure.Write.Persistence.EventStoreDbContext>();
-    return await eventStoreContext.Events.AnyAsync();
+    var eventStoreReader = scope.ServiceProvider.GetRequiredService<RewindPM.Domain.Common.IEventStoreReader>();
+    return await eventStoreReader.HasEventsAsync();
 });
 
 var app = builder.Build();
@@ -79,7 +79,7 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
-    // EventStoreデータベースの処理
+    // EventStoreデータベースの処理（マイグレーションは直接アクセスが必要）
     var eventStoreContext = services.GetRequiredService<RewindPM.Infrastructure.Write.Persistence.EventStoreDbContext>();
     var pendingEventStoreMigrations = await eventStoreContext.Database.GetPendingMigrationsAsync();
     var hasPendingEventStoreMigrations = pendingEventStoreMigrations.Any();
@@ -114,10 +114,9 @@ using (var scope = app.Services.CreateScope())
     var readModelIsEmpty = !await readModelContext.Projects.AnyAsync();
     Console.WriteLine($"[Startup] ReadModel empty: {readModelIsEmpty}, ReadModel cleared by timezone change: {readModelWasCleared}");
 
-    // ReadModelが空で、EventStoreにイベントがある場合はプロジェクションをリプレイしてReadModelを再構築する
-    // 注: readModelWasClearedが真の場合、readModelIsEmptyも必ず真になるが、
-    // 可読性のため両方の状態を明示的にチェックする
-    if (readModelIsEmpty || readModelWasCleared)
+    // ReadModelが空の場合、EventStoreからイベントをリプレイしてReadModelを再構築する
+    // 注: タイムゾーン変更によってReadModelがクリアされた場合も、このフラグによりReadModelは空になっている想定
+    if (readModelIsEmpty)
     {
         var eventReplayService = services.GetRequiredService<RewindPM.Projection.Services.IEventReplayService>();
         var hasEvents = await eventReplayService.HasEventsAsync();
@@ -128,16 +127,10 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("[Startup] Replaying events from EventStore to rebuild ReadModel...");
             eventReplayService.RegisterAllEventHandlers();
 
-            // EventStoreからイベントデータを取得してリプレイ
-            await eventReplayService.ReplayAllEventsAsync(async (ct) =>
-            {
-                var events = await eventStoreContext.Events
-                    .OrderBy(e => e.OccurredAt)
-                    .Select(e => new { e.EventType, e.EventData })
-                    .ToListAsync(ct);
-
-                return events.Select(e => (e.EventType, e.EventData)).ToList();
-            });
+            // EventStoreからイベントデータを取得してリプレイ（サービス経由でCQRS境界を維持）
+            var eventStoreReader = services.GetRequiredService<RewindPM.Domain.Common.IEventStoreReader>();
+            await eventReplayService.ReplayAllEventsAsync(
+                async (ct) => await eventStoreReader.GetAllEventsAsync(ct));
 
             Console.WriteLine("[Startup] ReadModel rebuild from EventStore completed.");
 
@@ -163,7 +156,8 @@ using (var scope = app.Services.CreateScope())
         {
             // ReadModelが空でもEventStoreに既存イベントがある場合、
             // シードでEventStoreへ書き込むのは避ける（タイムゾーン変更でReadModelのみ再構築したいケース）
-            var hasEventStoreEvents = await eventStoreContext.Events.AnyAsync();
+            var eventStoreReader = services.GetRequiredService<RewindPM.Domain.Common.IEventStoreReader>();
+            var hasEventStoreEvents = await eventStoreReader.HasEventsAsync();
             Console.WriteLine($"[Startup] EventStore has events: {hasEventStoreEvents}");
 
             if (hasEventStoreEvents)

@@ -21,7 +21,7 @@ public interface IEventReplayService
 
     /// <summary>
     /// EventStoreからすべてのイベントをリプレイしてReadModelを再構築する
-    /// イベントデータの取得とデシリアライズは外部から提供される関数を使用
+    /// イベントデータの取得は外部から提供される関数を使用し、デシリアライズは内部で実行される
     /// </summary>
     /// <param name="getEventsAsync">EventStoreからイベントデータを取得する関数</param>
     /// <param name="cancellationToken">キャンセルトークン</param>

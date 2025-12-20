@@ -27,6 +27,33 @@ public class EventReplayService : IEventReplayService
         PropertyNameCaseInsensitive = true
     };
 
+    /// <summary>
+    /// イベント名から型へのマッピング辞書（型安全性とメンテナンス性の向上）
+    /// </summary>
+    private static readonly Dictionary<string, Type> EventTypeMapping = new()
+    {
+        ["ProjectCreated"] = typeof(ProjectCreated),
+        ["ProjectUpdated"] = typeof(ProjectUpdated),
+        ["ProjectDeleted"] = typeof(ProjectDeleted),
+        ["TaskCreated"] = typeof(TaskCreated),
+        ["TaskUpdated"] = typeof(TaskUpdated),
+        ["TaskCompletelyUpdated"] = typeof(TaskCompletelyUpdated),
+        ["TaskStatusChanged"] = typeof(TaskStatusChanged),
+        ["TaskScheduledPeriodChanged"] = typeof(TaskScheduledPeriodChanged),
+        ["TaskActualPeriodChanged"] = typeof(TaskActualPeriodChanged),
+        ["TaskDeleted"] = typeof(TaskDeleted)
+    };
+
+    /// <summary>
+    /// ReadModelの整合性に重大な影響を与える重要イベントのセット
+    /// これらのイベントのデシリアライズに失敗した場合、リプレイ処理を中断する
+    /// </summary>
+    private static readonly HashSet<string> CriticalEvents = new()
+    {
+        "ProjectCreated",
+        "TaskCreated"
+    };
+
     public EventReplayService(
         IEventPublisher eventPublisher,
         IServiceProvider serviceProvider,
@@ -101,11 +128,7 @@ public class EventReplayService : IEventReplayService
                     : eventData[..maxLogLength] + "...";
 
                 // 重要イベントの失敗は ReadModel の整合性に重大な影響を与えるため、処理を中断する
-                var isCriticalEvent =
-                    string.Equals(eventType, "ProjectCreated", StringComparison.Ordinal) ||
-                    string.Equals(eventType, "TaskCreated", StringComparison.Ordinal);
-
-                if (isCriticalEvent)
+                if (CriticalEvents.Contains(eventType))
                 {
                     _logger.LogError(
                         ex,
@@ -130,11 +153,11 @@ public class EventReplayService : IEventReplayService
 
     /// <summary>
     /// イベントデータを型情報に基づいてデシリアライズする
+    /// 型マッピング辞書を使用して型安全性とメンテナンス性を確保
     /// </summary>
     private IDomainEvent DeserializeEvent(string eventType, string eventData)
     {
-        var type = Type.GetType($"RewindPM.Domain.Events.{eventType}, RewindPM.Domain");
-        if (type == null)
+        if (!EventTypeMapping.TryGetValue(eventType, out var type))
         {
             throw new InvalidOperationException($"Unknown event type: {eventType}");
         }

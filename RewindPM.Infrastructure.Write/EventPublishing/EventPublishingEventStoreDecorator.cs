@@ -74,4 +74,20 @@ public class EventPublishingEventStoreDecorator : IEventStore
     {
         return _innerEventStore.GetTaskIdsByProjectIdAsync(projectId);
     }
+
+    /// <summary>
+    /// EventStoreにイベントが存在するかチェックする（委譲、IEventStoreReaderの実装）
+    /// </summary>
+    public Task<bool> HasEventsAsync(CancellationToken cancellationToken = default)
+    {
+        return _innerEventStore.HasEventsAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// EventStoreから全イベントを時系列順に取得する（委譲、IEventStoreReaderの実装）
+    /// </summary>
+    public Task<List<(string EventType, string EventData)>> GetAllEventsAsync(CancellationToken cancellationToken = default)
+    {
+        return _innerEventStore.GetAllEventsAsync(cancellationToken);
+    }
 }

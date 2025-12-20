@@ -185,9 +185,7 @@ public class ReadModelRebuildServiceTest : IDisposable
         var service = new ReadModelRebuildService(context, _mockTimeZoneService, _mockLogger);
 
         // Act
-        var transaction = await service.ClearReadModelAndUpdateTimeZoneAsync("UTC", TestContext.Current.CancellationToken);
-        await transaction.CommitAsync(TestContext.Current.CancellationToken);
-        await transaction.DisposeAsync();
+        await service.ClearReadModelAndUpdateTimeZoneAsync("UTC", TestContext.Current.CancellationToken);
 
         // Assert
         // データがクリアされているか確認
@@ -209,9 +207,7 @@ public class ReadModelRebuildServiceTest : IDisposable
         var service = new ReadModelRebuildService(context, _mockTimeZoneService, _mockLogger);
 
         // Act
-        var transaction = await service.ClearReadModelAndUpdateTimeZoneAsync("UTC", TestContext.Current.CancellationToken);
-        await transaction.CommitAsync(TestContext.Current.CancellationToken);
-        await transaction.DisposeAsync();
+        await service.ClearReadModelAndUpdateTimeZoneAsync("UTC", TestContext.Current.CancellationToken);
 
         // Assert
         var storedTimeZone = await service.GetStoredTimeZoneIdAsync(TestContext.Current.CancellationToken);

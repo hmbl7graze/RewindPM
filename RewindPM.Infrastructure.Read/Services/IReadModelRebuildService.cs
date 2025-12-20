@@ -15,12 +15,11 @@ public interface IReadModelRebuildService
     Task<bool> CheckAndRebuildIfTimeZoneChangedAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// ReadModelのデータをクリアし、タイムゾーンメタデータを更新する
+    /// ReadModelのデータをクリアし、タイムゾーンメタデータを更新する（トランザクション内で完了）
     /// </summary>
     /// <param name="newTimeZoneId">新しいタイムゾーンID</param>
     /// <param name="cancellationToken">キャンセルトークン</param>
-    /// <returns>完了したトランザクション</returns>
-    Task<IDbContextTransaction> ClearReadModelAndUpdateTimeZoneAsync(string newTimeZoneId, CancellationToken cancellationToken = default);
+    Task ClearReadModelAndUpdateTimeZoneAsync(string newTimeZoneId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 現在保存されているタイムゾーンIDを取得する

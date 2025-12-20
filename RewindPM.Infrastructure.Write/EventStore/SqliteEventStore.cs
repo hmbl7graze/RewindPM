@@ -165,4 +165,26 @@ public class SqliteEventStore : IEventStore
         // 削除されていないタスクIDを返す
         return createdTasks.Except(deletedTasks).ToList();
     }
+
+    /// <summary>
+    /// EventStoreにイベントが存在するかチェックする（IEventStoreReaderの実装）
+    /// </summary>
+    public async Task<bool> HasEventsAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Events.AnyAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// EventStoreから全イベントを時系列順に取得する（IEventStoreReaderの実装）
+    /// リプレイ処理で使用される
+    /// </summary>
+    public async Task<List<(string EventType, string EventData)>> GetAllEventsAsync(CancellationToken cancellationToken = default)
+    {
+        var events = await _context.Events
+            .OrderBy(e => e.OccurredAt)
+            .Select(e => new { e.EventType, e.EventData })
+            .ToListAsync(cancellationToken);
+
+        return events.Select(e => (e.EventType, e.EventData)).ToList();
+    }
 }
