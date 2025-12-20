@@ -120,6 +120,27 @@
     border-radius: 4px;
 }
 
+/* ステータスごとのバッジカラー */
+.column-header-todo + .task-list .badge {
+    background-color: #f3e5f5;
+    color: #9c27b0;
+}
+
+.column-header-inprogress + .task-list .badge {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.column-header-inreview + .task-list .badge {
+    background-color: #fffbf0;
+    color: #f57f17;
+}
+
+.column-header-done + .task-list .badge {
+    background-color: #e0f2f1;
+    color: #00897b;
+}
+
 /* ========================================
    カードのアニメーション
    ======================================== */

@@ -135,9 +135,9 @@
 }
 
 .gantt-status-todo {
-    background: var(--bg-subtle);
-    color: var(--text-muted);
-    border: 1px solid var(--border-color);
+    background: var(--gantt-status-todo-bg);
+    color: var(--gantt-status-todo-text);
+    border: 1px solid var(--gantt-status-todo-border);
 }
 
 .gantt-status-inprogress {

@@ -80,8 +80,8 @@
     --kanban-bg: #fafafa;
     --kanban-border: #e0e0e0;
     --kanban-header-text: #424242;
-    --kanban-header-todo-bg: #fafafa;
-    --kanban-header-todo-border: #e0e0e0;
+    --kanban-header-todo-bg: #f3e5f5;
+    --kanban-header-todo-border: #ce93d8;
     --kanban-header-inprogress-bg: #e3f2fd;
     --kanban-header-inprogress-border: #90caf9;
     --kanban-header-inreview-bg: #fffbf0;
@@ -99,6 +99,9 @@
     --kanban-badge-text: #424242;
 
     /* Gantt Chart Colors */
+    --gantt-status-todo-bg: #f3e5f5;
+    --gantt-status-todo-border: #ce93d8;
+    --gantt-status-todo-text: #9c27b0;
     --gantt-status-inprogress-bg: #e3f2fd;
     --gantt-status-inprogress-border: #90caf9;
     --gantt-status-inreview-bg: #fffbf0;
@@ -115,7 +118,7 @@
     --chart-done: #80cbc4;
     --chart-inreview: #FFE55F;
     --chart-inprogress: #90caf9;
-    --chart-todo: #bdbdbd;
+    --chart-todo: #ce93d8;
     --chart-ideal: #e0e0e0;
 }
 
