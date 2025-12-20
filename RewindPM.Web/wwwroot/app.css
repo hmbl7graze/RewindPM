@@ -97,6 +97,14 @@
     --kanban-title-text: #0E0000;
     --kanban-badge-bg: #f0f0f0;
     --kanban-badge-text: #424242;
+    --kanban-badge-todo-bg: #f3e5f5;
+    --kanban-badge-todo-text: #9c27b0;
+    --kanban-badge-inprogress-bg: #e3f2fd;
+    --kanban-badge-inprogress-text: #1976d2;
+    --kanban-badge-inreview-bg: #fffbf0;
+    --kanban-badge-inreview-text: #f57f17;
+    --kanban-badge-done-bg: #e0f2f1;
+    --kanban-badge-done-text: #00897b;
 
     /* Gantt Chart Colors */
     --gantt-status-todo-bg: #f3e5f5;

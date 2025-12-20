@@ -122,23 +122,23 @@
 
 /* ステータスごとのバッジカラー */
 .column-header-todo + .task-list .badge {
-    background-color: #f3e5f5;
-    color: #9c27b0;
+    background-color: var(--kanban-badge-todo-bg);
+    color: var(--kanban-badge-todo-text);
 }
 
 .column-header-inprogress + .task-list .badge {
-    background-color: #e3f2fd;
-    color: #1976d2;
+    background-color: var(--kanban-badge-inprogress-bg);
+    color: var(--kanban-badge-inprogress-text);
 }
 
 .column-header-inreview + .task-list .badge {
-    background-color: #fffbf0;
-    color: #f57f17;
+    background-color: var(--kanban-badge-inreview-bg);
+    color: var(--kanban-badge-inreview-text);
 }
 
 .column-header-done + .task-list .badge {
-    background-color: #e0f2f1;
-    color: #00897b;
+    background-color: var(--kanban-badge-done-bg);
+    color: var(--kanban-badge-done-text);
 }
 
 /* ========================================
