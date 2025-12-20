@@ -46,7 +46,7 @@ public class EventReplayServiceTest
             hasEventsFunc);
 
         // Act
-        var result = await service.HasEventsAsync();
+        var result = await service.HasEventsAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result);
@@ -64,7 +64,7 @@ public class EventReplayServiceTest
             hasEventsFunc);
 
         // Act
-        var result = await service.HasEventsAsync();
+        var result = await service.HasEventsAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result);
@@ -138,7 +138,7 @@ public class EventReplayServiceTest
         };
 
         // Act
-        await service.ReplayAllEventsAsync(_ => Task.FromResult(eventDataList));
+        await service.ReplayAllEventsAsync(_ => Task.FromResult(eventDataList), TestContext.Current.CancellationToken);
 
         // Assert
         // PublishAsyncが2回呼ばれたことを確認
@@ -159,7 +159,7 @@ public class EventReplayServiceTest
         var emptyEventList = new List<(string EventType, string EventData)>();
 
         // Act
-        await service.ReplayAllEventsAsync(_ => Task.FromResult(emptyEventList));
+        await service.ReplayAllEventsAsync(_ => Task.FromResult(emptyEventList), TestContext.Current.CancellationToken);
 
         // Assert
         await _mockEventPublisher.DidNotReceive().PublishAsync(Arg.Any<IDomainEvent>());
@@ -183,7 +183,7 @@ public class EventReplayServiceTest
         };
 
         // Act & Assert (例外がスローされないことを確認)
-        await service.ReplayAllEventsAsync(_ => Task.FromResult(eventDataList));
+        await service.ReplayAllEventsAsync(_ => Task.FromResult(eventDataList), TestContext.Current.CancellationToken);
 
         // 警告ログが出力されることを確認 (NSubstituteではLogger検証が難しいため省略)
     }

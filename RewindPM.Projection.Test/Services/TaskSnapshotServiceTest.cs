@@ -60,17 +60,17 @@ public class TaskSnapshotServiceTest : IDisposable
         };
 
         _context.Tasks.Add(task);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var occurredAt = new DateTimeOffset(2025, 12, 15, 10, 0, 0, TimeSpan.Zero);
 
         // Act
         await _service.PrepareTaskSnapshotAsync(taskId, task, occurredAt);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Assert
         var snapshot = await _context.TaskHistories
-            .FirstOrDefaultAsync(h => h.TaskId == taskId);
+            .FirstOrDefaultAsync(h => h.TaskId == taskId, TestContext.Current.CancellationToken);
 
         Assert.NotNull(snapshot);
         Assert.Equal(taskId, snapshot.TaskId);
@@ -126,18 +126,18 @@ public class TaskSnapshotServiceTest : IDisposable
         };
 
         _context.Tasks.Add(task);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var occurredAt = new DateTimeOffset(2025, 12, 15, 14, 0, 0, TimeSpan.Zero); // 同じ日
 
         // Act
         await _service.PrepareTaskSnapshotAsync(taskId, task, occurredAt);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Assert
         var snapshots = await _context.TaskHistories
             .Where(h => h.TaskId == taskId)
-            .ToListAsync();
+            .ToListAsync(TestContext.Current.CancellationToken);
 
         // 1つだけ存在することを確認（新規作成されず、更新されたこと）
         Assert.Single(snapshots);
@@ -176,17 +176,17 @@ public class TaskSnapshotServiceTest : IDisposable
         };
 
         _context.Tasks.Add(task);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var occurredAt = new DateTimeOffset(2025, 12, 15, 10, 0, 0, TimeSpan.Zero);
 
         // Act
         await _service.PrepareTaskSnapshotAsync(taskId, task, occurredAt);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Assert
         var snapshot = await _context.TaskHistories
-            .FirstOrDefaultAsync(h => h.TaskId == taskId);
+            .FirstOrDefaultAsync(h => h.TaskId == taskId, TestContext.Current.CancellationToken);
 
         Assert.NotNull(snapshot);
         Assert.Null(snapshot.EstimatedHours);
@@ -217,18 +217,18 @@ public class TaskSnapshotServiceTest : IDisposable
         };
 
         _context.Tasks.Add(task);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // JST 2025-12-15 23:30 (UTC 2025-12-15 14:30)
         var occurredAtJst = new DateTimeOffset(2025, 12, 15, 23, 30, 0, TimeSpan.FromHours(9));
 
         // Act
         await _service.PrepareTaskSnapshotAsync(taskId, task, occurredAtJst);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Assert
         var snapshot = await _context.TaskHistories
-            .FirstOrDefaultAsync(h => h.TaskId == taskId);
+            .FirstOrDefaultAsync(h => h.TaskId == taskId, TestContext.Current.CancellationToken);
 
         Assert.NotNull(snapshot);
         // TestTimeZoneServiceはUTCをそのまま返すので、日付は2025-12-15になる
@@ -290,20 +290,20 @@ public class TaskSnapshotServiceTest : IDisposable
         };
 
         _context.Tasks.Add(task);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // 翌日のイベント
         var occurredAt = new DateTimeOffset(2025, 12, 16, 10, 0, 0, TimeSpan.Zero);
 
         // Act
         await _service.PrepareTaskSnapshotAsync(taskId, task, occurredAt);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Assert
         var snapshots = await _context.TaskHistories
             .Where(h => h.TaskId == taskId)
             .OrderBy(h => h.SnapshotDate)
-            .ToListAsync();
+            .ToListAsync(TestContext.Current.CancellationToken);
 
         // 2つのスナップショットが存在することを確認
         Assert.Equal(2, snapshots.Count);

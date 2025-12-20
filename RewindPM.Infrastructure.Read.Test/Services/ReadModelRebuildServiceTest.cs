@@ -45,7 +45,7 @@ public class ReadModelRebuildServiceTest
         var service = new ReadModelRebuildService(context, _mockTimeZoneService, _mockLogger);
 
         // Act
-        var result = await service.GetStoredTimeZoneIdAsync();
+        var result = await service.GetStoredTimeZoneIdAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Null(result);
@@ -61,12 +61,12 @@ public class ReadModelRebuildServiceTest
             Key = SystemMetadataEntity.TimeZoneMetadataKey,
             Value = "Asia/Tokyo"
         });
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = new ReadModelRebuildService(context, _mockTimeZoneService, _mockLogger);
 
         // Act
-        var result = await service.GetStoredTimeZoneIdAsync();
+        var result = await service.GetStoredTimeZoneIdAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("Asia/Tokyo", result);
@@ -85,12 +85,12 @@ public class ReadModelRebuildServiceTest
             Key = SystemMetadataEntity.TimeZoneMetadataKey,
             Value = "Asia/Tokyo"
         });
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = new ReadModelRebuildService(context, _mockTimeZoneService, _mockLogger);
 
         // Act
-        var result = await service.CheckAndRebuildIfTimeZoneChangedAsync();
+        var result = await service.CheckAndRebuildIfTimeZoneChangedAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.False(result);
@@ -119,22 +119,22 @@ public class ReadModelRebuildServiceTest
             CreatedAt = DateTimeOffset.UtcNow,
             CreatedBy = "test"
         });
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = new ReadModelRebuildService(context, _mockTimeZoneService, _mockLogger);
 
         // Act
-        var result = await service.CheckAndRebuildIfTimeZoneChangedAsync();
+        var result = await service.CheckAndRebuildIfTimeZoneChangedAsync(TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result);
 
         // データがクリアされているか確認
-        var projectCount = await context.Projects.CountAsync();
+        var projectCount = await context.Projects.CountAsync(TestContext.Current.CancellationToken);
         Assert.Equal(0, projectCount);
 
         // タイムゾーンIDが更新されているか確認
-        var storedTimeZone = await service.GetStoredTimeZoneIdAsync();
+        var storedTimeZone = await service.GetStoredTimeZoneIdAsync(TestContext.Current.CancellationToken);
         Assert.Equal("UTC", storedTimeZone);
     }
 
@@ -167,24 +167,24 @@ public class ReadModelRebuildServiceTest
             CreatedBy = "test"
         });
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = new ReadModelRebuildService(context, _mockTimeZoneService, _mockLogger);
 
         // Act
-        var transaction = await service.ClearReadModelAndUpdateTimeZoneAsync("UTC");
-        await transaction.CommitAsync();
+        var transaction = await service.ClearReadModelAndUpdateTimeZoneAsync("UTC", TestContext.Current.CancellationToken);
+        await transaction.CommitAsync(TestContext.Current.CancellationToken);
         await transaction.DisposeAsync();
 
         // Assert
         // データがクリアされているか確認
-        var projectCount = await context.Projects.CountAsync();
-        var taskCount = await context.Tasks.CountAsync();
+        var projectCount = await context.Projects.CountAsync(TestContext.Current.CancellationToken);
+        var taskCount = await context.Tasks.CountAsync(TestContext.Current.CancellationToken);
         Assert.Equal(0, projectCount);
         Assert.Equal(0, taskCount);
 
         // タイムゾーンIDが更新されているか確認
-        var storedTimeZone = await service.GetStoredTimeZoneIdAsync();
+        var storedTimeZone = await service.GetStoredTimeZoneIdAsync(TestContext.Current.CancellationToken);
         Assert.Equal("UTC", storedTimeZone);
     }
 
@@ -196,12 +196,12 @@ public class ReadModelRebuildServiceTest
         var service = new ReadModelRebuildService(context, _mockTimeZoneService, _mockLogger);
 
         // Act
-        var transaction = await service.ClearReadModelAndUpdateTimeZoneAsync("UTC");
-        await transaction.CommitAsync();
+        var transaction = await service.ClearReadModelAndUpdateTimeZoneAsync("UTC", TestContext.Current.CancellationToken);
+        await transaction.CommitAsync(TestContext.Current.CancellationToken);
         await transaction.DisposeAsync();
 
         // Assert
-        var storedTimeZone = await service.GetStoredTimeZoneIdAsync();
+        var storedTimeZone = await service.GetStoredTimeZoneIdAsync(TestContext.Current.CancellationToken);
         Assert.Equal("UTC", storedTimeZone);
     }
 }
