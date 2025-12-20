@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RewindPM.Application.Read\RewindPM.Application.Read.csproj" />
-    <ProjectReference Include="..\RewindPM.Domain\RewindPM.Domain.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
