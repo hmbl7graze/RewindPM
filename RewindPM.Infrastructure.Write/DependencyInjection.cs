@@ -7,6 +7,7 @@ using RewindPM.Infrastructure.Write.EventStore;
 using RewindPM.Infrastructure.Write.Persistence;
 using RewindPM.Infrastructure.Write.Repositories;
 using RewindPM.Infrastructure.Write.Serialization;
+using RewindPM.Infrastructure.Write.Services;
 
 namespace RewindPM.Infrastructure;
 
@@ -36,7 +37,7 @@ public static class DependencyInjection
         services.AddSingleton<IEventPublisher, EventPublisher>();
 
         // 時刻プロバイダーの登録（シングルトン：ステートレスなため）
-        services.AddSingleton<IDateTimeProvider, RewindPM.Infrastructure.Write.Services.SystemDateTimeProvider>();
+        services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
 
         // SqliteEventStoreの登録（内部実装、スコープド：DbContextを使用するため）
         services.AddScoped<SqliteEventStore>();
