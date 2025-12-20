@@ -166,8 +166,8 @@
     transition: background-color 0.1s ease;
 }
 
-.gantt-timeline-area.highlighted {
-    background-color: var(--bg-row-hover) !important;
+.gantt-task-row .gantt-timeline-area.highlighted {
+    background-color: var(--bg-row-hover);
 }
 
 /* Header Subrows (Month/Date) */
