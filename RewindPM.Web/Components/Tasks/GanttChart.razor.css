@@ -137,25 +137,21 @@
 .gantt-status-todo {
     background: var(--gantt-status-todo-bg);
     color: var(--gantt-status-todo-text);
-    border: 1px solid var(--gantt-status-todo-border);
 }
 
 .gantt-status-inprogress {
     background: var(--gantt-status-inprogress-bg);
     color: var(--primary);
-    border: 1px solid var(--gantt-status-inprogress-border);
 }
 
 .gantt-status-inreview {
     background: var(--gantt-status-inreview-bg);
     color: var(--gantt-status-inreview-text);
-    border: 1px solid var(--gantt-status-inreview-border);
 }
 
 .gantt-status-done {
     background: var(--gantt-status-done-bg);
     color: var(--success);
-    border: 1px solid var(--gantt-status-done-border);
 }
 
 /* Timeline Area */
