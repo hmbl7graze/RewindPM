@@ -87,6 +87,8 @@ using (var scope = app.Services.CreateScope())
 
     var configuredTimeZone = timeZoneService.TimeZone.Id;
 
+    var readModelWasCleared = false;
+
     if (storedTimeZone != configuredTimeZone)
     {
         Console.WriteLine($"[Startup] TimeZone changed: {storedTimeZone ?? "none"} -> {configuredTimeZone}");
@@ -123,6 +125,7 @@ using (var scope = app.Services.CreateScope())
             await transaction.CommitAsync();
 
             Console.WriteLine($"[Startup] ReadModel cleared. Please re-create your data or import from EventStore.");
+            readModelWasCleared = true;
         }
         catch (Exception ex)
         {
@@ -152,37 +155,101 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
-    // 開発環境でサンプルデータを追加
-    if (app.Environment.IsDevelopment())
+    // ReadModelをクリアした場合、EventStoreにイベントがあればプロジェクションをリプレイしてReadModelを再構築する
+    if (readModelWasCleared)
     {
-        var mediator = services.GetRequiredService<IMediator>();
-        var projects = await mediator.Send(new GetAllProjectsQuery());
-
-        if (projects.Count == 0)
+        var hasEvents = await eventStoreContext.Events.AnyAsync();
+        if (hasEvents)
         {
-            Console.WriteLine("[Startup] Seeding sample data...");
+            Console.WriteLine("[Startup] Replaying events from EventStore to rebuild ReadModel...");
 
-            // Projectionハンドラーを登録してからシードデータを実行
-            // EventPublisherにすべてのプロジェクションハンドラーを登録
+            // Projectionハンドラーを登録（Program.csのスコープで即時利用するため）
             var eventPublisher = services.GetRequiredService<IEventPublisher>();
             eventPublisher.Subscribe<ProjectCreated>(
                 new ScopedEventHandlerAdapter<ProjectCreated, ProjectCreatedEventHandler>(services));
             eventPublisher.Subscribe<ProjectUpdated>(
                 new ScopedEventHandlerAdapter<ProjectUpdated, ProjectUpdatedEventHandler>(services));
+            eventPublisher.Subscribe<ProjectDeleted>(
+                new ScopedEventHandlerAdapter<ProjectDeleted, ProjectDeletedEventHandler>(services));
             eventPublisher.Subscribe<TaskCreated>(
                 new ScopedEventHandlerAdapter<TaskCreated, TaskCreatedEventHandler>(services));
             eventPublisher.Subscribe<TaskUpdated>(
                 new ScopedEventHandlerAdapter<TaskUpdated, TaskUpdatedEventHandler>(services));
+            eventPublisher.Subscribe<TaskCompletelyUpdated>(
+                new ScopedEventHandlerAdapter<TaskCompletelyUpdated, TaskCompletelyUpdatedEventHandler>(services));
             eventPublisher.Subscribe<TaskStatusChanged>(
                 new ScopedEventHandlerAdapter<TaskStatusChanged, TaskStatusChangedEventHandler>(services));
             eventPublisher.Subscribe<TaskScheduledPeriodChanged>(
                 new ScopedEventHandlerAdapter<TaskScheduledPeriodChanged, TaskScheduledPeriodChangedEventHandler>(services));
             eventPublisher.Subscribe<TaskActualPeriodChanged>(
                 new ScopedEventHandlerAdapter<TaskActualPeriodChanged, TaskActualPeriodChangedEventHandler>(services));
+            eventPublisher.Subscribe<TaskDeleted>(
+                new ScopedEventHandlerAdapter<TaskDeleted, TaskDeletedEventHandler>(services));
 
-            var seedData = new SeedData(app.Services);
-            await seedData.SeedAsync();
-            Console.WriteLine("[Startup] Sample data seeded successfully.");
+            // シリアライザーを取得してEventStoreのイベントを時系列でリプレイ
+            var serializer = services.GetRequiredService<RewindPM.Infrastructure.Write.Serialization.DomainEventSerializer>();
+            var events = await eventStoreContext.Events
+                .OrderBy(e => e.OccurredAt)
+                .ToListAsync();
+
+            foreach (var e in events)
+            {
+                try
+                {
+                    var domainEvent = serializer.Deserialize(e.EventType, e.EventData);
+                    await eventPublisher.PublishAsync(domainEvent);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Startup WARN] Failed to replay event {e.EventId}: {ex.Message}");
+                }
+            }
+
+            Console.WriteLine("[Startup] ReadModel rebuild from EventStore completed.");
+        }
+    }
+
+    // 開発環境でサンプルデータを追加
+    if (app.Environment.IsDevelopment())
+    {
+        var mediator = services.GetRequiredService<IMediator>();
+        var projects = await mediator.Send(new GetAllProjectsQuery());
+        if (projects.Count == 0)
+        {
+            // ReadModelが空でもEventStoreに既存イベントがある場合、
+            // シードでEventStoreへ書き込むのは避ける（タイムゾーン変更でReadModelのみ再構築したいケース）
+            var hasEventStoreEvents = await eventStoreContext.Events.AnyAsync();
+
+            if (hasEventStoreEvents)
+            {
+                Console.WriteLine("[Startup] ReadModel empty but EventStore contains events. Skipping seed to avoid writing to EventStore.");
+            }
+            else
+            {
+                Console.WriteLine("[Startup] Seeding sample data...");
+
+                // Projectionハンドラーを登録してからシードデータを実行
+                // EventPublisherにすべてのプロジェクションハンドラーを登録
+                var eventPublisher = services.GetRequiredService<IEventPublisher>();
+                eventPublisher.Subscribe<ProjectCreated>(
+                    new ScopedEventHandlerAdapter<ProjectCreated, ProjectCreatedEventHandler>(services));
+                eventPublisher.Subscribe<ProjectUpdated>(
+                    new ScopedEventHandlerAdapter<ProjectUpdated, ProjectUpdatedEventHandler>(services));
+                eventPublisher.Subscribe<TaskCreated>(
+                    new ScopedEventHandlerAdapter<TaskCreated, TaskCreatedEventHandler>(services));
+                eventPublisher.Subscribe<TaskUpdated>(
+                    new ScopedEventHandlerAdapter<TaskUpdated, TaskUpdatedEventHandler>(services));
+                eventPublisher.Subscribe<TaskStatusChanged>(
+                    new ScopedEventHandlerAdapter<TaskStatusChanged, TaskStatusChangedEventHandler>(services));
+                eventPublisher.Subscribe<TaskScheduledPeriodChanged>(
+                    new ScopedEventHandlerAdapter<TaskScheduledPeriodChanged, TaskScheduledPeriodChangedEventHandler>(services));
+                eventPublisher.Subscribe<TaskActualPeriodChanged>(
+                    new ScopedEventHandlerAdapter<TaskActualPeriodChanged, TaskActualPeriodChangedEventHandler>(services));
+
+                var seedData = new SeedData(app.Services);
+                await seedData.SeedAsync();
+                Console.WriteLine("[Startup] Sample data seeded successfully.");
+            }
         }
         else
         {
