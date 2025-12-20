@@ -149,8 +149,7 @@
 .view-tab.active {
     color: #1f2328;
     font-weight: 600;
-    border-bottom-color: #fd8c73;
-    /* RewindPM accent color? Or just a standard active color */
+    border-bottom-color: var(--primary);
 }
 
 .view-tab.disabled {
