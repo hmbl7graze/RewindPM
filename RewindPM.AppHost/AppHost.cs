@@ -12,6 +12,7 @@ builder.Eventing.Subscribe<Aspire.Hosting.ApplicationModel.ResourceEndpointsAllo
     if (@event.Resource.Name == "webfrontend")
     {
         // バックグラウンドでブラウザを開く（イベントハンドラーのキャンセルトークンとは独立して実行）
+        // 注: 意図的にfire-and-forgetパターンを使用。すべての例外はキャッチされコンソールに出力される
         _ = Task.Run(async () =>
         {
             try
@@ -26,8 +27,9 @@ builder.Eventing.Subscribe<Aspire.Hosting.ApplicationModel.ResourceEndpointsAllo
                 // リソースが起動するまで待機
                 await notificationService.WaitForResourceAsync(@event.Resource.Name, Aspire.Hosting.ApplicationModel.KnownResourceStates.Running, launchToken);
                 
-                // 少し余分に待機
-                await Task.Delay(1000, launchToken);
+                // アプリケーションが完全に起動するまで少し待機
+                const int startupDelayMs = 1000;
+                await Task.Delay(startupDelayMs, launchToken);
                 
                 // リソースの状態を監視してURLを取得
                 await foreach (var resourceEvent in notificationService.WatchAsync(launchToken))
@@ -35,6 +37,7 @@ builder.Eventing.Subscribe<Aspire.Hosting.ApplicationModel.ResourceEndpointsAllo
                     if (resourceEvent.Resource.Name == "webfrontend" && 
                         resourceEvent.Snapshot.Urls.Length > 0)
                     {
+                        // 最初のURLを使用（通常はhttpsエンドポイント）
                         var url = resourceEvent.Snapshot.Urls[0].Url;
                         Console.WriteLine($"[AppHost] ブラウザを開きます: {url}");
                         
