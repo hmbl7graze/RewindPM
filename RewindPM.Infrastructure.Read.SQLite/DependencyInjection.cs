@@ -27,6 +27,9 @@ public static class DependencyInjection
         services.AddDbContext<ReadModelDbContext>(options =>
             options.UseSqlite(connectionString));
 
+        // IReadModelContextの実装としてReadModelDbContextを登録
+        services.AddScoped<IReadModelContext>(sp => sp.GetRequiredService<ReadModelDbContext>());
+
         // IReadModelRepositoryの実装としてReadModelRepositoryを登録（スコープド：DbContextを使用するため）
         services.AddScoped<IReadModelRepository, ReadModelRepository>();
 

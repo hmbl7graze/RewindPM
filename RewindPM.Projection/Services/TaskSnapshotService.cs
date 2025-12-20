@@ -34,7 +34,7 @@ public class TaskSnapshotService
     /// <param name="taskId">タスクID</param>
     /// <param name="currentState">タスクの現在状態</param>
     /// <param name="occurredAt">イベント発生日時</param>
-    public async Task PrepareTaskSnapshotAsync(Guid taskId, TaskEntity currentState, DateTimeOffset occurredAt)
+    public Task PrepareTaskSnapshotAsync(Guid taskId, TaskEntity currentState, DateTimeOffset occurredAt)
     {
         ArgumentNullException.ThrowIfNull(currentState);
 
@@ -60,7 +60,7 @@ public class TaskSnapshotService
                 taskId, snapshotDate);
         }
 
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     /// <summary>
