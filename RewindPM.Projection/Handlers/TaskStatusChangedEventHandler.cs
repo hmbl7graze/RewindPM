@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
-using RewindPM.Infrastructure.Read.Persistence;
+using RewindPM.Infrastructure.Read.SQLite.Persistence;
 using RewindPM.Projection.Services;
 
 namespace RewindPM.Projection.Handlers;

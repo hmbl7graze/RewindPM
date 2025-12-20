@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Events;
 using RewindPM.Domain.ValueObjects;
-using RewindPM.Infrastructure.Read.Persistence;
+using RewindPM.Infrastructure.Read.SQLite.Persistence;
 using RewindPM.Infrastructure.Read.Services;
 using RewindPM.Projection.Handlers;
 using RewindPM.Projection.Services;
@@ -117,7 +117,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         var updatedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
 
         // 既存のプロジェクトを作成
-        var project = new Infrastructure.Read.Entities.ProjectEntity
+        var project = new Infrastructure.Read.SQLite.Entities.ProjectEntity
         {
             Id = projectId,
             Title = "Old Title",
@@ -164,7 +164,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         var today = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc);
 
         // 既存のプロジェクトとスナップショットを作成
-        var project = new Infrastructure.Read.Entities.ProjectEntity
+        var project = new Infrastructure.Read.SQLite.Entities.ProjectEntity
         {
             Id = projectId,
             Title = "Original Title",
@@ -174,7 +174,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         };
         _context.Projects.Add(project);
 
-        var existingSnapshot = new Infrastructure.Read.Entities.ProjectHistoryEntity
+        var existingSnapshot = new Infrastructure.Read.SQLite.Entities.ProjectHistoryEntity
         {
             Id = Guid.NewGuid(),
             ProjectId = projectId,
@@ -280,7 +280,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         var updatedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
 
         // 既存のタスクを作成
-        var task = new Infrastructure.Read.Entities.TaskEntity
+        var task = new Infrastructure.Read.SQLite.Entities.TaskEntity
         {
             Id = taskId,
             ProjectId = projectId,
@@ -330,7 +330,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         var today = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc);
 
         // 既存のタスクとスナップショットを作成
-        var task = new Infrastructure.Read.Entities.TaskEntity
+        var task = new Infrastructure.Read.SQLite.Entities.TaskEntity
         {
             Id = taskId,
             ProjectId = projectId,
@@ -342,7 +342,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         };
         _context.Tasks.Add(task);
 
-        var existingSnapshot = new Infrastructure.Read.Entities.TaskHistoryEntity
+        var existingSnapshot = new Infrastructure.Read.SQLite.Entities.TaskHistoryEntity
         {
             Id = Guid.NewGuid(),
             TaskId = taskId,
@@ -395,7 +395,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         var changedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
 
         // 既存のタスクを作成
-        var task = new Infrastructure.Read.Entities.TaskEntity
+        var task = new Infrastructure.Read.SQLite.Entities.TaskEntity
         {
             Id = taskId,
             ProjectId = projectId,
@@ -443,7 +443,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         var today = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc);
 
         // 既存のタスクとスナップショットを作成
-        var task = new Infrastructure.Read.Entities.TaskEntity
+        var task = new Infrastructure.Read.SQLite.Entities.TaskEntity
         {
             Id = taskId,
             ProjectId = projectId,
@@ -455,7 +455,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         };
         _context.Tasks.Add(task);
 
-        var existingSnapshot = new Infrastructure.Read.Entities.TaskHistoryEntity
+        var existingSnapshot = new Infrastructure.Read.SQLite.Entities.TaskHistoryEntity
         {
             Id = Guid.NewGuid(),
             TaskId = taskId,
@@ -546,7 +546,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         var changedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
 
         // 既存のタスクを作成
-        var task = new Infrastructure.Read.Entities.TaskEntity
+        var task = new Infrastructure.Read.SQLite.Entities.TaskEntity
         {
             Id = taskId,
             ProjectId = projectId,
@@ -605,7 +605,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         var today = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc);
 
         // 既存のタスクとスナップショットを作成
-        var task = new Infrastructure.Read.Entities.TaskEntity
+        var task = new Infrastructure.Read.SQLite.Entities.TaskEntity
         {
             Id = taskId,
             ProjectId = projectId,
@@ -620,7 +620,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         };
         _context.Tasks.Add(task);
 
-        var existingSnapshot = new Infrastructure.Read.Entities.TaskHistoryEntity
+        var existingSnapshot = new Infrastructure.Read.SQLite.Entities.TaskHistoryEntity
         {
             Id = Guid.NewGuid(),
             TaskId = taskId,
@@ -681,7 +681,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         var changedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
 
         // 既存のタスクを作成
-        var task = new Infrastructure.Read.Entities.TaskEntity
+        var task = new Infrastructure.Read.SQLite.Entities.TaskEntity
         {
             Id = taskId,
             ProjectId = projectId,
@@ -740,7 +740,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         var today = new DateTime(2025, 12, 6, 10, 0, 0, DateTimeKind.Utc);
 
         // 既存のタスクとスナップショットを作成
-        var task = new Infrastructure.Read.Entities.TaskEntity
+        var task = new Infrastructure.Read.SQLite.Entities.TaskEntity
         {
             Id = taskId,
             ProjectId = projectId,
@@ -755,7 +755,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         };
         _context.Tasks.Add(task);
 
-        var existingSnapshot = new Infrastructure.Read.Entities.TaskHistoryEntity
+        var existingSnapshot = new Infrastructure.Read.SQLite.Entities.TaskHistoryEntity
         {
             Id = Guid.NewGuid(),
             TaskId = taskId,
@@ -812,7 +812,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         var changedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
 
         // 既存のタスクを作成
-        var task = new Infrastructure.Read.Entities.TaskEntity
+        var task = new Infrastructure.Read.SQLite.Entities.TaskEntity
         {
             Id = taskId,
             ProjectId = projectId,
@@ -865,7 +865,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         var deletedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
 
         // 既存のプロジェクトを作成
-        var project = new Infrastructure.Read.Entities.ProjectEntity
+        var project = new Infrastructure.Read.SQLite.Entities.ProjectEntity
         {
             Id = projectId,
             Title = "Test Project",
@@ -929,7 +929,7 @@ public class ProjectionHandlerTests : IAsyncDisposable
         var deletedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
 
         // 既存のタスクを作成
-        var task = new Infrastructure.Read.Entities.TaskEntity
+        var task = new Infrastructure.Read.SQLite.Entities.TaskEntity
         {
             Id = taskId,
             ProjectId = projectId,

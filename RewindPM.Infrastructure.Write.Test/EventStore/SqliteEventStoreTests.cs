@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
 using RewindPM.Domain.ValueObjects;
-using RewindPM.Infrastructure.Write.EventStore;
-using RewindPM.Infrastructure.Write.Persistence;
+using RewindPM.Infrastructure.Write.SQLite.EventStore;
+using RewindPM.Infrastructure.Write.SQLite.Persistence;
 using RewindPM.Infrastructure.Write.Serialization;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 

@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using RewindPM.Infrastructure.Read.Entities;
-using RewindPM.Infrastructure.Read.Persistence;
+using RewindPM.Infrastructure.Read.SQLite.Entities;
+using RewindPM.Infrastructure.Read.SQLite.Persistence;
 using RewindPM.Infrastructure.Read.Services;
 
 namespace RewindPM.Projection.Services;

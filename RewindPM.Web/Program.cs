@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using RewindPM.Web.Components;
-using RewindPM.Infrastructure;
+using RewindPM.Infrastructure.Write;
+using RewindPM.Infrastructure.Write.SQLite;
 using RewindPM.Infrastructure.Read;
+using RewindPM.Infrastructure.Read.SQLite;
 using RewindPM.Application.Write;
 using RewindPM.Application.Read;
 using RewindPM.Projection;
@@ -28,11 +30,17 @@ var eventStoreConnectionString = builder.Configuration.GetConnectionString("Even
 var readModelConnectionString = builder.Configuration.GetConnectionString("ReadModel")
     ?? throw new InvalidOperationException("Connection string 'ReadModel' not found.");
 
-// Infrastructure層の登録（EventStore, EventPublisher, AggregateRepository）
-builder.Services.AddInfrastructure(eventStoreConnectionString);
+// Infrastructure.Write層の登録（DB非依存の共通サービス）
+builder.Services.AddInfrastructureWrite();
 
-// Infrastructure.Read層の登録（ReadModelRepository, ReadModelDbContext, TimeZoneService）
-builder.Services.AddInfrastructureRead(readModelConnectionString, builder.Configuration);
+// Infrastructure.Write.SQLite層の登録（EventStore, SqliteEventStore）
+builder.Services.AddInfrastructureWriteSQLite(eventStoreConnectionString);
+
+// Infrastructure.Read層の登録（DB非依存の共通サービス）
+builder.Services.AddInfrastructureRead(builder.Configuration);
+
+// Infrastructure.Read.SQLite層の登録（ReadModelRepository, ReadModelDbContext）
+builder.Services.AddInfrastructureReadSQLite(readModelConnectionString);
 
 // Application.Write層の登録（MediatR for Commands）
 builder.Services.AddApplicationWrite();
@@ -60,7 +68,7 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
 
     // ReadModelデータベースの処理
-    var readModelContext = services.GetRequiredService<RewindPM.Infrastructure.Read.Persistence.ReadModelDbContext>();
+    var readModelContext = services.GetRequiredService<RewindPM.Infrastructure.Read.SQLite.Persistence.ReadModelDbContext>();
     var pendingReadModelMigrations = await readModelContext.Database.GetPendingMigrationsAsync();
     var hasPendingReadModelMigrations = pendingReadModelMigrations.Any();
 
@@ -80,7 +88,7 @@ using (var scope = app.Services.CreateScope())
     }
 
     // EventStoreデータベースの処理（マイグレーションは直接アクセスが必要）
-    var eventStoreContext = services.GetRequiredService<RewindPM.Infrastructure.Write.Persistence.EventStoreDbContext>();
+    var eventStoreContext = services.GetRequiredService<RewindPM.Infrastructure.Write.SQLite.Persistence.EventStoreDbContext>();
     var pendingEventStoreMigrations = await eventStoreContext.Database.GetPendingMigrationsAsync();
     var hasPendingEventStoreMigrations = pendingEventStoreMigrations.Any();
 

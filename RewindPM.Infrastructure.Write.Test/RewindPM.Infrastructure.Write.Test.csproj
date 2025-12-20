@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\RewindPM.Infrastructure.Write\RewindPM.Infrastructure.Write.csproj" />
+    <ProjectReference Include="..\RewindPM.Infrastructure.Write.SQLite\RewindPM.Infrastructure.Write.SQLite.csproj" />
   </ItemGroup>
 
 </Project>
