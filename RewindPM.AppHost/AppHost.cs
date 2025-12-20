@@ -11,22 +11,26 @@ builder.Eventing.Subscribe<Aspire.Hosting.ApplicationModel.ResourceEndpointsAllo
     // webfrontendリソースのエンドポイントが割り当てられたときに実行
     if (@event.Resource.Name == "webfrontend")
     {
-        // バックグラウンドでブラウザを開く
+        // バックグラウンドでブラウザを開く（イベントハンドラーのキャンセルトークンとは独立して実行）
         _ = Task.Run(async () =>
         {
             try
             {
+                // ブラウザ起動用のタイムアウト付きキャンセレーショントークンを作成
+                using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+                var launchToken = cts.Token;
+                
                 // ResourceNotificationServiceを取得
                 var notificationService = @event.Services.GetRequiredService<Aspire.Hosting.ApplicationModel.ResourceNotificationService>();
                 
                 // リソースが起動するまで待機
-                await notificationService.WaitForResourceAsync(@event.Resource.Name, Aspire.Hosting.ApplicationModel.KnownResourceStates.Running, ct);
+                await notificationService.WaitForResourceAsync(@event.Resource.Name, Aspire.Hosting.ApplicationModel.KnownResourceStates.Running, launchToken);
                 
                 // 少し余分に待機
-                await Task.Delay(1000, ct);
+                await Task.Delay(1000, launchToken);
                 
                 // リソースの状態を監視してURLを取得
-                await foreach (var resourceEvent in notificationService.WatchAsync(ct))
+                await foreach (var resourceEvent in notificationService.WatchAsync(launchToken))
                 {
                     if (resourceEvent.Resource.Name == "webfrontend" && 
                         resourceEvent.Snapshot.Urls.Length > 0)
@@ -39,16 +43,24 @@ builder.Eventing.Subscribe<Aspire.Hosting.ApplicationModel.ResourceEndpointsAllo
                             FileName = url,
                             UseShellExecute = true
                         };
-                        System.Diagnostics.Process.Start(psi);
+                        var process = System.Diagnostics.Process.Start(psi);
+                        if (process == null)
+                        {
+                            Console.WriteLine("[AppHost] ブラウザの起動に失敗しました: Process.Startがnullを返しました");
+                        }
                         break; // 一度だけ実行
                     }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                Console.WriteLine("[AppHost] ブラウザの起動がタイムアウトしました");
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[AppHost] ブラウザの起動に失敗しました: {ex.Message}");
             }
-        }, ct);
+        });
     }
     
     return Task.CompletedTask;
