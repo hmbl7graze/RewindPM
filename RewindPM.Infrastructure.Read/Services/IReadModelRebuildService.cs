@@ -1,0 +1,31 @@
+using Microsoft.EntityFrameworkCore.Storage;
+
+namespace RewindPM.Infrastructure.Read.Services;
+
+/// <summary>
+/// ReadModelの再構築を管理するサービスのインターフェース
+/// </summary>
+public interface IReadModelRebuildService
+{
+    /// <summary>
+    /// タイムゾーン変更を検出し、必要に応じてReadModelを再構築する
+    /// </summary>
+    /// <param name="cancellationToken">キャンセルトークン</param>
+    /// <returns>ReadModelがクリアされた場合はtrue、そうでない場合はfalse</returns>
+    Task<bool> CheckAndRebuildIfTimeZoneChangedAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// ReadModelのデータをクリアし、タイムゾーンメタデータを更新する
+    /// </summary>
+    /// <param name="newTimeZoneId">新しいタイムゾーンID</param>
+    /// <param name="cancellationToken">キャンセルトークン</param>
+    /// <returns>完了したトランザクション</returns>
+    Task<IDbContextTransaction> ClearReadModelAndUpdateTimeZoneAsync(string newTimeZoneId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 現在保存されているタイムゾーンIDを取得する
+    /// </summary>
+    /// <param name="cancellationToken">キャンセルトークン</param>
+    /// <returns>保存されているタイムゾーンID (未設定の場合はnull)</returns>
+    Task<string?> GetStoredTimeZoneIdAsync(CancellationToken cancellationToken = default);
+}
