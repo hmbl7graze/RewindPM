@@ -22,6 +22,8 @@ public static class DependencyInjection
         this IServiceCollection services,
         Func<IServiceProvider, Task<bool>> hasEventsAsyncFunc)
     {
+         ArgumentNullException.ThrowIfNull(hasEventsAsyncFunc);
+         
         // プロジェクションサービスを登録
         services.AddScoped<TaskSnapshotService>();
 
