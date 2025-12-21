@@ -843,25 +843,25 @@ public class BurndownChartTests : Bunit.TestContext
         // Assert - 理想線データを取得して検証
         var idealDataField = cut.Instance.GetType()
             .GetField("_idealData", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var idealData = idealDataField?.GetValue(cut.Instance) as List<object>;
+        var idealData = idealDataField?.GetValue(cut.Instance) as System.Collections.IList;
 
         Assert.NotNull(idealData);
         Assert.Equal(4, idealData!.Count);
 
         // 理想線の各ポイントを検証
-        var point1 = idealData[0];
+        var point1 = idealData[0]!;
         var point1Y = (int)point1.GetType().GetProperty("Y")!.GetValue(point1)!;
         Assert.Equal(1, point1Y);  // startDate: タスク1のみ
 
-        var point2 = idealData[1];
+        var point2 = idealData[1]!;
         var point2Y = (int)point2.GetType().GetProperty("Y")!.GetValue(point2)!;
         Assert.Equal(2, point2Y);  // taskAddDate: タスク1とタスク2
 
-        var point3 = idealData[2];
+        var point3 = idealData[2]!;
         var point3Y = (int)point3.GetType().GetProperty("Y")!.GetValue(point3)!;
         Assert.Equal(1, point3Y);  // task1EndDate: タスク1完了、タスク2残り
 
-        var point4 = idealData[3];
+        var point4 = idealData[3]!;
         var point4Y = (int)point4.GetType().GetProperty("Y")!.GetValue(point4)!;
         Assert.Equal(0, point4Y);  // task2EndDate: タスク2完了
     }
