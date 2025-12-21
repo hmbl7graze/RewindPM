@@ -121,8 +121,12 @@ else
                 startDate = fallbackDate.AddDays(-30);
             }
 
-            // 開始時点でのタスク一覧を取得して、プロジェクトの終了日を決定
-            var tasksQuery = new GetTasksByProjectIdAtTimeQuery(ProjectId, startDate);
+            // 理想線を計算する基準時点を決定
+            // リワインドモード時：AsOfDate時点、通常モード時：最新時点
+            var idealLineBaseDate = AsOfDate ?? (editDates != null && editDates.Any() ? editDates.Last() : DateTimeOffset.UtcNow);
+
+            // 基準時点でのタスク一覧を取得して、プロジェクトの終了日を決定
+            var tasksQuery = new GetTasksByProjectIdAtTimeQuery(ProjectId, idealLineBaseDate);
             var tasksAtStart = await Mediator.Send(tasksQuery);
 
             if (tasksAtStart != null && tasksAtStart.Any())
@@ -183,21 +187,24 @@ else
                     })
                     .ToList();
 
-                // 理想線データを作成：開始時点でのタスクの予定終了日に基づいて計算
+                // 理想線データを作成：タスクの作成日と予定終了日に基づいて計算
                 if (tasksAtStart != null && tasksAtStart.Any())
                 {
-                    var totalTasks = tasksAtStart.Count;
-
                     _idealData = snapshots
                         .Select(s =>
                         {
+                            // この日付までに作成されたタスク数
+                            var createdTasks = tasksAtStart.Count(t =>
+                                t.CreatedAt.Date <= s.Date.DateTime.Date);
+
                             // この日付までに予定終了日を迎えるべきタスク数（完了予定）
                             var shouldBeCompleted = tasksAtStart.Count(t =>
                                 t.ScheduledEndDate.HasValue &&
-                                t.ScheduledEndDate.Value.Date <= s.Date.DateTime.Date);
+                                t.ScheduledEndDate.Value.Date <= s.Date.DateTime.Date &&
+                                t.CreatedAt.Date <= s.Date.DateTime.Date);
 
-                            // 理想的な残タスク数
-                            var idealRemaining = totalTasks - shouldBeCompleted;
+                            // 理想的な残タスク数 = 作成されたタスク数 - 完了予定のタスク数
+                            var idealRemaining = createdTasks - shouldBeCompleted;
 
                             return new ChartDataPoint
                             {

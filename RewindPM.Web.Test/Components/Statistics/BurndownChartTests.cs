@@ -301,8 +301,8 @@ public class BurndownChartTests : Bunit.TestContext
         _mediatorMock.Send(Arg.Any<GetProjectStatisticsTimeSeriesQuery>(), Arg.Any<CancellationToken>())
             .Returns(timeSeriesData);
 
-        // 開始時点のタスク一覧（予定終了日あり）
-        var tasksAtStart = new List<TaskDto>
+        // 最新時点のタスク一覧（予定終了日あり）
+        var tasksAtLatest = new List<TaskDto>
         {
             new TaskDto { Id = Guid.NewGuid(), ProjectId = projectId, Title = "Task1", Description = "",
                 Status = TaskStatus.Todo, ScheduledEndDate = startDate.AddDays(1),
@@ -315,17 +315,17 @@ public class BurndownChartTests : Bunit.TestContext
                 CreatedAt = startDate, UpdatedAt = null, CreatedBy = "user" }
         };
         _mediatorMock.Send(Arg.Any<GetTasksByProjectIdAtTimeQuery>(), Arg.Any<CancellationToken>())
-            .Returns(tasksAtStart);
+            .Returns(tasksAtLatest);
 
         // Act
         var cut = RenderComponent<BurndownChart>(parameters => parameters
             .Add(p => p.ProjectId, projectId));
 
-        // Assert - タスク一覧が取得されたことを確認
+        // Assert - タスク一覧が最新時点で取得されたことを確認
         await _mediatorMock.Received(1).Send(
             Arg.Is<GetTasksByProjectIdAtTimeQuery>(q =>
                 q.ProjectId == projectId &&
-                q.PointInTime == startDate),
+                q.PointInTime == endDate),  // 通常モードでは最新時点（endDate）を使用
             Arg.Any<CancellationToken>());
     }
 
@@ -771,6 +771,99 @@ public class BurndownChartTests : Bunit.TestContext
                 q.StartDate == startDate &&
                 q.EndDate == scheduledEndDate), // lastEditDateより後のscheduledEndDateが使われる
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "BurndownChart: タスク追加時に理想線の残タスク数を増やす")]
+    public async Task BurndownChart_IdealLine_IncreaseWhenTaskAdded()
+    {
+        // Arrange
+        var projectId = Guid.NewGuid();
+        var startDate = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        var taskAddDate = new DateTimeOffset(2024, 1, 5, 0, 0, 0, TimeSpan.Zero);
+        var task1EndDate = new DateTimeOffset(2024, 1, 10, 0, 0, 0, TimeSpan.Zero);
+        var task2EndDate = new DateTimeOffset(2024, 1, 15, 0, 0, 0, TimeSpan.Zero);
+
+        // 編集日一覧
+        var editDates = new List<DateTimeOffset> { startDate, taskAddDate, task2EndDate };
+        _mediatorMock.Send(Arg.Any<GetProjectEditDatesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(editDates);
+
+        // 時系列データ
+        var timeSeriesData = new ProjectStatisticsTimeSeriesDto
+        {
+            ProjectId = projectId,
+            DailySnapshots = new List<DailyStatisticsSnapshot>
+            {
+                new DailyStatisticsSnapshot
+                {
+                    Date = startDate, TotalTasks = 1, CompletedTasks = 0,
+                    InProgressTasks = 1, InReviewTasks = 0, TodoTasks = 0
+                },
+                new DailyStatisticsSnapshot
+                {
+                    Date = taskAddDate, TotalTasks = 2, CompletedTasks = 0,
+                    InProgressTasks = 2, InReviewTasks = 0, TodoTasks = 0
+                },
+                new DailyStatisticsSnapshot
+                {
+                    Date = task1EndDate, TotalTasks = 2, CompletedTasks = 1,
+                    InProgressTasks = 1, InReviewTasks = 0, TodoTasks = 0
+                },
+                new DailyStatisticsSnapshot
+                {
+                    Date = task2EndDate, TotalTasks = 2, CompletedTasks = 2,
+                    InProgressTasks = 0, InReviewTasks = 0, TodoTasks = 0
+                }
+            }
+        };
+        _mediatorMock.Send(Arg.Any<GetProjectStatisticsTimeSeriesQuery>(), Arg.Any<CancellationToken>())
+            .Returns(timeSeriesData);
+
+        // 最新時点のタスク一覧
+        var tasksAtLatest = new List<TaskDto>
+        {
+            new TaskDto { Id = Guid.NewGuid(), ProjectId = projectId, Title = "Task1", Description = "",
+                Status = TaskStatus.Done, ScheduledEndDate = task1EndDate,
+                CreatedAt = startDate, UpdatedAt = null, CreatedBy = "user" },
+            new TaskDto { Id = Guid.NewGuid(), ProjectId = projectId, Title = "Task2", Description = "",
+                Status = TaskStatus.Done, ScheduledEndDate = task2EndDate,
+                CreatedAt = taskAddDate, UpdatedAt = null, CreatedBy = "user" }  // 途中で追加されたタスク
+        };
+        _mediatorMock.Send(Arg.Any<GetTasksByProjectIdAtTimeQuery>(), Arg.Any<CancellationToken>())
+            .Returns(tasksAtLatest);
+
+        // Act
+        var cut = RenderComponent<BurndownChart>(parameters => parameters
+            .Add(p => p.ProjectId, projectId));
+
+        cut.WaitForState(() => !cut.Instance.GetType()
+            .GetField("_isLoading", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!
+            .GetValue(cut.Instance)!.Equals(true), timeout: TimeSpan.FromSeconds(5));
+
+        // Assert - 理想線データを取得して検証
+        var idealDataField = cut.Instance.GetType()
+            .GetField("_idealData", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var idealData = idealDataField?.GetValue(cut.Instance) as List<object>;
+
+        Assert.NotNull(idealData);
+        Assert.Equal(4, idealData!.Count);
+
+        // 理想線の各ポイントを検証
+        var point1 = idealData[0];
+        var point1Y = (int)point1.GetType().GetProperty("Y")!.GetValue(point1)!;
+        Assert.Equal(1, point1Y);  // startDate: タスク1のみ
+
+        var point2 = idealData[1];
+        var point2Y = (int)point2.GetType().GetProperty("Y")!.GetValue(point2)!;
+        Assert.Equal(2, point2Y);  // taskAddDate: タスク1とタスク2
+
+        var point3 = idealData[2];
+        var point3Y = (int)point3.GetType().GetProperty("Y")!.GetValue(point3)!;
+        Assert.Equal(1, point3Y);  // task1EndDate: タスク1完了、タスク2残り
+
+        var point4 = idealData[3];
+        var point4Y = (int)point4.GetType().GetProperty("Y")!.GetValue(point4)!;
+        Assert.Equal(0, point4Y);  // task2EndDate: タスク2完了
     }
 }
 
