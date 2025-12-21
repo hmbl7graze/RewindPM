@@ -84,7 +84,7 @@ dotnet run --project RewindPM.AppHost
 
 ### バイナリ版
 
-[Releases](https://github.com/hmbl7graze/RewindPM/releases)ページから最新版をダウンロードできます。
+[Releases](https://github.com/hmbl7graze/RewindPM/releases)ページから最新版をダウンロードできます。ただし、LinuxとmacOSについては動作確認を行っていません。
 
 #### セキュリティ警告について
 
