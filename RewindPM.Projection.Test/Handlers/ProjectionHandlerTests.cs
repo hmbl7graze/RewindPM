@@ -81,7 +81,7 @@ public class ProjectionHandlerTests : IDisposable
         await handler.HandleAsync(@event);
 
         // Assert
-        var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+        var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId, TestContext.Current.CancellationToken);
         Assert.NotNull(project);
         Assert.Equal("Test Project", project.Title);
         Assert.Equal("Test Description", project.Description);
@@ -90,7 +90,7 @@ public class ProjectionHandlerTests : IDisposable
         Assert.Null(project.UpdatedAt);
         Assert.Null(project.UpdatedBy);
 
-        var snapshot = await _context.ProjectHistories.FirstOrDefaultAsync(h => h.ProjectId == projectId);
+        var snapshot = await _context.ProjectHistories.FirstOrDefaultAsync(h => h.ProjectId == projectId, TestContext.Current.CancellationToken);
         Assert.NotNull(snapshot);
         Assert.Equal(occurredAt.Date, snapshot.SnapshotDate.Date);
         Assert.Equal("Test Project", snapshot.Title);
@@ -120,7 +120,7 @@ public class ProjectionHandlerTests : IDisposable
             CreatedAt = createdAt
         };
         _context.Projects.Add(existingProject);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new ProjectUpdatedEventHandler(_context, _timeZoneService, CreateLogger<ProjectUpdatedEventHandler>());
         var @event = new ProjectUpdated
@@ -136,14 +136,14 @@ public class ProjectionHandlerTests : IDisposable
         await handler.HandleAsync(@event);
 
         // Assert
-        var updatedProject = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+        var updatedProject = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId, TestContext.Current.CancellationToken);
         Assert.NotNull(updatedProject);
         Assert.Equal("New Title", updatedProject.Title);
         Assert.Equal("New Description", updatedProject.Description);
         Assert.Equal("user2", updatedProject.UpdatedBy);
         Assert.Equal(updatedAt, updatedProject.UpdatedAt);
 
-        var snapshot = await _context.ProjectHistories.FirstOrDefaultAsync(h => h.ProjectId == projectId);
+        var snapshot = await _context.ProjectHistories.FirstOrDefaultAsync(h => h.ProjectId == projectId, TestContext.Current.CancellationToken);
         Assert.NotNull(snapshot);
         Assert.Equal("New Title", snapshot.Title);
         Assert.Equal("New Description", snapshot.Description);
@@ -182,7 +182,7 @@ public class ProjectionHandlerTests : IDisposable
         await handler.HandleAsync(@event);
 
         // Assert
-        var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId);
+        var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId, TestContext.Current.CancellationToken);
         Assert.NotNull(task);
         Assert.Equal(projectId, task.ProjectId);
         Assert.Equal("Test Task", task.Title);
@@ -196,7 +196,7 @@ public class ProjectionHandlerTests : IDisposable
         Assert.Null(task.ActualEndDate);
         Assert.Null(task.ActualHours);
 
-        var snapshot = await _context.TaskHistories.FirstOrDefaultAsync(h => h.TaskId == taskId);
+        var snapshot = await _context.TaskHistories.FirstOrDefaultAsync(h => h.TaskId == taskId, TestContext.Current.CancellationToken);
         Assert.NotNull(snapshot);
         Assert.Equal(occurredAt.Date, snapshot.SnapshotDate.Date);
         Assert.Equal("Test Task", snapshot.Title);
@@ -228,7 +228,7 @@ public class ProjectionHandlerTests : IDisposable
             CreatedAt = createdAt
         };
         _context.Tasks.Add(existingTask);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var taskSnapshotService = new TaskSnapshotService(_context, _timeZoneService, CreateLogger<TaskSnapshotService>());
         var handler = new TaskUpdatedEventHandler(_context, taskSnapshotService, CreateLogger<TaskUpdatedEventHandler>());
@@ -245,14 +245,14 @@ public class ProjectionHandlerTests : IDisposable
         await handler.HandleAsync(@event);
 
         // Assert
-        var updatedTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId);
+        var updatedTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId, TestContext.Current.CancellationToken);
         Assert.NotNull(updatedTask);
         Assert.Equal("New Task Title", updatedTask.Title);
         Assert.Equal("New Task Description", updatedTask.Description);
         Assert.Equal("user2", updatedTask.UpdatedBy);
         Assert.Equal(updatedAt, updatedTask.UpdatedAt);
 
-        var snapshot = await _context.TaskHistories.FirstOrDefaultAsync(h => h.TaskId == taskId);
+        var snapshot = await _context.TaskHistories.FirstOrDefaultAsync(h => h.TaskId == taskId, TestContext.Current.CancellationToken);
         Assert.NotNull(snapshot);
         Assert.Equal("New Task Title", snapshot.Title);
         Assert.Equal("New Task Description", snapshot.Description);
@@ -283,7 +283,7 @@ public class ProjectionHandlerTests : IDisposable
             CreatedAt = createdAt
         };
         _context.Tasks.Add(existingTask);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var taskSnapshotService = new TaskSnapshotService(_context, _timeZoneService, CreateLogger<TaskSnapshotService>());
         var handler = new TaskStatusChangedEventHandler(_context, taskSnapshotService, CreateLogger<TaskStatusChangedEventHandler>());
@@ -300,13 +300,13 @@ public class ProjectionHandlerTests : IDisposable
         await handler.HandleAsync(@event);
 
         // Assert
-        var updatedTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId);
+        var updatedTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId, TestContext.Current.CancellationToken);
         Assert.NotNull(updatedTask);
         Assert.Equal(TaskStatus.InProgress, updatedTask.Status);
         Assert.Equal("user1", updatedTask.UpdatedBy);
         Assert.Equal(changedAt, updatedTask.UpdatedAt);
 
-        var snapshot = await _context.TaskHistories.FirstOrDefaultAsync(h => h.TaskId == taskId);
+        var snapshot = await _context.TaskHistories.FirstOrDefaultAsync(h => h.TaskId == taskId, TestContext.Current.CancellationToken);
         Assert.NotNull(snapshot);
         Assert.Equal(TaskStatus.InProgress, snapshot.Status);
     }
@@ -330,7 +330,7 @@ public class ProjectionHandlerTests : IDisposable
         await handler.HandleAsync(@event);
 
         // タスクが存在しないことを確認
-        var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == @event.AggregateId);
+        var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == @event.AggregateId, TestContext.Current.CancellationToken);
         Assert.Null(task);
     }
 
@@ -356,7 +356,7 @@ public class ProjectionHandlerTests : IDisposable
             CreatedAt = createdAt
         };
         _context.Projects.Add(existingProject);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new ProjectDeletedEventHandler(_context, CreateLogger<ProjectDeletedEventHandler>());
         var @event = new ProjectDeleted
@@ -370,7 +370,7 @@ public class ProjectionHandlerTests : IDisposable
         await handler.HandleAsync(@event);
 
         // Assert
-        var deletedProject = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+        var deletedProject = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId, TestContext.Current.CancellationToken);
         Assert.NotNull(deletedProject);
         Assert.True(deletedProject.IsDeleted);
         Assert.Equal(deletedAt, deletedProject.DeletedAt);
@@ -402,7 +402,7 @@ public class ProjectionHandlerTests : IDisposable
             CreatedAt = createdAt
         };
         _context.Tasks.Add(existingTask);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new TaskDeletedEventHandler(_context, CreateLogger<TaskDeletedEventHandler>());
         var @event = new TaskDeleted
@@ -417,7 +417,7 @@ public class ProjectionHandlerTests : IDisposable
         await handler.HandleAsync(@event);
 
         // Assert
-        var deletedTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId);
+        var deletedTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId, TestContext.Current.CancellationToken);
         Assert.NotNull(deletedTask);
         Assert.True(deletedTask.IsDeleted);
         Assert.Equal(deletedAt, deletedTask.DeletedAt);

@@ -65,11 +65,11 @@ public class TaskSnapshotServiceTest : IDisposable
 
         // Act
         await _service.PrepareTaskSnapshotAsync(taskId, task, occurredAt);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Assert
         var snapshot = await _context.TaskHistories
-            .FirstOrDefaultAsync(h => h.TaskId == taskId);
+            .FirstOrDefaultAsync(h => h.TaskId == taskId, TestContext.Current.CancellationToken);
 
         Assert.NotNull(snapshot);
         Assert.Equal(taskId, snapshot.TaskId);
@@ -109,7 +109,7 @@ public class TaskSnapshotServiceTest : IDisposable
 
         // 既存スナップショットをDBに追加
         _context.TaskHistories.Add(existingSnapshot);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var task = new TaskEntity
         {
@@ -130,11 +130,11 @@ public class TaskSnapshotServiceTest : IDisposable
 
         // Act
         await _service.PrepareTaskSnapshotAsync(taskId, task, occurredAt);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Assert - DBから再取得して確認
         var updatedSnapshot = await _context.TaskHistories
-            .FirstOrDefaultAsync(h => h.TaskId == taskId);
+            .FirstOrDefaultAsync(h => h.TaskId == taskId, TestContext.Current.CancellationToken);
 
         Assert.NotNull(updatedSnapshot);
         Assert.Equal("新タイトル", updatedSnapshot.Title);
@@ -144,7 +144,7 @@ public class TaskSnapshotServiceTest : IDisposable
         Assert.Equal(4, updatedSnapshot.ActualHours);
 
         // スナップショットは1つのみ
-        var snapshotCount = await _context.TaskHistories.CountAsync(h => h.TaskId == taskId);
+        var snapshotCount = await _context.TaskHistories.CountAsync(h => h.TaskId == taskId, TestContext.Current.CancellationToken);
         Assert.Equal(1, snapshotCount);
     }
 
@@ -177,11 +177,11 @@ public class TaskSnapshotServiceTest : IDisposable
 
         // Act
         await _service.PrepareTaskSnapshotAsync(taskId, task, occurredAt);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Assert
         var snapshot = await _context.TaskHistories
-            .FirstOrDefaultAsync(h => h.TaskId == taskId);
+            .FirstOrDefaultAsync(h => h.TaskId == taskId, TestContext.Current.CancellationToken);
 
         Assert.NotNull(snapshot);
         Assert.Equal(taskId, snapshot.TaskId);
