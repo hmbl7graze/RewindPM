@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RewindPM.Infrastructure.Read.Entities;
 using RewindPM.Infrastructure.Read.Services;
@@ -34,13 +35,13 @@ public class TaskSnapshotService
     /// <param name="taskId">タスクID</param>
     /// <param name="currentState">タスクの現在状態</param>
     /// <param name="occurredAt">イベント発生日時</param>
-    public Task PrepareTaskSnapshotAsync(Guid taskId, TaskEntity currentState, DateTimeOffset occurredAt)
+    public async Task PrepareTaskSnapshotAsync(Guid taskId, TaskEntity currentState, DateTimeOffset occurredAt)
     {
         ArgumentNullException.ThrowIfNull(currentState);
 
         var snapshotDate = _timeZoneService.GetSnapshotDate(occurredAt);
-        var snapshot = _context.TaskHistories
-            .FirstOrDefault(h => h.TaskId == taskId && h.SnapshotDate == snapshotDate);
+        var snapshot = await _context.TaskHistories
+            .FirstOrDefaultAsync(h => h.TaskId == taskId && h.SnapshotDate == snapshotDate);
 
         if (snapshot != null)
         {
@@ -59,8 +60,6 @@ public class TaskSnapshotService
             _logger.LogDebug("Created new snapshot for task {TaskId} on {SnapshotDate}",
                 taskId, snapshotDate);
         }
-
-        return Task.CompletedTask;
     }
 
     /// <summary>

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
@@ -28,7 +29,7 @@ public class ProjectDeletedEventHandler : IEventHandler<ProjectDeleted>
         _logger.LogInformation("Handling ProjectDeleted event for project {AggregateId}", @event.AggregateId);
 
         // Read Modelの削除フラグを更新
-        var project = _context.Projects.FirstOrDefault(p => p.Id == @event.AggregateId);
+        var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == @event.AggregateId);
         if (project != null)
         {
             project.IsDeleted = true;

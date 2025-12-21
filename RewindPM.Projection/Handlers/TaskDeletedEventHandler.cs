@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
@@ -28,7 +29,7 @@ public class TaskDeletedEventHandler : IEventHandler<TaskDeleted>
         _logger.LogInformation("Handling TaskDeleted event for task {AggregateId}", @event.AggregateId);
 
         // Read Modelの削除フラグを更新
-        var task = _context.Tasks.FirstOrDefault(t => t.Id == @event.AggregateId);
+        var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == @event.AggregateId);
         if (task != null)
         {
             task.IsDeleted = true;

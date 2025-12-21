@@ -1,9 +1,11 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using RewindPM.Domain.Events;
 using RewindPM.Domain.ValueObjects;
 using RewindPM.Infrastructure.Read.Entities;
 using RewindPM.Infrastructure.Read.Services;
+using RewindPM.Infrastructure.Read.SQLite.Persistence;
 using RewindPM.Projection.Handlers;
 using RewindPM.Projection.Services;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
@@ -11,18 +13,27 @@ using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 namespace RewindPM.Projection.Test.Handlers;
 
 /// <summary>
-/// プロジェクションハンドラーの単体テスト（DB抽象化版）
-/// IReadModelContextインターフェースを使用
+/// プロジェクションハンドラーの単体テスト（InMemoryデータベース使用）
 /// </summary>
-public class ProjectionHandlerTests
+public class ProjectionHandlerTests : IDisposable
 {
-    private readonly IReadModelContext _context;
+    private readonly ReadModelDbContext _context;
     private readonly ITimeZoneService _timeZoneService;
 
     public ProjectionHandlerTests()
     {
-        _context = Substitute.For<IReadModelContext>();
+        // InMemoryデータベースを使用
+        var options = new DbContextOptionsBuilder<ReadModelDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        _context = new ReadModelDbContext(options);
         _timeZoneService = new TestTimeZoneService();
+    }
+
+    public void Dispose()
+    {
+        _context?.Dispose();
     }
 
     private ILogger<T> CreateLogger<T>()
@@ -70,23 +81,21 @@ public class ProjectionHandlerTests
         await handler.HandleAsync(@event);
 
         // Assert
-        _context.Received(1).AddProject(Arg.Is<ProjectEntity>(p =>
-            p.Id == projectId &&
-            p.Title == "Test Project" &&
-            p.Description == "Test Description" &&
-            p.CreatedBy == "user1" &&
-            p.CreatedAt == occurredAt &&
-            p.UpdatedAt == null &&
-            p.UpdatedBy == null));
+        var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+        Assert.NotNull(project);
+        Assert.Equal("Test Project", project.Title);
+        Assert.Equal("Test Description", project.Description);
+        Assert.Equal("user1", project.CreatedBy);
+        Assert.Equal(occurredAt, project.CreatedAt);
+        Assert.Null(project.UpdatedAt);
+        Assert.Null(project.UpdatedBy);
 
-        _context.Received(1).AddProjectHistory(Arg.Is<ProjectHistoryEntity>(h =>
-            h.ProjectId == projectId &&
-            h.SnapshotDate == occurredAt.Date &&
-            h.Title == "Test Project" &&
-            h.Description == "Test Description" &&
-            h.CreatedBy == "user1"));
-
-        await _context.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        var snapshot = await _context.ProjectHistories.FirstOrDefaultAsync(h => h.ProjectId == projectId);
+        Assert.NotNull(snapshot);
+        Assert.Equal(occurredAt.Date, snapshot.SnapshotDate.Date);
+        Assert.Equal("Test Project", snapshot.Title);
+        Assert.Equal("Test Description", snapshot.Description);
+        Assert.Equal("user1", snapshot.CreatedBy);
     }
 
     #endregion
@@ -101,7 +110,7 @@ public class ProjectionHandlerTests
         var createdAt = new DateTime(2025, 12, 5, 10, 0, 0, DateTimeKind.Utc);
         var updatedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
 
-        // 既存のプロジェクトを返すようにモックを設定
+        // 既存のプロジェクトを作成
         var existingProject = new ProjectEntity
         {
             Id = projectId,
@@ -110,13 +119,8 @@ public class ProjectionHandlerTests
             CreatedBy = "user1",
             CreatedAt = createdAt
         };
-
-        var projects = new List<ProjectEntity> { existingProject }.AsQueryable();
-        _context.Projects.Returns(projects);
-
-        // 既存スナップショットなし
-        var emptyHistories = new List<ProjectHistoryEntity>().AsQueryable();
-        _context.ProjectHistories.Returns(emptyHistories);
+        _context.Projects.Add(existingProject);
+        await _context.SaveChangesAsync();
 
         var handler = new ProjectUpdatedEventHandler(_context, _timeZoneService, CreateLogger<ProjectUpdatedEventHandler>());
         var @event = new ProjectUpdated
@@ -132,17 +136,17 @@ public class ProjectionHandlerTests
         await handler.HandleAsync(@event);
 
         // Assert
-        Assert.Equal("New Title", existingProject.Title);
-        Assert.Equal("New Description", existingProject.Description);
-        Assert.Equal("user2", existingProject.UpdatedBy);
-        Assert.Equal(updatedAt, existingProject.UpdatedAt);
+        var updatedProject = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+        Assert.NotNull(updatedProject);
+        Assert.Equal("New Title", updatedProject.Title);
+        Assert.Equal("New Description", updatedProject.Description);
+        Assert.Equal("user2", updatedProject.UpdatedBy);
+        Assert.Equal(updatedAt, updatedProject.UpdatedAt);
 
-        _context.Received(1).AddProjectHistory(Arg.Is<ProjectHistoryEntity>(h =>
-            h.ProjectId == projectId &&
-            h.Title == "New Title" &&
-            h.Description == "New Description"));
-
-        await _context.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        var snapshot = await _context.ProjectHistories.FirstOrDefaultAsync(h => h.ProjectId == projectId);
+        Assert.NotNull(snapshot);
+        Assert.Equal("New Title", snapshot.Title);
+        Assert.Equal("New Description", snapshot.Description);
     }
 
     #endregion
@@ -178,27 +182,25 @@ public class ProjectionHandlerTests
         await handler.HandleAsync(@event);
 
         // Assert
-        _context.Received(1).AddTask(Arg.Is<TaskEntity>(t =>
-            t.Id == taskId &&
-            t.ProjectId == projectId &&
-            t.Title == "Test Task" &&
-            t.Description == "Test Task Description" &&
-            t.Status == TaskStatus.Todo &&
-            t.ScheduledStartDate == new DateTime(2025, 12, 10) &&
-            t.ScheduledEndDate == new DateTime(2025, 12, 20) &&
-            t.EstimatedHours == 40 &&
-            t.CreatedBy == "user1" &&
-            t.ActualStartDate == null &&
-            t.ActualEndDate == null &&
-            t.ActualHours == null));
+        var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId);
+        Assert.NotNull(task);
+        Assert.Equal(projectId, task.ProjectId);
+        Assert.Equal("Test Task", task.Title);
+        Assert.Equal("Test Task Description", task.Description);
+        Assert.Equal(TaskStatus.Todo, task.Status);
+        Assert.Equal(new DateTime(2025, 12, 10), task.ScheduledStartDate);
+        Assert.Equal(new DateTime(2025, 12, 20), task.ScheduledEndDate);
+        Assert.Equal(40, task.EstimatedHours);
+        Assert.Equal("user1", task.CreatedBy);
+        Assert.Null(task.ActualStartDate);
+        Assert.Null(task.ActualEndDate);
+        Assert.Null(task.ActualHours);
 
-        _context.Received(1).AddTaskHistory(Arg.Is<TaskHistoryEntity>(h =>
-            h.TaskId == taskId &&
-            h.SnapshotDate == occurredAt.Date &&
-            h.Title == "Test Task" &&
-            h.Status == TaskStatus.Todo));
-
-        await _context.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        var snapshot = await _context.TaskHistories.FirstOrDefaultAsync(h => h.TaskId == taskId);
+        Assert.NotNull(snapshot);
+        Assert.Equal(occurredAt.Date, snapshot.SnapshotDate.Date);
+        Assert.Equal("Test Task", snapshot.Title);
+        Assert.Equal(TaskStatus.Todo, snapshot.Status);
     }
 
     #endregion
@@ -214,7 +216,7 @@ public class ProjectionHandlerTests
         var createdAt = new DateTime(2025, 12, 5, 10, 0, 0, DateTimeKind.Utc);
         var updatedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
 
-        // 既存のタスクを返すようにモックを設定
+        // 既存のタスクを作成
         var existingTask = new TaskEntity
         {
             Id = taskId,
@@ -225,13 +227,8 @@ public class ProjectionHandlerTests
             CreatedBy = "user1",
             CreatedAt = createdAt
         };
-
-        var tasks = new List<TaskEntity> { existingTask }.AsQueryable();
-        _context.Tasks.Returns(tasks);
-
-        // 既存スナップショットなし
-        var emptyHistories = new List<TaskHistoryEntity>().AsQueryable();
-        _context.TaskHistories.Returns(emptyHistories);
+        _context.Tasks.Add(existingTask);
+        await _context.SaveChangesAsync();
 
         var taskSnapshotService = new TaskSnapshotService(_context, _timeZoneService, CreateLogger<TaskSnapshotService>());
         var handler = new TaskUpdatedEventHandler(_context, taskSnapshotService, CreateLogger<TaskUpdatedEventHandler>());
@@ -248,17 +245,17 @@ public class ProjectionHandlerTests
         await handler.HandleAsync(@event);
 
         // Assert
-        Assert.Equal("New Task Title", existingTask.Title);
-        Assert.Equal("New Task Description", existingTask.Description);
-        Assert.Equal("user2", existingTask.UpdatedBy);
-        Assert.Equal(updatedAt, existingTask.UpdatedAt);
+        var updatedTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId);
+        Assert.NotNull(updatedTask);
+        Assert.Equal("New Task Title", updatedTask.Title);
+        Assert.Equal("New Task Description", updatedTask.Description);
+        Assert.Equal("user2", updatedTask.UpdatedBy);
+        Assert.Equal(updatedAt, updatedTask.UpdatedAt);
 
-        _context.Received(1).AddTaskHistory(Arg.Is<TaskHistoryEntity>(h =>
-            h.TaskId == taskId &&
-            h.Title == "New Task Title" &&
-            h.Description == "New Task Description"));
-
-        await _context.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        var snapshot = await _context.TaskHistories.FirstOrDefaultAsync(h => h.TaskId == taskId);
+        Assert.NotNull(snapshot);
+        Assert.Equal("New Task Title", snapshot.Title);
+        Assert.Equal("New Task Description", snapshot.Description);
     }
 
     #endregion
@@ -274,7 +271,7 @@ public class ProjectionHandlerTests
         var createdAt = new DateTime(2025, 12, 5, 10, 0, 0, DateTimeKind.Utc);
         var changedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
 
-        // 既存のタスクを返すようにモックを設定
+        // 既存のタスクを作成
         var existingTask = new TaskEntity
         {
             Id = taskId,
@@ -285,13 +282,8 @@ public class ProjectionHandlerTests
             CreatedBy = "user1",
             CreatedAt = createdAt
         };
-
-        var tasks = new List<TaskEntity> { existingTask }.AsQueryable();
-        _context.Tasks.Returns(tasks);
-
-        // 既存スナップショットなし
-        var emptyHistories = new List<TaskHistoryEntity>().AsQueryable();
-        _context.TaskHistories.Returns(emptyHistories);
+        _context.Tasks.Add(existingTask);
+        await _context.SaveChangesAsync();
 
         var taskSnapshotService = new TaskSnapshotService(_context, _timeZoneService, CreateLogger<TaskSnapshotService>());
         var handler = new TaskStatusChangedEventHandler(_context, taskSnapshotService, CreateLogger<TaskStatusChangedEventHandler>());
@@ -308,24 +300,21 @@ public class ProjectionHandlerTests
         await handler.HandleAsync(@event);
 
         // Assert
-        Assert.Equal(TaskStatus.InProgress, existingTask.Status);
-        Assert.Equal("user1", existingTask.UpdatedBy);
-        Assert.Equal(changedAt, existingTask.UpdatedAt);
+        var updatedTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId);
+        Assert.NotNull(updatedTask);
+        Assert.Equal(TaskStatus.InProgress, updatedTask.Status);
+        Assert.Equal("user1", updatedTask.UpdatedBy);
+        Assert.Equal(changedAt, updatedTask.UpdatedAt);
 
-        _context.Received(1).AddTaskHistory(Arg.Is<TaskHistoryEntity>(h =>
-            h.TaskId == taskId &&
-            h.Status == TaskStatus.InProgress));
-
-        await _context.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        var snapshot = await _context.TaskHistories.FirstOrDefaultAsync(h => h.TaskId == taskId);
+        Assert.NotNull(snapshot);
+        Assert.Equal(TaskStatus.InProgress, snapshot.Status);
     }
 
     [Fact(DisplayName = "TaskStatusChangedイベントで存在しないタスクを適切に処理すること")]
     public async Task TaskStatusChangedEventHandler_Should_Handle_Missing_Task_Gracefully()
     {
         // Arrange
-        var emptyTasks = new List<TaskEntity>().AsQueryable();
-        _context.Tasks.Returns(emptyTasks);
-
         var taskSnapshotService = new TaskSnapshotService(_context, _timeZoneService, CreateLogger<TaskSnapshotService>());
         var handler = new TaskStatusChangedEventHandler(_context, taskSnapshotService, CreateLogger<TaskStatusChangedEventHandler>());
         var @event = new TaskStatusChanged
@@ -340,8 +329,9 @@ public class ProjectionHandlerTests
         // Act & Assert - 例外が発生しないことを確認
         await handler.HandleAsync(@event);
 
-        // SaveChangesAsyncが呼ばれないことを確認（タスクが存在しないため）
-        await _context.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        // タスクが存在しないことを確認
+        var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == @event.AggregateId);
+        Assert.Null(task);
     }
 
     #endregion
@@ -356,7 +346,7 @@ public class ProjectionHandlerTests
         var createdAt = new DateTime(2025, 12, 5, 10, 0, 0, DateTimeKind.Utc);
         var deletedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
 
-        // 既存のプロジェクトを返すようにモックを設定
+        // 既存のプロジェクトを作成
         var existingProject = new ProjectEntity
         {
             Id = projectId,
@@ -365,9 +355,8 @@ public class ProjectionHandlerTests
             CreatedBy = "user1",
             CreatedAt = createdAt
         };
-
-        var projects = new List<ProjectEntity> { existingProject }.AsQueryable();
-        _context.Projects.Returns(projects);
+        _context.Projects.Add(existingProject);
+        await _context.SaveChangesAsync();
 
         var handler = new ProjectDeletedEventHandler(_context, CreateLogger<ProjectDeletedEventHandler>());
         var @event = new ProjectDeleted
@@ -381,11 +370,11 @@ public class ProjectionHandlerTests
         await handler.HandleAsync(@event);
 
         // Assert
-        Assert.True(existingProject.IsDeleted);
-        Assert.Equal(deletedAt, existingProject.DeletedAt);
-        Assert.Equal("user2", existingProject.DeletedBy);
-
-        await _context.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        var deletedProject = await _context.Projects.FirstOrDefaultAsync(p => p.Id == projectId);
+        Assert.NotNull(deletedProject);
+        Assert.True(deletedProject.IsDeleted);
+        Assert.Equal(deletedAt, deletedProject.DeletedAt);
+        Assert.Equal("user2", deletedProject.DeletedBy);
     }
 
     #endregion
@@ -401,7 +390,7 @@ public class ProjectionHandlerTests
         var createdAt = new DateTime(2025, 12, 5, 10, 0, 0, DateTimeKind.Utc);
         var deletedAt = new DateTime(2025, 12, 6, 15, 0, 0, DateTimeKind.Utc);
 
-        // 既存のタスクを返すようにモックを設定
+        // 既存のタスクを作成
         var existingTask = new TaskEntity
         {
             Id = taskId,
@@ -412,9 +401,8 @@ public class ProjectionHandlerTests
             CreatedBy = "user1",
             CreatedAt = createdAt
         };
-
-        var tasks = new List<TaskEntity> { existingTask }.AsQueryable();
-        _context.Tasks.Returns(tasks);
+        _context.Tasks.Add(existingTask);
+        await _context.SaveChangesAsync();
 
         var handler = new TaskDeletedEventHandler(_context, CreateLogger<TaskDeletedEventHandler>());
         var @event = new TaskDeleted
@@ -429,11 +417,11 @@ public class ProjectionHandlerTests
         await handler.HandleAsync(@event);
 
         // Assert
-        Assert.True(existingTask.IsDeleted);
-        Assert.Equal(deletedAt, existingTask.DeletedAt);
-        Assert.Equal("user2", existingTask.DeletedBy);
-
-        await _context.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        var deletedTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId);
+        Assert.NotNull(deletedTask);
+        Assert.True(deletedTask.IsDeleted);
+        Assert.Equal(deletedAt, deletedTask.DeletedAt);
+        Assert.Equal("user2", deletedTask.DeletedBy);
     }
 
     #endregion

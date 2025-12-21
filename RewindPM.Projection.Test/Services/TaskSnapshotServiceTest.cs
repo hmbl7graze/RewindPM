@@ -1,29 +1,40 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using RewindPM.Infrastructure.Read.Entities;
 using RewindPM.Infrastructure.Read.Services;
+using RewindPM.Infrastructure.Read.SQLite.Persistence;
 using RewindPM.Projection.Services;
 using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 
 namespace RewindPM.Projection.Test.Services;
 
 /// <summary>
-/// TaskSnapshotServiceのテスト（DB抽象化版）
-/// IReadModelContextインターフェースを使用
+/// TaskSnapshotServiceのテスト（InMemoryデータベース使用）
 /// </summary>
-public class TaskSnapshotServiceTest
+public class TaskSnapshotServiceTest : IDisposable
 {
-    private readonly IReadModelContext _context;
+    private readonly ReadModelDbContext _context;
     private readonly ITimeZoneService _timeZoneService;
     private readonly ILogger<TaskSnapshotService> _logger;
     private readonly TaskSnapshotService _service;
 
     public TaskSnapshotServiceTest()
     {
-        _context = Substitute.For<IReadModelContext>();
+        // InMemoryデータベースを使用
+        var options = new DbContextOptionsBuilder<ReadModelDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+
+        _context = new ReadModelDbContext(options);
         _timeZoneService = new TestTimeZoneService();
         _logger = Substitute.For<ILogger<TaskSnapshotService>>();
         _service = new TaskSnapshotService(_context, _timeZoneService, _logger);
+    }
+
+    public void Dispose()
+    {
+        _context?.Dispose();
     }
 
     [Fact(DisplayName = "PrepareTaskSnapshotAsync_Should_Create_New_Snapshot")]
@@ -52,22 +63,22 @@ public class TaskSnapshotServiceTest
 
         var occurredAt = new DateTimeOffset(2025, 12, 15, 10, 0, 0, TimeSpan.Zero);
 
-        // 既存スナップショットなし
-        var emptyHistories = new List<TaskHistoryEntity>().AsQueryable();
-        _context.TaskHistories.Returns(emptyHistories);
-
         // Act
         await _service.PrepareTaskSnapshotAsync(taskId, task, occurredAt);
+        await _context.SaveChangesAsync();
 
         // Assert
-        _context.Received(1).AddTaskHistory(Arg.Is<TaskHistoryEntity>(h =>
-            h.TaskId == taskId &&
-            h.ProjectId == projectId &&
-            h.Title == "テストタスク" &&
-            h.Description == "説明" &&
-            h.Status == TaskStatus.InProgress &&
-            h.EstimatedHours == 8 &&
-            h.ActualHours == 4));
+        var snapshot = await _context.TaskHistories
+            .FirstOrDefaultAsync(h => h.TaskId == taskId);
+
+        Assert.NotNull(snapshot);
+        Assert.Equal(taskId, snapshot.TaskId);
+        Assert.Equal(projectId, snapshot.ProjectId);
+        Assert.Equal("テストタスク", snapshot.Title);
+        Assert.Equal("説明", snapshot.Description);
+        Assert.Equal(TaskStatus.InProgress, snapshot.Status);
+        Assert.Equal(8, snapshot.EstimatedHours);
+        Assert.Equal(4, snapshot.ActualHours);
     }
 
     [Fact(DisplayName = "PrepareTaskSnapshotAsync_Should_Update_Existing_Snapshot_On_Same_Date")]
@@ -96,8 +107,9 @@ public class TaskSnapshotServiceTest
             SnapshotCreatedAt = DateTimeOffset.UtcNow
         };
 
-        var histories = new List<TaskHistoryEntity> { existingSnapshot }.AsQueryable();
-        _context.TaskHistories.Returns(histories);
+        // 既存スナップショットをDBに追加
+        _context.TaskHistories.Add(existingSnapshot);
+        await _context.SaveChangesAsync();
 
         var task = new TaskEntity
         {
@@ -118,17 +130,22 @@ public class TaskSnapshotServiceTest
 
         // Act
         await _service.PrepareTaskSnapshotAsync(taskId, task, occurredAt);
+        await _context.SaveChangesAsync();
 
-        // Assert
-        // 既存のスナップショットが更新されたことを確認
-        Assert.Equal("新タイトル", existingSnapshot.Title);
-        Assert.Equal("新説明", existingSnapshot.Description);
-        Assert.Equal(TaskStatus.InProgress, existingSnapshot.Status);
-        Assert.Equal(8, existingSnapshot.EstimatedHours);
-        Assert.Equal(4, existingSnapshot.ActualHours);
+        // Assert - DBから再取得して確認
+        var updatedSnapshot = await _context.TaskHistories
+            .FirstOrDefaultAsync(h => h.TaskId == taskId);
 
-        // 新しいスナップショットは追加されない
-        _context.DidNotReceive().AddTaskHistory(Arg.Any<TaskHistoryEntity>());
+        Assert.NotNull(updatedSnapshot);
+        Assert.Equal("新タイトル", updatedSnapshot.Title);
+        Assert.Equal("新説明", updatedSnapshot.Description);
+        Assert.Equal(TaskStatus.InProgress, updatedSnapshot.Status);
+        Assert.Equal(8, updatedSnapshot.EstimatedHours);
+        Assert.Equal(4, updatedSnapshot.ActualHours);
+
+        // スナップショットは1つのみ
+        var snapshotCount = await _context.TaskHistories.CountAsync(h => h.TaskId == taskId);
+        Assert.Equal(1, snapshotCount);
     }
 
     [Fact(DisplayName = "PrepareTaskSnapshotAsync_Should_Handle_Null_Values")]
@@ -158,22 +175,22 @@ public class TaskSnapshotServiceTest
 
         var occurredAt = new DateTimeOffset(2025, 12, 15, 10, 0, 0, TimeSpan.Zero);
 
-        // 既存スナップショットなし
-        var emptyHistories = new List<TaskHistoryEntity>().AsQueryable();
-        _context.TaskHistories.Returns(emptyHistories);
-
         // Act
         await _service.PrepareTaskSnapshotAsync(taskId, task, occurredAt);
+        await _context.SaveChangesAsync();
 
         // Assert
-        _context.Received(1).AddTaskHistory(Arg.Is<TaskHistoryEntity>(h =>
-            h.TaskId == taskId &&
-            h.EstimatedHours == null &&
-            h.ActualHours == null &&
-            h.ScheduledStartDate == null &&
-            h.ScheduledEndDate == null &&
-            h.ActualStartDate == null &&
-            h.ActualEndDate == null));
+        var snapshot = await _context.TaskHistories
+            .FirstOrDefaultAsync(h => h.TaskId == taskId);
+
+        Assert.NotNull(snapshot);
+        Assert.Equal(taskId, snapshot.TaskId);
+        Assert.Null(snapshot.EstimatedHours);
+        Assert.Null(snapshot.ActualHours);
+        Assert.Null(snapshot.ScheduledStartDate);
+        Assert.Null(snapshot.ScheduledEndDate);
+        Assert.Null(snapshot.ActualStartDate);
+        Assert.Null(snapshot.ActualEndDate);
     }
 
     [Fact(DisplayName = "PrepareTaskSnapshotAsync_Should_Throw_When_CurrentState_Is_Null")]

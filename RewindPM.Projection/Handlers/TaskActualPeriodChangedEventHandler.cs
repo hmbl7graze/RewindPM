@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
@@ -32,7 +33,7 @@ public class TaskActualPeriodChangedEventHandler : IEventHandler<TaskActualPerio
         _logger.LogInformation("Handling TaskActualPeriodChanged event for task {AggregateId}", @event.AggregateId);
 
         // 現在の状態を更新
-        var task = _context.Tasks.FirstOrDefault(t => t.Id == @event.AggregateId);
+        var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == @event.AggregateId);
         if (task == null)
         {
             _logger.LogWarning("Task {TaskId} not found in ReadModel", @event.AggregateId);

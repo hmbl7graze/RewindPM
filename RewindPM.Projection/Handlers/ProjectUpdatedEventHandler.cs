@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
@@ -32,8 +33,8 @@ public class ProjectUpdatedEventHandler : IEventHandler<ProjectUpdated>
         _logger.LogInformation("Handling ProjectUpdated event for project {AggregateId}", @event.AggregateId);
 
         // Projectsテーブルの現在の状態を更新
-        var project = _context.Projects
-            .FirstOrDefault(p => p.Id == @event.AggregateId);
+        var project = await _context.Projects
+            .FirstOrDefaultAsync(p => p.Id == @event.AggregateId);
 
         if (project == null)
         {
@@ -48,8 +49,8 @@ public class ProjectUpdatedEventHandler : IEventHandler<ProjectUpdated>
 
         // スナップショットを作成または更新
         var snapshotDate = _timeZoneService.GetSnapshotDate(@event.OccurredAt);
-        var snapshot = _context.ProjectHistories
-            .FirstOrDefault(h => h.ProjectId == @event.AggregateId && h.SnapshotDate == snapshotDate);
+        var snapshot = await _context.ProjectHistories
+            .FirstOrDefaultAsync(h => h.ProjectId == @event.AggregateId && h.SnapshotDate == snapshotDate);
 
         if (snapshot != null)
         {
