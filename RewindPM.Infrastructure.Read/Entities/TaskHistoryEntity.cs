@@ -4,18 +4,18 @@ using TaskStatus = RewindPM.Domain.ValueObjects.TaskStatus;
 namespace RewindPM.Infrastructure.Read.Entities;
 
 /// <summary>
-/// タスクの過去状態を保持するエンティティ
-/// タイムトラベル機能のために日単位のスナップショットを保存
+/// タスクの日次スナップショットを保持するエンティティ
+/// 過去の任意の時点の状態を確認するために使用
 /// </summary>
 public class TaskHistoryEntity : ITaskStatisticsData
 {
     /// <summary>
-    /// 履歴レコードID（主キー）
+    /// スナップショットID（主キー）
     /// </summary>
     public Guid Id { get; set; }
 
     /// <summary>
-    /// 元のタスクID
+    /// タスクID
     /// </summary>
     public Guid TaskId { get; set; }
 
@@ -25,27 +25,26 @@ public class TaskHistoryEntity : ITaskStatisticsData
     public Guid ProjectId { get; set; }
 
     /// <summary>
-    /// スナップショット日付（日単位、UTC）
-    /// この日の最後の状態を保存
+    /// スナップショットの基準日（ローカルタイムゾーンの日付の00:00:00 UTC）
     /// </summary>
     public DateTimeOffset SnapshotDate { get; set; }
 
     /// <summary>
-    /// タスク名
+    /// タスク名（この日の最終状態）
     /// </summary>
     public string Title { get; set; } = string.Empty;
 
     /// <summary>
-    /// タスクの説明
+    /// タスクの説明（この日の最終状態）
     /// </summary>
     public string Description { get; set; } = string.Empty;
 
     /// <summary>
-    /// タスクのステータス
+    /// タスクのステータス（この日の最終状態）
     /// </summary>
     public TaskStatus Status { get; set; }
 
-    // 予定期間と工数
+    // 予定期間と工数（この日の最終状態）
     /// <summary>
     /// 予定開始日
     /// </summary>
@@ -61,7 +60,7 @@ public class TaskHistoryEntity : ITaskStatisticsData
     /// </summary>
     public int? EstimatedHours { get; set; }
 
-    // 実績期間と工数
+    // 実績期間と工数（この日の最終状態）
     /// <summary>
     /// 実績開始日
     /// </summary>
@@ -84,7 +83,6 @@ public class TaskHistoryEntity : ITaskStatisticsData
 
     /// <summary>
     /// 更新日時（UTC）
-    /// この時点での最終更新日時
     /// </summary>
     public DateTimeOffset? UpdatedAt { get; set; }
 
@@ -95,13 +93,11 @@ public class TaskHistoryEntity : ITaskStatisticsData
 
     /// <summary>
     /// 更新者
-    /// この時点での最終更新者
     /// </summary>
     public string? UpdatedBy { get; set; }
 
     /// <summary>
     /// スナップショット作成日時（UTC）
-    /// このレコードがいつ作成されたか
     /// </summary>
     public DateTimeOffset SnapshotCreatedAt { get; set; }
 }

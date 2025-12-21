@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
-using RewindPM.Infrastructure.Read.Persistence;
+using RewindPM.Infrastructure.Read.Services;
 
 namespace RewindPM.Projection.Handlers;
 
@@ -11,11 +11,11 @@ namespace RewindPM.Projection.Handlers;
 /// </summary>
 public class ProjectDeletedEventHandler : IEventHandler<ProjectDeleted>
 {
-    private readonly ReadModelDbContext _context;
+    private readonly IReadModelContext _context;
     private readonly ILogger<ProjectDeletedEventHandler> _logger;
 
     public ProjectDeletedEventHandler(
-        ReadModelDbContext context,
+        IReadModelContext context,
         ILogger<ProjectDeletedEventHandler> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -29,7 +29,7 @@ public class ProjectDeletedEventHandler : IEventHandler<ProjectDeleted>
         _logger.LogInformation("Handling ProjectDeleted event for project {AggregateId}", @event.AggregateId);
 
         // Read Modelの削除フラグを更新
-        var project = await _context.Projects.FindAsync(@event.AggregateId);
+        var project = await _context.Projects.FirstOrDefaultAsync(p => p.Id == @event.AggregateId);
         if (project != null)
         {
             project.IsDeleted = true;

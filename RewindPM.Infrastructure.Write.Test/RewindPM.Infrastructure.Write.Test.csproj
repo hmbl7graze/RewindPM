@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\RewindPM.Domain\RewindPM.Domain.csproj" />
     <ProjectReference Include="..\RewindPM.Infrastructure.Write\RewindPM.Infrastructure.Write.csproj" />
   </ItemGroup>
 

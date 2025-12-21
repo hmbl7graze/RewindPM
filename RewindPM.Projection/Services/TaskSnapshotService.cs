@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RewindPM.Infrastructure.Read.Entities;
-using RewindPM.Infrastructure.Read.Persistence;
 using RewindPM.Infrastructure.Read.Services;
 
 namespace RewindPM.Projection.Services;
@@ -12,12 +11,12 @@ namespace RewindPM.Projection.Services;
 /// </summary>
 public class TaskSnapshotService
 {
-    private readonly ReadModelDbContext _context;
+    private readonly IReadModelContext _context;
     private readonly ITimeZoneService _timeZoneService;
     private readonly ILogger<TaskSnapshotService> _logger;
 
     public TaskSnapshotService(
-        ReadModelDbContext context,
+        IReadModelContext context,
         ITimeZoneService timeZoneService,
         ILogger<TaskSnapshotService> logger)
     {
@@ -56,7 +55,7 @@ public class TaskSnapshotService
         {
             // 新規スナップショットを作成
             snapshot = CreateSnapshot(taskId, currentState, snapshotDate, occurredAt);
-            _context.TaskHistories.Add(snapshot);
+            _context.AddTaskHistory(snapshot);
 
             _logger.LogDebug("Created new snapshot for task {TaskId} on {SnapshotDate}",
                 taskId, snapshotDate);

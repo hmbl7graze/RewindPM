@@ -1,7 +1,8 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RewindPM.Domain.Common;
 using RewindPM.Domain.Events;
-using RewindPM.Infrastructure.Read.Persistence;
+using RewindPM.Infrastructure.Read.Services;
 using RewindPM.Projection.Services;
 
 namespace RewindPM.Projection.Handlers;
@@ -11,12 +12,12 @@ namespace RewindPM.Projection.Handlers;
 /// </summary>
 public class TaskStatusChangedEventHandler : IEventHandler<TaskStatusChanged>
 {
-    private readonly ReadModelDbContext _context;
+    private readonly IReadModelContext _context;
     private readonly TaskSnapshotService _snapshotService;
     private readonly ILogger<TaskStatusChangedEventHandler> _logger;
 
     public TaskStatusChangedEventHandler(
-        ReadModelDbContext context,
+        IReadModelContext context,
         TaskSnapshotService snapshotService,
         ILogger<TaskStatusChangedEventHandler> logger)
     {
@@ -33,7 +34,7 @@ public class TaskStatusChangedEventHandler : IEventHandler<TaskStatusChanged>
             @event.AggregateId, @event.OldStatus, @event.NewStatus);
 
         // 現在の状態を更新
-        var task = await _context.Tasks.FindAsync(@event.AggregateId);
+        var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == @event.AggregateId);
         if (task == null)
         {
             _logger.LogWarning("Task {TaskId} not found in ReadModel", @event.AggregateId);
